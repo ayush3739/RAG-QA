@@ -17,11 +17,11 @@
 
 **Upload & Index** — drop a PDF, hit Index Document, watch 3 live progress steps.
 
-![Upload and Index](src/localhost_8501_%20(1).png)
+![Upload and Index](src/localhost_8501_%20(3).png)
 
 **Streaming Answer** — answers stream token by token with page references from the document.
 
-![Streaming Answer](src/localhost_8501_%20(3).png)
+![Streaming Answer](src/localhost_8501_%20(1).png)
 
 **Honest Response** — if it's not in the PDF, it says so. No hallucination.
 
