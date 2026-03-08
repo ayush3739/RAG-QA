@@ -1,0 +1,15 @@
+# environment
+.env
+
+# python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+
+# uploaded PDFs (too large for git)
+docs/
+
+# streamlit
+tempCodeRunnerFile.py
