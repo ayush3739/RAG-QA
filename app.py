@@ -7,7 +7,7 @@ from qdrant_client import QdrantClient
 DOCS_DIR = Path(__file__).parent / "docs"
 DOCS_DIR.mkdir(exist_ok=True)
 
-# ── helpers ──────────────────────────────────────────────────────────────────
+# ── helpers
 
 @st.cache_data(ttl=30)
 def get_existing_collections() -> list[str]:
@@ -30,17 +30,16 @@ def index_pdf(pdf_path: Path, status_container) -> None:
     status_container.success("Step 3 / 3 — Stored in Qdrant ✓")
 
 
-# ── page config ───────────────────────────────────────────────────────────────
+# ── page config 
 
 st.set_page_config(page_title="RAG System", page_icon="📚", layout="wide")
 st.title("📚 RAG System")
 
-# ── tabs ──────────────────────────────────────────────────────────────────────
+# ── tabs
 
 tab_new, tab_existing = st.tabs(["Upload New Document", "Query Existing Collection"])
 
-# ── Tab 1: Upload & index new PDF ─────────────────────────────────────────────
-
+# ── Tab 1: Upload & index new PDF 
 with tab_new:
     st.subheader("Upload a PDF")
     uploaded_file = st.file_uploader("Choose a PDF file", type="pdf", key="uploader")
@@ -70,7 +69,7 @@ with tab_new:
             st.session_state["active_collection"] = uploaded_file.name
             st.success(f"Ready to query `{uploaded_file.name}`!")
 
-    # ── chat (new doc) ────────────────────────────────────────────────────────
+    # ── chat (new doc)
     active = st.session_state.get("active_collection")
     if active:
         st.divider()
@@ -93,7 +92,7 @@ with tab_new:
     else:
         st.info("Upload and index a PDF above to start chatting.")
 
-# ── Tab 2: Query existing collection ─────────────────────────────────────────
+# ── Tab 2: Query existing collection
 
 with tab_existing:
     st.subheader("Select an existing collection")
