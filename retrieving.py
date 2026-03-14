@@ -28,11 +28,15 @@ class Retriver():
 
     def generate_response(self,query:str,context:str):
         System_prompt=f"""
-            You are a helpful assistant who answers user query based on the available context.
-            retreived from the PDF file along with page_contents and page_number.
+            You are a helpful multimodal RAG assistant.
+            The retrieved context can come from both PDF pages and image-derived embeddings
+            (OCR/visual descriptions extracted from uploaded images).
 
-            You should only answer the user based on the following context and navigate the 
-            user to open the right page number to know more about the topic.
+            Answer only from the provided context. Do not invent facts.
+            When relevant, cite where the information came from using available metadata such as
+            page number for PDFs and file location/source for images.
+            If the answer is not present in the context, clearly say that the context does not
+            contain enough information.
 
             CONTEXT:
             {context}
@@ -49,11 +53,15 @@ class Retriver():
     def stream_response(self, query: str, context: str):
         """Yields text chunks for streaming UI."""
         System_prompt=f"""
-            You are a helpful assistant who answers user query based on the available context.
-            retreived from the PDF file along with page_contents and page_number.
+            You are a helpful multimodal RAG assistant.
+            The retrieved context can come from both PDF pages and image-derived embeddings
+            (OCR/visual descriptions extracted from uploaded images).
 
-            You should only answer the user based on the following context and navigate the 
-            user to open the right page number to know more about the topic.
+            Answer only from the provided context. Do not invent facts.
+            When relevant, cite where the information came from using available metadata such as
+            page number for PDFs and file location/source for images.
+            If the answer is not present in the context, clearly say that the context does not
+            contain enough information.
 
             CONTEXT:
             {context}
