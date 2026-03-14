@@ -86,8 +86,9 @@ with tab_new:
             st.session_state["messages_new"].append({"role": "user", "content": query})
             st.chat_message("user").write(query)
             with st.chat_message("assistant"):
-                retriver = get_retriver(active)
-                response = st.write_stream(retriver.answer_stream(query=query))
+                with st.spinner("Assistant is thinking..."):
+                    retriver = get_retriver(active)
+                    response = st.write_stream(retriver.answer_stream(query=query))
             st.session_state["messages_new"].append({"role": "assistant", "content": response})
     else:
         st.info("Upload and index a PDF above to start chatting.")
@@ -117,6 +118,7 @@ with tab_existing:
             st.session_state["messages_existing"].append({"role": "user", "content": query})
             st.chat_message("user").write(query)
             with st.chat_message("assistant"):
-                retriver = get_retriver(selected)
-                response = st.write_stream(retriver.answer_stream(query=query))
+                with st.spinner("Assistant is thinking..."):
+                    retriver = get_retriver(selected)
+                    response = st.write_stream(retriver.answer_stream(query=query))
             st.session_state["messages_existing"].append({"role": "assistant", "content": response})

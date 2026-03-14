@@ -1,5 +1,9 @@
 from langchain_openai import OpenAIEmbeddings
 from langchain_qdrant import QdrantVectorStore
+from langchain_ollama import OllamaLLM
+
+
+
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
@@ -10,6 +14,15 @@ class Retriver():
         self.openai_client = OpenAI(
             base_url="https://models.github.ai/inference",
             api_key=os.getenv("GITHUB_TOKEN"),
+        )
+
+        self.llm = OllamaLLM(
+            model="qwen3:4b",
+            temperature=0.4,
+            num_ctx=8192,
+            num_predict=1024,
+            repeat_penalty=1.05,
+            base_url="http://localhost:11434"  # explicit is better
         )
         self.embedding_model = OpenAIEmbeddings(
             model="text-embedding-3-large",
@@ -58,20 +71,11 @@ class Retriver():
             CONTEXT:
             {context}
         """
-        stream = self.openai_client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role":"system","content":System_prompt},
-                {"role":"user","content":query}
-            ],
-            stream=True,
-        )
+        prompt = f"{System_prompt}\n\nUser Question:\n{query}"
+        stream = self.llm.stream(prompt)
         for chunk in stream:
-            if not chunk.choices:
-                continue
-            delta = chunk.choices[0].delta.content
-            if delta:
-                yield delta
+            yield chunk
+        
 
     def answer(self, query: str, k: int = 10) -> str:
         context = self.similarity_search(query, k)
