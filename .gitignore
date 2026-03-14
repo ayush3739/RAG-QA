@@ -8,6 +8,8 @@ __pycache__/
 .venv/
 venv/
 test.py
+local_model.py
+
 # uploaded PDFs (too large for git)
 docs/
 
