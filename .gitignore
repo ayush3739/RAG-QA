@@ -9,6 +9,7 @@ __pycache__/
 venv/
 test.py
 local_model.py
+plan.md
 
 # uploaded PDFs (too large for git)
 docs/
