@@ -33,7 +33,7 @@ class Retriver():
             (OCR/visual descriptions extracted from uploaded images).
 
             Answer only from the provided context. Do not invent facts.
-            When relevant, cite where the information came from using available metadata such as
+            cite where the information came from using available metadata such as
             page number for PDFs and file location/source for images.
             If the answer is not present in the context, clearly say that the context does not
             contain enough information.
