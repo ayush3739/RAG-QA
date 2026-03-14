@@ -7,7 +7,7 @@ __pycache__/
 *.pyo
 .venv/
 venv/
-
+test.py
 # uploaded PDFs (too large for git)
 docs/
 
