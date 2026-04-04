@@ -10,7 +10,7 @@ venv/
 test.py
 local_model.py
 plan.md
-
+Expense Tracker.py
 # uploaded PDFs (too large for git)
 docs/
 
