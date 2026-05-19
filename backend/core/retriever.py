@@ -33,11 +33,21 @@ class Retriever():
                 openai_api_key=os.getenv("GITHUB_TOKEN"),
                 openai_api_base="https://models.github.ai/inference",
             )
-            self.vector_db = QdrantVectorStore.from_existing_collection(
-                url="http://localhost:6333",
-                collection_name=collection_name,
-                embedding=self.embedding_model,
-            )
+            # Try to connect to Qdrant; if unavailable, fall back to BM25-only mode
+            try:
+                self.vector_db = QdrantVectorStore.from_existing_collection(
+                    url=os.getenv("QDRANT_URL", "http://localhost:6333"),
+                    collection_name=collection_name,
+                    embedding=self.embedding_model,
+                )
+                self.qdrant_available = True
+                self.qdrant_error = None
+            except Exception as e:
+                # Do not fail initialization; continue with BM25-only retriever
+                self.vector_db = None
+                self.qdrant_available = False
+                self.qdrant_error = str(e)
+                print(f"Warning: Qdrant not available. Proceeding without vector DB. Error: {self.qdrant_error}")
             bm25_file = Path("data/bm25") / f"{collection_name}_bm25.pkl"
             self.bm25 = None
             self.bm25_texts = []
@@ -50,8 +60,6 @@ class Retriever():
                     self.bm25_meta = d.get("meta", [])
                     self.bm25_texts = [m.get("page_content", "") for m in self.bm25_meta]
             self.reranker = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
-        except ConnectionError as e:
-            raise RuntimeError(f"Unable to connect to Qdrant: {e}")
         except Exception as e:
             raise RuntimeError(f"Retriever initialization failed: {str(e)}")
 
@@ -79,17 +87,36 @@ class Retriever():
 
         def add_results(results):
             for rank, result in enumerate(results, start=1):
-                key = result.page_content
+                # prefer stable chunk_id when available for deduplication
+                try:
+                    key = result.metadata.get("chunk_id")
+                except Exception:
+                    key = None
+                if not key:
+                    key = result.page_content
                 scores[key] = scores.get(key, 0.0) + 1.0 / (k + rank)
 
         add_results(vector_results)
         add_results(bm25_results)
 
-        ordered = sorted(
-            {result.page_content: result for result in list(vector_results) + list(bm25_results)}.values(),
-            key=lambda result: scores.get(result.page_content, 0.0),
-            reverse=True,
-        )
+        # merge by chunk id when available to avoid duplicates
+        merged_map = {}
+        for result in list(vector_results) + list(bm25_results):
+            try:
+                cid = result.metadata.get("chunk_id") or result.page_content
+            except Exception:
+                cid = result.page_content
+            if cid not in merged_map:
+                merged_map[cid] = result
+
+        def score_for_result(result):
+            try:
+                cid = result.metadata.get("chunk_id") or result.page_content
+            except Exception:
+                cid = result.page_content
+            return scores.get(cid, 0.0)
+
+        ordered = sorted(merged_map.values(), key=score_for_result, reverse=True)
         return ordered
     
 
@@ -98,7 +125,13 @@ class Retriever():
     def similarity_search(self,query:str,k:int=10):
         try:
             query = self.sanitize_query(query)
-            search_results = self.vector_db.similarity_search(query=query, k=max(k, 15))
+            # Vector search only if Qdrant is available
+            search_results = []
+            if getattr(self, 'vector_db', None) is not None:
+                try:
+                    search_results = self.vector_db.similarity_search(query=query, k=max(k, 15))
+                except Exception:
+                    search_results = []
 
             # BM25 retrieval (if available)
             bm25_results = []
@@ -115,24 +148,54 @@ class Retriever():
 
                     for i in ranked_idx:
                         meta = self.bm25_meta[i]
-                        bm25_results.append(_DocLike(self.bm25_texts[i], {"page_label": meta.get("page_label"), "source": meta.get("source")}))
+                        bm25_results.append(
+                            _DocLike(
+                                self.bm25_texts[i],
+                                {
+                                    "chunk_id": meta.get("chunk_id"),
+                                    "page_label": meta.get("page_label"),
+                                    "source": meta.get("source"),
+                                    "bm25_score": float(scores[i]) if scores is not None else None,
+                                },
+                            )
+                        )
             except Exception:
                 bm25_results = []
 
             merged_results = self.reciprocal_rank_fusion(search_results, bm25_results)
+
             # Rerank top merged results using CrossEncoder, fall back gracefully
             top_for_rerank = merged_results[:15]
             try:
-                ranked_chunks, _ = self.rerank_(query, top_for_rerank, top_n=10)
+                ranked_chunks, max_score = self.rerank_(query, top_for_rerank, top_n=10)
                 chunks_for_context = ranked_chunks
             except Exception:
                 chunks_for_context = top_for_rerank[:10]
 
-            context = "\n\n\n".join([
-                f"Page Content : {result.page_content} \n Page Number : {result.metadata['page_label']}\nfile Location : {result.metadata['source']}"
-                for result in chunks_for_context
-            ])
-            return context
+            # Build structured chunk list for output
+            structured_chunks = []
+            for c in chunks_for_context:
+                meta = getattr(c, 'metadata', {}) or {}
+                structured_chunks.append(
+                    {
+                        "chunk_id": meta.get("chunk_id"),
+                        "page_label": meta.get("page_label"),
+                        "source": meta.get("source"),
+                        "text": c.page_content,
+                        "bm25_score": meta.get("bm25_score"),
+                        "reranker_score": float(meta.get("reranker_score", 0.0)) if meta.get("reranker_score") is not None else None,
+                        "vector_score": None,
+                    }
+                )
+
+            result_payload = {
+                "chunks": structured_chunks,
+                "used_vector_db": bool(getattr(self, 'qdrant_available', False)),
+                "debug": {"qdrant_error": getattr(self, 'qdrant_error', None)},
+                "confidence": float(max_score) if 'max_score' in locals() else None,
+            }
+
+            return result_payload
         except Exception as e:
             raise RuntimeError(f"Retrieval failed: {str(e)}")
         
@@ -143,33 +206,95 @@ class Retriever():
         scores = self.reranker.predict(pairs)
         if len(scores) == 0:
             return chunks[:top_n], 0.0
-        ranked = sorted(zip(scores, chunks), reverse=True, key=lambda x: x[0])
-        return [chunk for _, chunk in ranked[:top_n]], float(max(scores))
+        for c, s in zip(chunks, scores):
+            try:
+                c.metadata["reranker_score"] = float(s)
+            except Exception:
+                c.metadata = getattr(c, "metadata", {}) or {}
+                c.metadata["reranker_score"] = float(s)
+        ranked = sorted(chunks, reverse=True, key=lambda x: x.metadata.get("reranker_score", 0.0))
+        return ranked[:top_n], float(max(scores))
 
-    def generate_response(self,query:str,context:str):
-        System_prompt=f"""
-            You are a helpful assistant who answers user query based on the available context.
-            retrieved from the PDF file along with page_contents and page_number.
+    def generate_response(self, query: str, retrieval_result: dict):
+        # defensive sanitization: ensure the query used with the LLM is safe
+        try:
+            query = self.sanitize_query(query)
+        except Exception:
+            # if the query is invalid, blank it so the model sees only the context
+            query = ""
 
-            You should only answer the user based on the following context and navigate the
-            user to open the right page number to know more about the topic.
-
-            CONTEXT:
-            {context}
-        """
-        response=self.openai_client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role":"system","content":System_prompt},
-                {"role":"user","content":query}
+        chunks = retrieval_result.get("chunks", []) if isinstance(retrieval_result, dict) else []
+        context = "\n\n".join(
+            [
+                f"[chunk_id={c.get('chunk_id')} | page={c.get('page_label')} | source={c.get('source')}] {c.get('text', '')}"
+                for c in chunks[:6]
             ]
         )
-        return response.choices[0].message.content
+
+        system_prompt = f"""
+    You are a helpful assistant that answers questions strictly based on context
+retrieved from a PDF document.
+
+Rules:
+- Answer ONLY using the provided context chunks. Do not use prior knowledge.
+- If the answer spans multiple chunks, synthesize them into one clear response.
+- Always cite the relevant page number(s) at the end, e.g., (Page 4, 12).
+- If chunks partially relate but don't fully answer the question, say what
+  you found and note what's missing.
+- If chunks contradict each other, mention both findings and their pages.
+- If the context doesn't contain the answer, respond with:
+  "I could not find this information in the provided document."
+- Keep answers under 200 words unless the question requires more detail.
+- Do not infer or extrapolate beyond what is explicitly stated in the chunks.
+
+CONTEXT:
+{context}
+"""
+
+        response = self.openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": query},
+            ],
+        )
+
+        answer_text = response.choices[0].message.content or ""
+        citations = [
+            {
+                "chunk_id": c.get("chunk_id"),
+                "source": c.get("source"),
+                "page_label": c.get("page_label"),
+                "excerpt": c.get("text", "")[:240],
+            }
+            for c in chunks[:5]
+        ]
+
+        return {
+            "answer": answer_text,
+            "citations": citations,
+            "used_vector_db": retrieval_result.get("used_vector_db", False),
+            "chunks": chunks,
+            "debug": retrieval_result.get("debug", {}),
+            "confidence": retrieval_result.get("confidence"),
+        }
 
 
-    def answer(self, query: str, k: int = 10) -> str:
-        context = self.similarity_search(query, k)
-        return self.generate_response(query, context)
+    def answer(self, query: str, k: int = 10) -> dict:
+        try:
+            q = self.sanitize_query(query)
+        except ValueError:
+            return {
+                "answer": "Invalid query detected.",
+                "citations": [],
+                "used_vector_db": False,
+                "chunks": [],
+                "debug": {"error": "invalid_query"},
+                "confidence": None,
+            }
+
+        retrieval_result = self.similarity_search(q, k)
+        return self.generate_response(q, retrieval_result)
     
 
 

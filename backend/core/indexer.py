@@ -5,10 +5,10 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_qdrant import  QdrantVectorStore
 from qdrant_client import QdrantClient
 from rank_bm25 import BM25Okapi
-import pickle
+import pickle, hashlib, os
 from backend.core.utils import simple_tokenize
 from dotenv import load_dotenv
-import os
+
 
 
 load_dotenv('./.env')
@@ -38,13 +38,26 @@ class Indexer():
             chunks = text_splitter.split_documents(documents=docs)
             print(f"Total Chunks created: {len(chunks)}")
 
+            # Stamp each chunk with a deterministic id before storing it anywhere.
+            for chunk in chunks:
+                normalized_text = " ".join(chunk.page_content.split())
+                page_label = chunk.metadata.get("page_label", "")
+                source = chunk.metadata.get("source", str(self.file_path))
+                chunk_id = self.make_chunk_id(normalized_text, page_label, source)
+                chunk.metadata["chunk_id"] = chunk_id
+
             # Build and persist BM25 index and metadata
             try:
                 texts = [c.page_content for c in chunks]
                 tokenized = [simple_tokenize(t) for t in texts]
                 bm25 = BM25Okapi(tokenized)
                 meta = [
-                    {"page_content": t, "page_label": c.metadata.get("page_label"), "source": c.metadata.get("source")}
+                    {
+                        "chunk_id": c.metadata.get("chunk_id"),
+                        "page_content": t,
+                        "page_label": c.metadata.get("page_label"),
+                        "source": c.metadata.get("source"),
+                    }
                     for t, c in zip(texts, chunks)
                 ]
                 os.makedirs("data/bm25", exist_ok=True)
@@ -77,3 +90,7 @@ class Indexer():
             print(f"Error occurred while deleting collection: {e}")
         finally:
             client.close()
+
+    def make_chunk_id(self, text: str, page_label: str, source: str):
+        h = hashlib.sha256(f"{source}|{page_label}|{text}".encode("utf-8")).hexdigest()
+        return h[:16]
