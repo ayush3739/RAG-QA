@@ -7,17 +7,14 @@ from qdrant_client import QdrantClient
 from rank_bm25 import BM25Okapi
 import pickle, hashlib, os
 from backend.core.utils import simple_tokenize
-from dotenv import load_dotenv
-
-
-
-load_dotenv('./.env')
+from backend.core.config import settings
     
 class Indexer():
-    def __init__(self, file_path: str):
+    def __init__(self, file_path: str, collection_name: str | None = None):
         self.file_path = Path(file_path)
+        self.collection_name = collection_name or self.file_path.name
         self.embedding_model = OpenAIEmbeddings(
-            api_key=os.getenv('GITHUB_TOKEN'),
+            api_key=settings.github_token,
             model="text-embedding-3-large",
             openai_api_base="https://models.github.ai/inference",
         )
@@ -61,31 +58,31 @@ class Indexer():
                     for t, c in zip(texts, chunks)
                 ]
                 os.makedirs("data/bm25", exist_ok=True)
-                with open(f"data/bm25/{self.file_path.name}_bm25.pkl", "wb") as f:
+                with open(f"data/bm25/{self.collection_name}_bm25.pkl", "wb") as f:
                     pickle.dump({"bm25": bm25, "meta": meta}, f)
-                print(f"✓ BM25 persisted → data/bm25/{self.file_path.name}_bm25.pkl")
+                print(f"✓ BM25 persisted → data/bm25/{self.collection_name}_bm25.pkl")
             except Exception as e:
                 print(f"Warning: failed to persist BM25 index: {e}")
 
             # Step 3: embed & index
             self.vector_db = QdrantVectorStore.from_documents(
                 documents=chunks,
-                url="http://localhost:6333",
-                collection_name=self.file_path.name,
+                url=settings.qdrant_url,
+                collection_name=self.collection_name,
                 embedding=self.embedding_model,
             )
-            print(f"Indexing done → collection: '{self.file_path.name}'")
+            print(f"Indexing done → collection: '{self.collection_name}'")
         except ConnectionError as e:
             raise RuntimeError(f"Unable to connect to Qdrant: {e}")
         except Exception as e:
             raise RuntimeError(f"Indexing failed: {str(e)}")
 
     def _delete_existing_collection(self):
-        client = QdrantClient(url="http://localhost:6333")
+        client = QdrantClient(url=settings.qdrant_url)
         try:
             existing = [c.name for c in client.get_collections().collections]
-            if self.file_path.name in existing:
-                client.delete_collection(collection_name=self.file_path.name)
+            if self.collection_name in existing:
+                client.delete_collection(collection_name=self.collection_name)
         except Exception as e:
             print(f"Error occurred while deleting collection: {e}")
         finally:

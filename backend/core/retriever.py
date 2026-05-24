@@ -4,39 +4,39 @@ from langchain_ollama import OllamaLLM
 from rank_bm25 import BM25Okapi
 from sentence_transformers import CrossEncoder
 from openai import OpenAI
-from dotenv import load_dotenv
 import pickle,os
 from pathlib import Path
 from backend.core.utils import simple_tokenize
-load_dotenv("./.env")
+from backend.core.config import settings
 
 class Retriever():
     def __init__(self, collection_name: str):
         try:
-            # validate required env vars at instance creation
-            self._validate_env()
+            # load configured credentials (non-fatal if missing)
+            self.github_token = settings.github_token
+
             self.openai_client = OpenAI(
                 base_url="https://models.github.ai/inference",
-                api_key=os.getenv("GITHUB_TOKEN"),
+                api_key=self.github_token,
             )
 
             self.llm = OllamaLLM(
-                model="qwen3:4b",
+                model=settings.ollama_model,
                 temperature=0.4,
                 num_ctx=8192,
                 num_predict=1024,
                 repeat_penalty=1.05,
-                base_url="http://localhost:11434"  # explicit is better
+                base_url=settings.ollama_base_url,
             )
             self.embedding_model = OpenAIEmbeddings(
                 model="text-embedding-3-large",
-                openai_api_key=os.getenv("GITHUB_TOKEN"),
+                openai_api_key=self.github_token,
                 openai_api_base="https://models.github.ai/inference",
             )
             # Try to connect to Qdrant; if unavailable, fall back to BM25-only mode
             try:
                 self.vector_db = QdrantVectorStore.from_existing_collection(
-                    url=os.getenv("QDRANT_URL", "http://localhost:6333"),
+                    url=settings.qdrant_url,
                     collection_name=collection_name,
                     embedding=self.embedding_model,
                 )
@@ -65,9 +65,8 @@ class Retriever():
 
     @staticmethod
     def _validate_env():
-        missing = [v for v in ["GITHUB_TOKEN"] if not os.getenv(v)]
-        if missing:
-            raise EnvironmentError(f"Missing environment variables: {', '.join(missing)}")
+        # kept for compatibility; settings.github_token is optional now
+        return True
 
     def sanitize_query(self, query: str) -> str:
         if len(query) >1000:

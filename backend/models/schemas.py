@@ -36,10 +36,31 @@ class ResearchResponse(BaseModel):
 
 
 # Collections
-class CollectionResponse(BaseModel):
+class CollectionUploadResponse(BaseModel):
+    status: str
+    job_id: str
+    collection_id: str
+    filename: str
+
+class Collectiondeleterequet(BaseModel):
     name: str
-    document_count: int
-    indexed_at: str
+
+class CollectionListResponse(BaseModel):
+    collections: List[str]
+
+
+class CollectionDeleteResponse(BaseModel):
+    status: str
+    collection: str
+
+
+class IndexJobStatusResponse(BaseModel):
+    job_id: str
+    status: str
+    collection_id: str
+    filename: str
+    path: str
+    error: Optional[str] = None
 
 
 # Feedback
