@@ -27,7 +27,11 @@ class Settings(BaseSettings):
     chunk_size: int = 600
     chunk_overlap: int = 150
 
+    # Database URL
+    DATABASE_URL: str 
+
     model_config = {"env_file": "../.env", "extra": "ignore"}
+
 
 
 settings = Settings()

@@ -3,6 +3,10 @@
 from pydantic import BaseModel
 from typing import List, Optional
 
+class Item(BaseModel):
+    name: str
+    description : str | None
+
 
 # Chat Models
 class ChatRequest(BaseModel):

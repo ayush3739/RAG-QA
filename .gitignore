@@ -13,6 +13,7 @@ local_model.py
 # uploaded PDFs (too large for git)
 docs/
 plan.md
+learn.md
 
 
 # streamlit
