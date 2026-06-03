@@ -229,6 +229,14 @@ except:
   "used_vector_db": True,
   "debug": {"qdrant_error": None},
 }
+
+---
+
+## Database & Schema Placement
+
+- Persistence infra (engine, sessions, Base) is in `backend/db/base.py`.
+- ORM models (tables like `sessions` and `messages`) should be placed in `backend/models/models.py` and import `Base` from `backend.db.base`.
+- Alembic (migrations) should be configured to reference `backend.models.models` as the place that defines metadata for autogeneration.
 ```
 
 ---
@@ -237,7 +245,7 @@ except:
 
 | Service | Purpose | Fallback |
 |---------|---------|----------|
-| **Qdrant** | Vector store | BM25-only mode |
+| **Postgres + pgvector** | Vector store (pgvector extension) and session storage | BM25-only mode / SQLite for dev |
 | **OpenAI API** | Embeddings (text-embedding-3-large) | ❌ Required |
 | **GitHub Model** | LLM (gpt-4o-mini) | Ollama (local) |
 | **Ollama** | Local LLM alternative | ❌ Required if no GitHub token |

@@ -10,6 +10,9 @@
 backend/
 ├── __init__.py
 ├── main.py                           ← FastAPI app entry point (WIP)
+├── db/                                ← DB infra: engine, Base, sessions, migrations
+│   ├── base.py                        ← engine, AsyncSessionLocal, Base, get_db
+│   └── migrations/                    ← Alembic migrations (optional)
 ├── core/
 │   ├── __init__.py
 │   ├── README.md                     ← Core modules breakdown
@@ -40,7 +43,7 @@ backend/
 │   ├── background_tasks.py           ← Async indexing (WIP)
 │   └── cache_service.py              ← Optional: Redis caching (TODO)
 └── migrations/                       ← DB schema migrations (TODO)
-    └── __init__.py
+  └── __init__.py
 ```
 
 ---
@@ -64,6 +67,11 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ### 3. Swagger UI
 
 Visit: `http://localhost:8000/docs`
+
+### 4. Database
+
+- This backend uses Postgres with `pgvector` for storing embeddings and `SQLite` for lightweight local fallback in development (if configured).
+- Ensure `DATABASE_URL` in your `.env` points to an asyncpg URL, e.g. `postgresql+asyncpg://user:pass@db-host:5432/documind` and that the Postgres server has the `vector` extension enabled.
 
 ---
 

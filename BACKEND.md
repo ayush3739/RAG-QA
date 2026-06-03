@@ -41,6 +41,11 @@ backend/
 - Expose `/api/v1/research` for the Phase 3 agent layer.
 - Persist sessions and chat history in SQLite.
 
+├── db/
+│   ├── base.py          ← engine, AsyncSessionLocal, Base, get_db
+│   └── migrations/      ← Alembic migrations
+├── models/
+│   └── models.py        ← SQLAlchemy ORM models (import `Base` from `backend.db.base`)
 ---
 
 ## Configuration
@@ -49,11 +54,13 @@ Expected env vars:
 
 ```bash
 GITHUB_TOKEN=ghp_xxx
-QDRANT_URL=http://localhost:6333
+DATABASE_URL=postgresql+asyncpg://user:pass@db-host:5432/documind
 OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_MODEL=qwen3:4b
 TAVILY_API_KEY=xxx
 ```
+
+Note: Ensure the Postgres instance has the `pgvector` extension enabled (CREATE EXTENSION IF NOT EXISTS vector;). Alembic autogeneration should reference `backend.models.models` for metadata.
 
 ---
 

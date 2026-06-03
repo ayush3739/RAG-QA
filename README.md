@@ -9,7 +9,7 @@
 ## 🎯 What This Project Does
 
 DocuMind is a **Retrieval-Augmented Generation (RAG) system** that answers questions by:
-1. Indexing user-uploaded PDFs into a vector database (Qdrant)
+1. Indexing user-uploaded PDFs into Postgres with the `pgvector` extension
 2. Performing **hybrid search** (BM25 keyword + vector semantic)
 3. **Reranking** results using a CrossEncoder model
 4. Grounding LLM answers strictly to retrieved document chunks
@@ -20,7 +20,7 @@ DocuMind is a **Retrieval-Augmented Generation (RAG) system** that answers quest
 - ✅ **Deterministic chunk IDs** — stable cross-store identification
 - ✅ **CrossEncoder reranking** — improved relevance ranking
 - ✅ **Query sanitization** — prompt injection prevention
-- ✅ **Qdrant fallback** — graceful degradation when vector DB unavailable
+-- ✅ **pgvector fallback** — graceful degradation to BM25-only mode when vectordata unavailable
 - ✅ **Structured output** — machine-readable JSON with metadata
 - ✅ **Citation tracking** — every answer cites source page + excerpt
 - ✅ **Confidence scores** — helps UI decide answer reliability
@@ -99,12 +99,14 @@ source .venv/Scripts/activate  # Windows: .venv\Scripts\activate
 # Install dependencies
 pip install -r requirements.txt
 
-# Setup environment
-cp .env.example .env
-# Edit .env: add GITHUB_TOKEN, QDRANT_URL
 
-# Start Qdrant vector DB
-docker run -p 6333:6333 qdrant/qdrant:latest
+cp .env.example .env
+# Edit `.env`: set `GITHUB_TOKEN` and `DATABASE_URL` (asyncpg URL)
+
+# Example Postgres (docker) — ensure `pgvector` extension is installed in the DB
+docker run -e POSTGRES_PASSWORD=pass -e POSTGRES_USER=user -e POSTGRES_DB=documind -p 5432:5432 postgres:15
+# After DB starts, create extension (once):
+# psql -h localhost -U user -d documind -c "CREATE EXTENSION IF NOT EXISTS vector;"
 
 # Run Streamlit UI
 streamlit run app.py
@@ -257,7 +259,7 @@ app.py  (Streamlit UI)
 | Layer | Tool |
 |---|---|
 | UI | Streamlit |
-| Vector DB | Qdrant (Docker) |
+| Vector DB | Postgres + `pgvector` |
 | Embeddings | `text-embedding-3-large` via GitHub Models |
 | LLM | `gpt-4o-mini` via GitHub Models |
 | PDF Loader | LangChain `PyPDFLoader` |

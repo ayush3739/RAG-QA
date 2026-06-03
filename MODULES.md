@@ -44,6 +44,13 @@ Small helper functions.
 - Qdrant can fail gracefully; BM25-only mode still works.
 - The LLM should answer only from provided context.
 
+## DB & ORM
+
+- The `backend/db/` package contains DB infra: `base.py` (engine, `AsyncSessionLocal`, `Base`, `get_db`) and is the place Alembic will reference for migrations.
+- The project uses Postgres with the `pgvector` extension for vector storage instead of an external vector DB like Qdrant. Ensure `CREATE EXTENSION IF NOT EXISTS vector` runs during startup/migration.
+- SQLAlchemy ORM model classes should live in `backend/models/models.py` (import `Base` from `backend.db.base`).
+- Keep database connection logic separate from domain model definitions for clarity and easier migrations.
+
 ---
 
 ## Retrieval Output Shape
