@@ -1,6 +1,8 @@
-from pydantic_settings import BaseSettings
+from pathlib import Path
+from pydantic_settings import BaseSettings,SettingsConfigDict
 from typing import Optional
 
+ROOT_DIR = Path(__file__).resolve().parents[2]
 
 class Settings(BaseSettings):
     """Configuration for DocuMind API."""
@@ -30,7 +32,10 @@ class Settings(BaseSettings):
     # Database URL
     DATABASE_URL: str 
 
-    model_config = {"env_file": "../.env", "extra": "ignore"}
+    model_config = SettingsConfigDict(
+        env_file=ROOT_DIR / ".env",
+        extra="ignore"
+    )
 
 
 
