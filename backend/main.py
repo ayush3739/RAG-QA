@@ -13,7 +13,7 @@ from backend.core.utils import vector_db_health_check
 from backend.db.base import engine, get_db
 
 # Import routers
-from backend.api.routes import collections, chat, research, feedback
+from backend.api.routes import chat, documents, research, feedback
 
 logging.basicConfig(
     level=logging.INFO,
@@ -47,7 +47,7 @@ async def lifespan(_app: FastAPI):
 app = FastAPI(title="DocuMind API", version="2.0.0", lifespan=lifespan)
 
 # Include routers
-app.include_router(collections.router, prefix="/api/v1", tags=["Collections"])
+app.include_router(documents.router, prefix="/api/v1", tags=["Documents"])
 app.include_router(chat.router, prefix="/api/v1", tags=["Chat"])
 app.include_router(research.router, prefix="/api/v1", tags=["Research"])
 app.include_router(feedback.router, prefix="/api/v1", tags=["Feedback"])

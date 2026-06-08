@@ -1,93 +1,111 @@
+import asyncio
+import hashlib
+import os
+import pickle
 from pathlib import Path
+
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
-from langchain_qdrant import  QdrantVectorStore
-from qdrant_client import QdrantClient
-from rank_bm25 import BM25Okapi
-import pickle, hashlib, os
-from backend.core.utils import simple_tokenize
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from backend.core.config import settings
-    
-class Indexer():
-    def __init__(self, file_path: str, collection_name: str | None = None):
+from backend.core.utils import simple_tokenize
+from backend.models.models import Chunk
+from rank_bm25 import BM25Okapi
+
+
+class Indexer:
+    def __init__(self, file_path: str, db_session: AsyncSession, document_id: int):
         self.file_path = Path(file_path)
-        self.collection_name = collection_name or self.file_path.name
+        self.db = db_session
+        self.document_id = document_id
+        self.collection_name = str(document_id)
         self.embedding_model = OpenAIEmbeddings(
             api_key=settings.github_token,
-            model="text-embedding-3-large",
+            model="text-embedding-3-small",
             openai_api_base="https://models.github.ai/inference",
         )
 
-    def index(self):
+    async def index(self):
         try:
-            self._delete_existing_collection()
-
-            # Step 1: load
+            # Step 1: load PDF — CPU/IO bound, offload to thread
             loader = PyPDFLoader(file_path=str(self.file_path))
-            docs = loader.load()
+            docs = await asyncio.to_thread(loader.load)
 
-            # Step 2: chunk
+            # Step 2: chunk — CPU bound, offload to thread
             text_splitter = RecursiveCharacterTextSplitter(
                 chunk_size=600,
                 chunk_overlap=150,
             )
-            chunks = text_splitter.split_documents(documents=docs)
-            print(f"Total Chunks created: {len(chunks)}")
+            chunks = await asyncio.to_thread(text_splitter.split_documents, docs)
+            print(f"Total chunks created: {len(chunks)}")
 
-            # Stamp each chunk with a deterministic id before storing it anywhere.
+            # Stamp deterministic chunk_id on each chunk
             for chunk in chunks:
                 normalized_text = " ".join(chunk.page_content.split())
                 page_label = chunk.metadata.get("page_label", "")
                 source = chunk.metadata.get("source", str(self.file_path))
-                chunk_id = self.make_chunk_id(normalized_text, page_label, source)
-                chunk.metadata["chunk_id"] = chunk_id
+                chunk.metadata["chunk_id"] = self.make_chunk_id(
+                    normalized_text, page_label, source
+                )
 
-            # Build and persist BM25 index and metadata
-            try:
-                texts = [c.page_content for c in chunks]
-                tokenized = [simple_tokenize(t) for t in texts]
-                bm25 = BM25Okapi(tokenized)
-                meta = [
-                    {
-                        "chunk_id": c.metadata.get("chunk_id"),
-                        "page_content": t,
-                        "page_label": c.metadata.get("page_label"),
-                        "source": c.metadata.get("source"),
-                    }
-                    for t, c in zip(texts, chunks)
-                ]
-                os.makedirs("data/bm25", exist_ok=True)
-                with open(f"data/bm25/{self.collection_name}_bm25.pkl", "wb") as f:
-                    pickle.dump({"bm25": bm25, "meta": meta}, f)
-                print(f"✓ BM25 persisted → data/bm25/{self.collection_name}_bm25.pkl")
-            except Exception as e:
-                print(f"Warning: failed to persist BM25 index: {e}")
+            # Step 3: BM25 — CPU bound, offload to thread
+            await asyncio.to_thread(self._persist_bm25, chunks)
 
-            # Step 3: embed & index
-            self.vector_db = QdrantVectorStore.from_documents(
-                documents=chunks,
-                url=settings.qdrant_url,
-                collection_name=self.collection_name,
-                embedding=self.embedding_model,
+            # Step 4: embed — network + CPU bound, offload to thread
+            texts = [c.page_content for c in chunks]
+            embeddings = await asyncio.to_thread(
+                self.embedding_model.embed_documents, texts
             )
-            print(f"Indexing done → collection: '{self.collection_name}'")
-        except ConnectionError as e:
-            raise RuntimeError(f"Unable to connect to Qdrant: {e}")
-        except Exception as e:
-            raise RuntimeError(f"Indexing failed: {str(e)}")
 
-    def _delete_existing_collection(self):
-        client = QdrantClient(url=settings.qdrant_url)
+            # Step 5: bulk insert chunks — pure async DB write
+            rows = [
+                Chunk(
+                    document_id=self.document_id,
+                    chunk_id=ch.metadata["chunk_id"],
+                    page_content=ch.page_content,
+                    page_number=ch.metadata.get("page"),
+                    chunk_index=idx,
+                    source=ch.metadata.get("source"),
+                    embedding=emb,
+                )
+                for idx, (ch, emb) in enumerate(zip(chunks, embeddings))
+            ]
+
+            self.db.add_all(rows)
+            await self.db.commit()
+            print(f"✓ {len(rows)} chunks committed to DB for document_id={self.document_id}")
+
+        except Exception as e:
+            await self.db.rollback()
+            raise RuntimeError(f"Indexing failed: {e}")
+
+    def _persist_bm25(self, chunks) -> None:
+        """Sync — called via asyncio.to_thread."""
         try:
-            existing = [c.name for c in client.get_collections().collections]
-            if self.collection_name in existing:
-                client.delete_collection(collection_name=self.collection_name)
+            texts = [c.page_content for c in chunks]
+            tokenized = [simple_tokenize(t) for t in texts]
+            bm25 = BM25Okapi(tokenized)
+            meta = [
+                {
+                    "chunk_id": c.metadata.get("chunk_id"),
+                    "page_content": t,
+                    "page_label": c.metadata.get("page_label"),
+                    "source": c.metadata.get("source"),
+                }
+                for t, c in zip(texts, chunks)
+            ]
+            os.makedirs("data/bm25", exist_ok=True)
+            path = f"data/bm25/{self.collection_name}_bm25.pkl"
+            with open(path, "wb") as f:
+                pickle.dump({"bm25": bm25, "meta": meta}, f)
+            print(f"✓ BM25 persisted → {path}")
         except Exception as e:
-            print(f"Error occurred while deleting collection: {e}")
-        finally:
-            client.close()
+            print(f"Warning: BM25 persist failed: {e}")
 
-    def make_chunk_id(self, text: str, page_label: str, source: str):
-        h = hashlib.sha256(f"{source}|{page_label}|{text}".encode("utf-8")).hexdigest()
+    def make_chunk_id(self, text: str, page_label: str, source: str) -> str:
+        h = hashlib.sha256(
+            f"{source}|{page_label}|{text}".encode("utf-8")
+        ).hexdigest()
         return h[:16]

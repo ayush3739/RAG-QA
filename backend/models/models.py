@@ -85,6 +85,7 @@ class Document(Base):
     deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     session_documents: Mapped[list["Session_Document"]] = relationship(back_populates="document", cascade="all, delete-orphan")
+    chunks: Mapped[list["Chunk"]] = relationship(back_populates="document",cascade="all, delete-orphan")
 
 
 class Session_Document(Base):
@@ -100,7 +101,7 @@ class Session_Document(Base):
 class Chunk(Base):
     __tablename__ = "chunks"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    document_id: Mapped[int] = mapped_column(ForeignKey("documents.id"), nullable=False, index=True)
+    document_id: Mapped[int] = mapped_column(ForeignKey("documents.id",ondelete="CASCADE"), nullable=False, index=True)
     chunk_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     page_content: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     page_number: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
@@ -109,6 +110,8 @@ class Chunk(Base):
     bm25_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     embedding: Mapped[Optional[list[float]]] = mapped_column(Vector(1536), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+
+    document : Mapped["Document"] = relationship(back_populates="chunks")
 
 class Feedback(Base):
     __tablename__ = "feedback"

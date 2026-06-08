@@ -40,28 +40,28 @@ class ResearchResponse(BaseModel):
 
 
 # Collections
-class CollectionUploadResponse(BaseModel):
+class DocumentUploadResponse(BaseModel):
     status: str
     job_id: str
-    collection_id: str
+    document_id: int
     filename: str
 
-class Collectiondeleterequet(BaseModel):
-    name: str
+class Documentdeleterequet(BaseModel):
+    doc_id: int
 
-class CollectionListResponse(BaseModel):
-    collections: List[str]
+class DocumentListResponse(BaseModel):
+    documents: List[str]
 
 
-class CollectionDeleteResponse(BaseModel):
+class DocumentDeleteResponse(BaseModel):
     status: str
-    collection: str
+    document: str
 
 
 class IndexJobStatusResponse(BaseModel):
     job_id: str
     status: str
-    collection_id: str
+    document_id: int
     filename: str
     path: str
     error: Optional[str] = None
