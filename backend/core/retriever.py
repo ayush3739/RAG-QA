@@ -1,20 +1,25 @@
 from langchain_openai import OpenAIEmbeddings
-from langchain_qdrant import QdrantVectorStore
 from langchain_ollama import OllamaLLM
 from rank_bm25 import BM25Okapi
 from sentence_transformers import CrossEncoder
 from openai import OpenAI
-import pickle,os
+import pickle
 from pathlib import Path
-from backend.core.utils import simple_tokenize
+from backend.core.utils import simple_tokenize,RERANKER
 from backend.core.config import settings
+from backend.models import models
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+import time
 
+t0 = time.perf_counter()
 class Retriever():
-    def __init__(self, collection_name: str):
+    def __init__(self, document_id: int,db: AsyncSession):
         try:
             # load configured credentials (non-fatal if missing)
             self.github_token = settings.github_token
-
+            self.document_id = document_id
+            self.db = db
             self.openai_client = OpenAI(
                 base_url="https://models.github.ai/inference",
                 api_key=self.github_token,
@@ -29,29 +34,21 @@ class Retriever():
                 base_url=settings.ollama_base_url,
             )
             self.embedding_model = OpenAIEmbeddings(
-                model="text-embedding-3-large",
+                model="text-embedding-3-small",
                 openai_api_key=self.github_token,
                 openai_api_base="https://models.github.ai/inference",
             )
-            # Try to connect to Qdrant; if unavailable, fall back to BM25-only mode
-            try:
-                self.vector_db = QdrantVectorStore.from_existing_collection(
-                    url=settings.qdrant_url,
-                    collection_name=collection_name,
-                    embedding=self.embedding_model,
-                )
-                self.qdrant_available = True
-                self.qdrant_error = None
-            except Exception as e:
-                # Do not fail initialization; continue with BM25-only retriever
-                self.vector_db = None
-                self.qdrant_available = False
-                self.qdrant_error = str(e)
-                print(f"Warning: Qdrant not available. Proceeding without vector DB. Error: {self.qdrant_error}")
-            bm25_file = Path("data/bm25") / f"{collection_name}_bm25.pkl"
+            BASE_DIR = Path(__file__).resolve().parent.parent
+            bm25_file = (
+                BASE_DIR
+                / "data"
+                / "bm25"
+                / f"{self.document_id}_bm25.pkl"
+            )
             self.bm25 = None
             self.bm25_texts = []
             self.bm25_meta = []
+            
             if bm25_file.exists():
                 with open(bm25_file, "rb") as f:
                     d = pickle.load(f)
@@ -59,7 +56,10 @@ class Retriever():
                     # meta is a list of dicts with page_content, page_label, source
                     self.bm25_meta = d.get("meta", [])
                     self.bm25_texts = [m.get("page_content", "") for m in self.bm25_meta]
-            self.reranker = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
+
+            else :
+                print("can't load the bm25")
+            self.reranker = RERANKER
         except Exception as e:
             raise RuntimeError(f"Retriever initialization failed: {str(e)}")
 
@@ -82,6 +82,7 @@ class Retriever():
         This keeps the hybrid-search step working even when one side is weaker
         or when we only have partial ranked lists available.
         """
+        
         scores = {}
 
         def add_results(results):
@@ -107,6 +108,14 @@ class Retriever():
                 cid = result.page_content
             if cid not in merged_map:
                 merged_map[cid] = result
+            else:
+                existing = merged_map[cid]
+
+                if result.metadata.get("bm25_score") is not None:
+                    existing.metadata["bm25_score"] = result.metadata["bm25_score"]
+
+                if result.metadata.get("vector_score") is not None:
+                    existing.metadata["vector_score"] = result.metadata["vector_score"]
 
         def score_for_result(result):
             try:
@@ -119,20 +128,61 @@ class Retriever():
         return ordered
     
 
-
-    
-    def similarity_search(self,query:str,k:int=10):
+    async def similarity_search(self, query: str, k: int = 10):
         try:
             query = self.sanitize_query(query)
-            # Vector search only if Qdrant is available
-            search_results = []
-            if getattr(self, 'vector_db', None) is not None:
-                try:
-                    search_results = self.vector_db.similarity_search(query=query, k=max(k, 15))
-                except Exception:
-                    search_results = []
 
-            # BM25 retrieval (if available)
+            t0 = time.perf_counter()
+            query_embedding = self.embedding_model.embed_query(query)
+            print("Embedding:", time.perf_counter() - t0)
+
+            t1 = time.perf_counter()
+            class _DocLike:
+                def __init__(self, page_content, metadata):
+                    self.page_content = page_content
+                    self.metadata = metadata
+
+            vector_results = []
+
+            try:
+                results = await self.db.execute(
+                    select(
+                        models.Chunk,
+                        models.Chunk.embedding.cosine_distance(
+                            query_embedding
+                        ).label("distance")
+                    )
+                    .where(
+                        models.Chunk.document_id == self.document_id
+                    )
+                    .order_by("distance")
+                    .limit(max(k, 15))
+                )
+
+                rows = results.all()
+
+                for chunk, distance in rows:
+                    vector_results.append(
+                        _DocLike(
+                            chunk.page_content,
+                            {
+                                "chunk_id": chunk.chunk_id,
+                                "page_label": chunk.page_number,
+                                "source": chunk.source,
+                                "vector_score": round(
+                                    1 - float(distance),
+                                    4
+                                ),
+                            }
+                        )
+                    )
+
+            except Exception as e:
+                print(f"Vector search failed: {e}")
+                vector_results = []
+            print("Vector Search:", time.perf_counter() - t1)
+            t2 = time.perf_counter()
+            # BM25 retrieval continues here...
             bm25_results = []
             try:
                 if self.bm25 and len(self.bm25_texts) > 0:
@@ -161,8 +211,11 @@ class Retriever():
             except Exception:
                 bm25_results = []
 
-            merged_results = self.reciprocal_rank_fusion(search_results, bm25_results)
+            print("BM25:", time.perf_counter() - t2)
 
+            merged_results = self.reciprocal_rank_fusion(vector_results, bm25_results)
+            
+            t3 = time.perf_counter()
             # Rerank top merged results using CrossEncoder, fall back gracefully
             top_for_rerank = merged_results[:15]
             try:
@@ -170,6 +223,7 @@ class Retriever():
                 chunks_for_context = ranked_chunks
             except Exception:
                 chunks_for_context = top_for_rerank[:10]
+            print("Rerank:", time.perf_counter() - t3)
 
             # Build structured chunk list for output
             structured_chunks = []
@@ -183,21 +237,22 @@ class Retriever():
                         "text": c.page_content,
                         "bm25_score": meta.get("bm25_score"),
                         "reranker_score": float(meta.get("reranker_score", 0.0)) if meta.get("reranker_score") is not None else None,
-                        "vector_score": None,
+                        "vector_score": meta.get("vector_score"),
+                        "bm25_len": len(bm25_results)
                     }
                 )
 
             result_payload = {
                 "chunks": structured_chunks,
-                "used_vector_db": bool(getattr(self, 'qdrant_available', False)),
-                "debug": {"qdrant_error": getattr(self, 'qdrant_error', None)},
+                "used_vector_db":len(vector_results) > 0,
+                "debug": {},
                 "confidence": float(max_score) if 'max_score' in locals() else None,
             }
-
+            print("Total:", time.perf_counter() - t0)
             return result_payload
         except Exception as e:
             raise RuntimeError(f"Retrieval failed: {str(e)}")
-        
+            
     def rerank_(self, query: str, chunks: list,top_n: int = 5) -> list:
         if not chunks:
             return [], 0.0
@@ -279,7 +334,7 @@ CONTEXT:
         }
 
 
-    def answer(self, query: str, k: int = 10) -> dict:
+    async def answer(self, query: str, k: int = 10) -> dict:
         try:
             q = self.sanitize_query(query)
         except ValueError:
@@ -292,7 +347,11 @@ CONTEXT:
                 "confidence": None,
             }
 
-        retrieval_result = self.similarity_search(q, k)
+        retrieval_result = await self.similarity_search(q, k)
+  
+
+
+
         return self.generate_response(q, retrieval_result)
     
 

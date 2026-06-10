@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.db.base import get_db, AsyncSessionLocal
 from backend.core.config import settings
 from backend.core.indexer import Indexer
+from backend.core.retriever import Retriever
 from backend.models.schemas import (
     DocumentUploadResponse,
     DocumentListResponse,
@@ -101,24 +102,22 @@ async def upload_document(
     upload_dir.mkdir(parents=True, exist_ok=True)
 
     contents = await file.read()
+    public_id = uuid4().hex
+    saved_path = upload_dir / f"{public_id}_{safe_name}"
+    saved_path.write_bytes(contents)
 
     # Create Document row first so Chunk FK constraint is satisfied
     doc = models.Document(
         user_id=1,                              # replace with current_user.id when auth is wired
+        public_id = public_id,
         name=safe_name,
-        file_path="",                           # filled in after we know doc.id
+        file_path=str(saved_path),                           # filled in after we know doc.id
+        bm25_path = f"data/bm25/{public_id}_bm25.pkl",
         status="queued",
         mime_type=file.content_type,
         file_size_kb=len(contents) // 1024,
     )
-    db.add(doc)
-    await db.flush()                            # get doc.id without committing yet
-
-    saved_path = upload_dir / f"{doc.id}_{safe_name}"
-    saved_path.write_bytes(contents)
-
-    doc.file_path = str(saved_path)
-    doc.bm25_path = f"data/bm25/{doc.id}_bm25.pkl"
+    db.add(doc)                               
     await db.commit()
     await db.refresh(doc)
 
@@ -138,7 +137,7 @@ async def upload_document(
     return {
         "status": "queued",
         "job_id": job_id,
-        "document_id": doc.id,
+        "document_id": doc.public_id,
         "filename": safe_name,
     }
 
@@ -158,11 +157,11 @@ async def list_documents(db: Annotated[AsyncSession, Depends(get_db)]):
         )
 
 
-@router.delete("/document/{doc_id}", response_model=DocumentDeleteResponse)
-async def delete_document(doc_id: int, db: Annotated[AsyncSession, Depends(get_db)]):
+@router.delete("/document/{public_id}", response_model=DocumentDeleteResponse)
+async def delete_document(public_id: str, db: Annotated[AsyncSession, Depends(get_db)]):
     """Delete a document and its chunks."""
     result = await db.execute(
-        select(models.Document).where(models.Document.id == doc_id)
+        select(models.Document).where(models.Document.public_id == public_id)
     )
     doc = result.scalars().first()
     if not doc:
@@ -174,6 +173,33 @@ async def delete_document(doc_id: int, db: Annotated[AsyncSession, Depends(get_d
     await db.commit()
     return DocumentDeleteResponse(status="deleted", document=doc.name)
 
+@router.post("/test-retrieval")
+async def test_retrieval(
+    document_id: int,
+    query: str,
+    db: AsyncSession = Depends(get_db)
+):
+    retriever = Retriever(
+        document_id=document_id,
+        db=db
+    )
+
+    result = await retriever.similarity_search(query)
+
+    return result
+
+@router.post("/test-answer")
+async def test_answer(
+    document_id: int,
+    query: str,
+    db: AsyncSession = Depends(get_db)
+):
+    retriever = Retriever(
+        document_id=document_id,
+        db=db
+    )
+
+    return await retriever.answer(query)
 
 @router.get("/documents/status/{job_id}", response_model=IndexJobStatusResponse)
 async def get_indexing_status(job_id: str):

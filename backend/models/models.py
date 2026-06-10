@@ -5,6 +5,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import JSONB
 from pgvector.sqlalchemy import Vector
 from backend.db.base import Base
+import uuid
 
 
 
@@ -72,6 +73,7 @@ class Message(Base):
 class Document(Base):
     __tablename__ = "documents"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    public_id : Mapped[str] = mapped_column(String , unique= True, nullable= False, default= lambda: uuid.uuid4().hex )
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     file_path: Mapped[str] = mapped_column(String(500), nullable=False)

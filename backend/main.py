@@ -9,7 +9,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 
 from backend.core.config import settings
-from backend.core.utils import vector_db_health_check
 from backend.db.base import engine, get_db
 
 # Import routers
@@ -57,23 +56,21 @@ async def health_check(db: Annotated[AsyncSession, Depends(get_db)]):
     """Health check endpoint."""
     try:
         await db.execute(text("SELECT 1"))
-        vector_healthy, vector_error = vector_db_health_check(settings.qdrant_url)
     except Exception as exc:
-        vector_healthy, vector_error = vector_db_health_check(settings.qdrant_url)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail={
                 "status": "error",
                 "service": "DocuMind API v2.0",
                 "database": {"healthy": False, "error": "Database unavailable"},
-                "vector_db": {"healthy": vector_healthy, "error": vector_error},
+                "vector_db": {"healthy": False, "error": str(exc) },
             },
         ) from exc
     return {
         "status": "ok",
         "service": "DocuMind API v2.0",
         "database": {"healthy": True, "error": None},
-        "vector_db": {"healthy": vector_healthy, "error": vector_error},
+        "vector_db": {"healthy":True , "error": None},
     }
 
 

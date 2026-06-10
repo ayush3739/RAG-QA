@@ -43,11 +43,11 @@ class ResearchResponse(BaseModel):
 class DocumentUploadResponse(BaseModel):
     status: str
     job_id: str
-    document_id: int
+    document_id: str
     filename: str
 
-class Documentdeleterequet(BaseModel):
-    doc_id: int
+class Documentdeleterequest(BaseModel):
+    public_id: int
 
 class DocumentListResponse(BaseModel):
     documents: List[str]
@@ -69,8 +69,12 @@ class IndexJobStatusResponse(BaseModel):
 
 # Feedback
 class FeedbackRequest(BaseModel):
+    message_id: int
     query: str
     answer: str
     rating: int  # 1-5
+    comment : str
     confidence: float
     tool_used: Optional[str] = None
+"""
+"""

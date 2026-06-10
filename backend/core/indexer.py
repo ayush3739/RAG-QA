@@ -20,7 +20,7 @@ class Indexer:
         self.file_path = Path(file_path)
         self.db = db_session
         self.document_id = document_id
-        self.collection_name = str(document_id)
+        self.document_id = str(document_id)
         self.embedding_model = OpenAIEmbeddings(
             api_key=settings.github_token,
             model="text-embedding-3-small",
@@ -97,7 +97,7 @@ class Indexer:
                 for t, c in zip(texts, chunks)
             ]
             os.makedirs("data/bm25", exist_ok=True)
-            path = f"data/bm25/{self.collection_name}_bm25.pkl"
+            path = f"data/bm25/{self.document_id}_bm25.pkl"
             with open(path, "wb") as f:
                 pickle.dump({"bm25": bm25, "meta": meta}, f)
             print(f"✓ BM25 persisted → {path}")
