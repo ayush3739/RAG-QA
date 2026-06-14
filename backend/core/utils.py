@@ -1,6 +1,6 @@
 # backend/core/utils.py
 import re
-import os
+import logging
 from typing import Tuple, Optional
 
 from qdrant_client import QdrantClient
@@ -8,13 +8,27 @@ from qdrant_client import QdrantClient
 
 from sentence_transformers import CrossEncoder
 
-print("Loading reranker...")
 
-RERANKER = CrossEncoder(
-    "cross-encoder/ms-marco-MiniLM-L-6-v2"
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
 )
 
-print("Reranker loaded")
+logger = logging.getLogger(__name__)
+
+logger.info("Loading reranker...")
+
+try:
+    RERANKER = CrossEncoder(
+        "cross-encoder/ms-marco-MiniLM-L-6-v2",
+        local_files_only=True,
+    )
+    logger.info("Reranker loaded")
+
+except Exception as e:
+    RERANKER = None
+    logger.exception(f"Failed to load reranker: {e}")
+
 
 def simple_tokenize(text: str):
     return re.findall(r"\w+", text.lower())

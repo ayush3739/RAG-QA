@@ -1,5 +1,4 @@
 from typing import Annotated
-from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, status
 from contextlib import asynccontextmanager
@@ -47,7 +46,7 @@ app = FastAPI(title="DocuMind API", version="2.0.0", lifespan=lifespan)
 
 # Include routers
 app.include_router(documents.router, prefix="/api/v1", tags=["Documents"])
-app.include_router(chat.router, prefix="/api/v1", tags=["Chat"])
+app.include_router(chat.router, prefix="/api/v1", tags=["Chat_sse"])
 app.include_router(research.router, prefix="/api/v1", tags=["Research"])
 app.include_router(feedback.router, prefix="/api/v1", tags=["Feedback"])
 
