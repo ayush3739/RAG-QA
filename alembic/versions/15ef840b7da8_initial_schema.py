@@ -1,8 +1,8 @@
 """initial schema
 
-Revision ID: 892233d4af11
+Revision ID: 15ef840b7da8
 Revises: 
-Create Date: 2026-06-06 19:36:13.135423
+Create Date: 2026-06-16 00:45:03.032518
 
 """
 from typing import Sequence, Union
@@ -10,10 +10,10 @@ from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
-from pgvector.sqlalchemy import Vector
+import pgvector 
 
 # revision identifiers, used by Alembic.
-revision: str = '892233d4af11'
+revision: str = '15ef840b7da8'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -33,6 +33,7 @@ def upgrade() -> None:
     op.create_index(op.f('ix_users_id'), 'users', ['id'], unique=False)
     op.create_table('documents',
     sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('public_id', sa.String(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(length=255), nullable=False),
     sa.Column('file_path', sa.String(length=500), nullable=False),
@@ -45,7 +46,8 @@ def upgrade() -> None:
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
     sa.Column('deleted_at', sa.DateTime(timezone=True), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('public_id')
     )
     op.create_index(op.f('ix_documents_id'), 'documents', ['id'], unique=False)
     op.create_index(op.f('ix_documents_user_id'), 'documents', ['user_id'], unique=False)
@@ -61,7 +63,7 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_password_reset_tokens_id'), 'password_reset_tokens', ['id'], unique=False)
     op.create_table('sessions',
-    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('title', sa.String(length=200), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
@@ -69,7 +71,6 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_sessions_id'), 'sessions', ['id'], unique=False)
     op.create_index(op.f('ix_sessions_user_id'), 'sessions', ['user_id'], unique=False)
     op.create_table('chunks',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -80,22 +81,22 @@ def upgrade() -> None:
     sa.Column('chunk_index', sa.Integer(), nullable=True),
     sa.Column('source', sa.String(length=255), nullable=True),
     sa.Column('bm25_score', sa.Float(), nullable=True),
-    sa.Column('embedding',Vector(1536), nullable=True),
+    sa.Column('embedding', pgvector.sqlalchemy.vector.VECTOR(dim=1536), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
-    sa.ForeignKeyConstraint(['document_id'], ['documents.id'], ),
+    sa.ForeignKeyConstraint(['document_id'], ['documents.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_chunks_document_id'), 'chunks', ['document_id'], unique=False)
     op.create_index(op.f('ix_chunks_id'), 'chunks', ['id'], unique=False)
     op.create_table('messages',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('session_id', sa.Integer(), nullable=False),
-    sa.Column('role', sa.String(), nullable=False),
+    sa.Column('session_id', sa.UUID(), nullable=False),
+    sa.Column('role', sa.String(length=20), nullable=False),
     sa.Column('content', sa.Text(), nullable=False),
     sa.Column('citations', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
     sa.Column('chunks', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
     sa.Column('confidence', sa.Float(), nullable=False),
-    sa.Column('tool_used', sa.String(), nullable=True),
+    sa.Column('tool_used', sa.String(length=100), nullable=True),
     sa.Column('used_vector_db', sa.Boolean(), nullable=True),
     sa.Column('debug', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
@@ -107,7 +108,7 @@ def upgrade() -> None:
     op.create_index(op.f('ix_messages_session_id'), 'messages', ['session_id'], unique=False)
     op.create_table('session_documents',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('session_id', sa.Integer(), nullable=False),
+    sa.Column('session_id', sa.UUID(), nullable=False),
     sa.Column('document_id', sa.Integer(), nullable=False),
     sa.Column('added_at', sa.DateTime(timezone=True), nullable=False),
     sa.ForeignKeyConstraint(['document_id'], ['documents.id'], ),
@@ -152,7 +153,6 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_chunks_document_id'), table_name='chunks')
     op.drop_table('chunks')
     op.drop_index(op.f('ix_sessions_user_id'), table_name='sessions')
-    op.drop_index(op.f('ix_sessions_id'), table_name='sessions')
     op.drop_table('sessions')
     op.drop_index(op.f('ix_password_reset_tokens_id'), table_name='password_reset_tokens')
     op.drop_table('password_reset_tokens')

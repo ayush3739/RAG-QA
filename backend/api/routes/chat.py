@@ -4,6 +4,7 @@ from fastapi import APIRouter
 from fastapi.sse import EventSourceResponse
 from backend.models.schemas import ChatRequest, ChatResponse, Item
 from collections.abc import AsyncIterable, Iterable
+from sse_starlette.sse import EventSourceResponse
 import asyncio
 
 router = APIRouter()
@@ -14,6 +15,16 @@ items = [
     Item(name="Meeseeks Box", description="A box that summons a Meeseeks."),
 ]
 
+
+
+@router.post("/chat/{collection}")
+async def chat(collection: str, req: ChatRequest):
+    async def event_generator():
+        retriever = Retriever(collection)
+        async for chunk in retriever.answer_stream(req.query, req.history):
+            yield {"data": chunk}
+        yield {"data": "[DONE]"}
+    return EventSourceResponse(event_generator())
 
 @router.get("/stream", response_class=EventSourceResponse)
 # FIX: Change the return type to AsyncIterable[dict] (or more specifically, the yielded structure)

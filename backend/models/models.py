@@ -2,10 +2,10 @@ from datetime import datetime,UTC
 from typing import Any, Dict, Optional
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, Boolean, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB,UUID
 from pgvector.sqlalchemy import Vector
 from backend.db.base import Base
-import uuid
+from uuid import uuid4
 
 
 
@@ -18,7 +18,7 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(200),nullable=False)
     sessions: Mapped[list["Session"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     reset_tokens : Mapped[list["PasswordResetToken"]] = relationship(back_populates="user",cascade="all , delete-orphan")
-     
+    documents: Mapped[list["Document"]] = relationship(back_populates="user")
 class PasswordResetToken(Base):
     __tablename__ = "password_reset_tokens"
 
@@ -40,13 +40,13 @@ class PasswordResetToken(Base):
 class Session(Base):
     __tablename__ = "sessions"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True,default=uuid4)
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     user_id: Mapped[int]  = mapped_column(ForeignKey("users.id"),nullable=False,index=True)
     created_at : Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC),)
-    updated_at : Mapped[datetime] = mapped_column(DateTime(timezone=True), default= created_at )
+    updated_at : Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC) )
     messages: Mapped[list["Message"]] = relationship(back_populates="session", cascade="all, delete-orphan")
-    session_documents: Mapped[list["Session_Document"]] = relationship(back_populates="session", cascade="all, delete-orphan")
+    session_documents: Mapped[list["SessionDocument"]] = relationship(back_populates="session", cascade="all, delete-orphan")
 
     user: Mapped["User"] = relationship(back_populates="sessions")
  
@@ -55,14 +55,14 @@ class Message(Base):
     __tablename__ = "messages"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    session_id: Mapped[int] = mapped_column(ForeignKey("sessions.id"), nullable=False, index=True)
-    role : Mapped[str] = mapped_column(String, nullable=False) # "user" or "bot"
-    content: Mapped[str] = mapped_column(Text, default="nothing")
+    session_id: Mapped[UUID] = mapped_column(ForeignKey("sessions.id"), nullable=False, index=True)
+    role : Mapped[str] = mapped_column(String(20), nullable=False) # "user" or "bot"
+    content: Mapped[str] = mapped_column(Text, nullable=False)
     citations: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSONB, nullable=True)
     chunks : Mapped[Optional[Dict[str, Any]]] = mapped_column(JSONB, nullable=True)
     confidence: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
-    tool_used : Mapped[Optional[str]] = mapped_column(String, default="null")
-    used_vector_db : Mapped[Optional[bool]] = mapped_column(Boolean, default=0)
+    tool_used : Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    used_vector_db : Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
     debug : Mapped[Optional[Dict[str, Any]]] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -73,7 +73,7 @@ class Message(Base):
 class Document(Base):
     __tablename__ = "documents"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    public_id : Mapped[str] = mapped_column(String , unique= True, nullable= False, default= lambda: uuid.uuid4().hex )
+    public_id : Mapped[str] = mapped_column(String , unique= True, nullable= False, default= lambda: uuid4().hex )
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     file_path: Mapped[str] = mapped_column(String(500), nullable=False)
@@ -86,14 +86,14 @@ class Document(Base):
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    session_documents: Mapped[list["Session_Document"]] = relationship(back_populates="document", cascade="all, delete-orphan")
+    session_documents: Mapped[list["SessionDocument"]] = relationship(back_populates="document", cascade="all, delete-orphan")
     chunks: Mapped[list["Chunk"]] = relationship(back_populates="document",cascade="all, delete-orphan")
+    user: Mapped["User"] = relationship(back_populates="documents")
 
-
-class Session_Document(Base):
+class SessionDocument(Base):
     __tablename__ = "session_documents"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    session_id: Mapped[int] = mapped_column(ForeignKey("sessions.id"), nullable=False, index=True)
+    session_id: Mapped[UUID] = mapped_column(ForeignKey("sessions.id"), nullable=False, index=True)
     document_id: Mapped[int] = mapped_column(ForeignKey("documents.id"), nullable=False, index=True)
     added_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
