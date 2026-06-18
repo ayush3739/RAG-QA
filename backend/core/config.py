@@ -11,8 +11,13 @@ class Settings(BaseSettings):
     qdrant_url: str = "http://localhost:6333"
 
     # API Keys (optional at runtime; required only for GitHub-backed features)
+
     github_token: Optional[str] = None
     test_key: Optional[str] = None
+    groq_api_key: Optional[str] = None
+    llm_provider: str = "github"
+    llm_model : str ="gpt-4o-mini" or "openai/gpt-oss-20b"
+
 
     # Ollama
     ollama_base_url: str = "http://localhost:11434"

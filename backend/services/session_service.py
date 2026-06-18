@@ -23,17 +23,29 @@ class SessionService:
 
         return SessionCreate(session_id=session.id)
         
-    
+    async def get_session(
+        self,
+        session_id: UUID,
+        db: AsyncSession,
+    ) -> Session | None:
+
+        result = await db.execute(
+            select(Session)
+            .where(Session.id == session_id)
+        )
+
+        return result.scalars().first()
+
     async def add_message(
-    self,
-    session_id: UUID,
-    role: str,
-    content: str,
-    db: AsyncSession,
-    sources: list | None = None,
-    confidence: float = 0.0,
-    tool_used: str | None = None,
-) -> MessageCreateResponse:
+        self,
+        session_id: UUID,
+        role: str,
+        content: str,
+        db: AsyncSession,
+        sources: list | None = None,
+        confidence: float = 0.0,
+        tool_used: str | None = None,
+    ) -> MessageCreateResponse:
         """Add message to session history."""
         mess = Message(
             session_id = session_id,

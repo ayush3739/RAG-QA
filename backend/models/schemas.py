@@ -11,9 +11,7 @@ class Item(BaseModel):
 
 # Chat Models
 class ChatRequest(BaseModel):
-    query: str
-    history: Optional[List[dict]] = []
-    k: int = 10
+    question: str
 
 
 class ChatResponse(BaseModel):
