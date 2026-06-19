@@ -35,7 +35,7 @@ def test_register_success(mock_auth_service):
     # We also need to mock create_access_token since it's used in the route
     with patch("backend.api.routes.auth.create_access_token", return_value=DUMMY_TOKEN):
         response = client.post(
-            "/api/v1/register",
+            "/api/v1/auth/register",
             data={
                 "name": "Test User",
                 "email": DUMMY_EMAIL,
@@ -53,7 +53,7 @@ def test_register_duplicate_email(mock_auth_service):
     mock_auth_service.register_user = AsyncMock(side_effect=ValueError("Email already registered"))
     
     response = client.post(
-        "/api/v1/register",
+        "/api/v1/auth/register",
         data={
             "name": "Test User",
             "email": DUMMY_EMAIL,
@@ -70,7 +70,7 @@ def test_login_success(mock_auth_service):
     mock_auth_service.login_user = AsyncMock(return_value=DUMMY_TOKEN)
     
     response = client.post(
-        "/api/v1/login",
+        "/api/v1/auth/login",
         data={
             "username": DUMMY_EMAIL,
             "password": DUMMY_PASSWORD
@@ -86,7 +86,7 @@ def test_login_invalid_credentials(mock_auth_service):
     mock_auth_service.login_user = AsyncMock(side_effect=ValueError("Invalid email or password"))
     
     response = client.post(
-        "/api/v1/login",
+        "/api/v1/auth/login",
         data={
             "username": DUMMY_EMAIL,
             "password": "wrongpassword"
@@ -103,8 +103,8 @@ def test_forgot_password_success(mock_auth_service, mock_email_service):
     mock_email_service.return_value = None  # It's an async function returning None
     
     response = client.post(
-        "/api/v1/forgot-password",
-        json={"email": DUMMY_EMAIL}
+        "/api/v1/auth/forgot-password",
+        data={"email": DUMMY_EMAIL}
     )
     
     assert response.status_code == 200
@@ -119,8 +119,8 @@ def test_forgot_password_nonexistent_email(mock_auth_service, mock_email_service
     mock_auth_service.create_password_reset_token = AsyncMock(return_value=None)
     
     response = client.post(
-        "/api/v1/forgot-password",
-        json={"email": "nonexistent@example.com"}
+        "/api/v1/auth/forgot-password",
+        data={"email": "nonexistent@example.com"}
     )
     
     assert response.status_code == 200
@@ -136,8 +136,8 @@ def test_reset_password_success(mock_auth_service):
     mock_auth_service.reset_password = AsyncMock(return_value=None)
     
     response = client.post(
-        "/api/v1/reset-password",
-        json={
+        "/api/v1/auth/reset-password",
+        data={
             "token": DUMMY_RESET_TOKEN,
             "new_password": "new_secure_password"
         }
@@ -152,8 +152,8 @@ def test_reset_password_invalid_token(mock_auth_service):
     mock_auth_service.reset_password = AsyncMock(side_effect=ValueError("Invalid or expired reset token"))
     
     response = client.post(
-        "/api/v1/reset-password",
-        json={
+        "/api/v1/auth/reset-password",
+        data={
             "token": "invalid_token",
             "new_password": "new_secure_password"
         }

@@ -137,6 +137,12 @@ class SessionService:
             .where(SessionDocument.session_id == session_id)
         )
         return result.scalars().all()
+
+    async def link_document_to_session(self, session_id: UUID, document_id: int, db: AsyncSession) -> None:
+        """Link an uploaded document to a session."""
+        session_doc = SessionDocument(session_id=session_id, document_id=document_id)
+        db.add(session_doc)
+        await db.commit()
         
     async def delete_session(self, session_id: UUID,db: AsyncSession) ->SessionDeleteResponse:
         """Delete a session."""

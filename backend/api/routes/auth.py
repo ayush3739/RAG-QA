@@ -87,23 +87,24 @@ async def me(current_user: User = Depends(get_current_user)):
 
 @router.post("/forgot-password")
 async def forgot_password(
-    body: ForgotPasswordRequest,
+    email: str = Form(...),
     db: AsyncSession = Depends(get_db),
 ):
-    token = await _auth_service.create_password_reset_token(body.email, db)
+    token = await _auth_service.create_password_reset_token(email, db)
     if token:
-        await send_reset_email(to_email=body.email, reset_token=token)
+        await send_reset_email(to_email=email, reset_token=token)
     
     # Always return a generic message to prevent email enumeration
     return {"message": "If an account with that email exists, a password reset link has been sent."}
 
 @router.post("/reset-password")
 async def reset_password(
-    body: ResetPasswordRequest,
+    token: str = Form(...),
+    new_password: str = Form(...),
     db: AsyncSession = Depends(get_db),
 ):
     try:
-        await _auth_service.reset_password(token=body.token, new_password=body.new_password, db=db)
+        await _auth_service.reset_password(token=token, new_password=new_password, db=db)
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

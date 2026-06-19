@@ -40,27 +40,4 @@ async def chat(
     return EventSourceResponse(
         event_generator()
     )
-
-@router.get("/history/{session_id}")
-async def get_chat_history(session_id: UUID,db: AsyncSession = Depends(get_db),current_user=Depends(get_current_user)):
-    session = await session_service.get_session(
-        session_id=session_id,
-        db=db,
-    )
-
-    if not session:
-        return {
-            "status": "error",
-            "message": "Session not found",
-        }
-
-    if session.user_id != current_user.id:
-        return {
-            "status": "error",
-            "message": "Unauthorized",
-        }
-
-    return await session_service.get_messages(
-        session_id=session_id,
-        db=db,
-    )
+

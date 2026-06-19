@@ -1,14 +1,15 @@
 """documents API — Upload, list, delete documents."""
 
 import asyncio
-from fastapi import APIRouter, UploadFile, File, BackgroundTasks, HTTPException, status, Depends
+from fastapi import APIRouter, UploadFile, File, BackgroundTasks, Form, HTTPException, status, Depends
 from pathlib import Path
 from typing import Annotated
-from uuid import uuid4
+from uuid import UUID, uuid4
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.db.base import get_db, AsyncSessionLocal
+from backend.api.deps import get_current_user
 from backend.core.config import settings
 from backend.core.indexer import Indexer
 from backend.core.retriever import Retriever
@@ -86,7 +87,9 @@ async def _run_index_job_async(job_id: str, document_id: int, file_path: str) ->
 @router.post("/documents/upload", response_model=DocumentUploadResponse)
 async def upload_document(
     db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: models.User = Depends(get_current_user),
     file: UploadFile = File(...),
+    session_id: UUID | None = Form(None),
 ):
     """Upload and index a PDF document."""
     if not file.filename:
@@ -108,7 +111,7 @@ async def upload_document(
 
     # Create Document row first so Chunk FK constraint is satisfied
     doc = models.Document(
-        user_id=1,                              # replace with current_user.id when auth is wired
+        user_id=current_user.id,
         public_id = public_id,
         name=safe_name,
         file_path=str(saved_path),                           # filled in after we know doc.id
@@ -120,6 +123,20 @@ async def upload_document(
     db.add(doc)                               
     await db.commit()
     await db.refresh(doc)
+
+    if session_id:
+        from backend.services.session_service import SessionService
+        session_service = SessionService()
+        
+        # Verify the session exists and belongs to the user
+        session = await session_service.get_session(session_id, db)
+        if not session or session.user_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, 
+                detail="Invalid session_id or unauthorized"
+            )
+            
+        await session_service.link_document_to_session(session_id=session_id, document_id=doc.id, db=db)
 
     job_id = uuid4().hex
     _INDEX_JOBS[job_id] = {
@@ -143,10 +160,15 @@ async def upload_document(
 
 
 @router.get("/documents/all", response_model=DocumentListResponse)
-async def list_documents(db: Annotated[AsyncSession, Depends(get_db)]):
+async def list_documents(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: models.User = Depends(get_current_user)
+):
     """List all indexed documents."""
     try:
-        result = await db.execute(select(models.Document.name))
+        result = await db.execute(
+            select(models.Document.name).where(models.Document.user_id == current_user.id)
+        )
         names = result.scalars().all()
         return {"documents": names}
 
@@ -158,10 +180,17 @@ async def list_documents(db: Annotated[AsyncSession, Depends(get_db)]):
 
 
 @router.delete("/document/{public_id}", response_model=DocumentDeleteResponse)
-async def delete_document(public_id: str, db: Annotated[AsyncSession, Depends(get_db)]):
+async def delete_document(
+    public_id: str, 
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: models.User = Depends(get_current_user)
+):
     """Delete a document and its chunks."""
     result = await db.execute(
-        select(models.Document).where(models.Document.public_id == public_id)
+        select(models.Document).where(
+            models.Document.public_id == public_id,
+            models.Document.user_id == current_user.id
+        )
     )
     doc = result.scalars().first()
     if not doc:
@@ -180,7 +209,7 @@ async def test_retrieval(
     db: AsyncSession = Depends(get_db)
 ):
     retriever = Retriever(
-        document_id=document_id,
+        document_ids=[document_id],
         db=db
     )
 
@@ -195,7 +224,7 @@ async def test_answer(
     db: AsyncSession = Depends(get_db)
 ):
     retriever = Retriever(
-        document_id=document_id,
+        document_ids=[document_id],
         db=db
     )
 

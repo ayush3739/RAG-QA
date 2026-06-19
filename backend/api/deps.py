@@ -19,7 +19,7 @@ from backend.core.retriever import Retriever
 
 # Tells FastAPI where clients send their token.
 # tokenUrl is used only for the OpenAPI docs "Authorize" button.
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 _auth_service = AuthService()
 
@@ -52,10 +52,6 @@ async def get_settings():
     """Provide app settings."""
     return settings
 
-
-async def get_retriever(collection_name: str) -> Retriever:
-    """Provide retriever for a collection."""
-    return Retriever(collection_name=collection_name)
 
 # Re-export get_db so routes only need to import from deps
 __all__ = ["get_db", "get_current_user", "oauth2_scheme"]

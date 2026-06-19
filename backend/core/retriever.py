@@ -14,11 +14,11 @@ import time
 
 t0 = time.perf_counter()
 class Retriever():
-    def __init__(self, document_id: int,db: AsyncSession):
+    def __init__(self, document_ids: list[int], db: AsyncSession):
         try:
             # load configured credentials (non-fatal if missing)
             self.github_token = settings.github_token
-            self.document_id = document_id
+            self.document_ids = document_ids
             self.db = db
             self.openai_client = OpenAI(
                 base_url="https://models.github.ai/inference",
@@ -39,26 +39,32 @@ class Retriever():
                 openai_api_base="https://models.github.ai/inference",
             )
             BASE_DIR = Path(__file__).resolve().parent.parent
-            bm25_file = (
-                BASE_DIR
-                / "data"
-                / "bm25"
-                / f"{self.document_id}_bm25.pkl"
-            )
+            
             self.bm25 = None
             self.bm25_texts = []
             self.bm25_meta = []
             
-            if bm25_file.exists():
-                with open(bm25_file, "rb") as f:
-                    d = pickle.load(f)
-                    self.bm25 = d.get("bm25")
-                    # meta is a list of dicts with page_content, page_label, source
-                    self.bm25_meta = d.get("meta", [])
-                    self.bm25_texts = [m.get("page_content", "") for m in self.bm25_meta]
+            for doc_id in self.document_ids:
+                bm25_file = (
+                    BASE_DIR
+                    / "data"
+                    / "bm25"
+                    / f"{doc_id}_bm25.pkl"
+                )
+                if bm25_file.exists():
+                    with open(bm25_file, "rb") as f:
+                        d = pickle.load(f)
+                        # meta is a list of dicts with page_content, page_label, source
+                        meta = d.get("meta", [])
+                        self.bm25_meta.extend(meta)
+                        self.bm25_texts.extend([m.get("page_content", "") for m in meta])
+                else:
+                    print(f"can't load the bm25 for document {doc_id}")
+            
+            if self.bm25_texts:
+                tokenized_corpus = [simple_tokenize(doc) for doc in self.bm25_texts]
+                self.bm25 = BM25Okapi(tokenized_corpus)
 
-            else :
-                print("can't load the bm25")
             self.reranker = RERANKER
         except Exception as e:
             raise RuntimeError(f"Retriever initialization failed: {str(e)}")
@@ -153,7 +159,7 @@ class Retriever():
                         ).label("distance")
                     )
                     .where(
-                        models.Chunk.document_id == self.document_id
+                        models.Chunk.document_id.in_(self.document_ids)
                     )
                     .order_by("distance")
                     .limit(max(k, 15))

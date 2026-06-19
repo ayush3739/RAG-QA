@@ -20,7 +20,6 @@ class Indexer:
         self.file_path = Path(file_path)
         self.db = db_session
         self.document_id = document_id
-        self.document_id = str(document_id)
         self.embedding_model = OpenAIEmbeddings(
             api_key=settings.github_token,
             model="text-embedding-3-small",

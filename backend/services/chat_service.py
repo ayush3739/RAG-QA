@@ -68,26 +68,17 @@ class ChatService:
         confidence = 0.0
         used_vector_db = False
 
-        for document_id in document_ids:
-
+        if document_ids:
             retriever = Retriever(
-                document_id=document_id,
+                document_ids=document_ids,
                 db=db,
             )
 
             result = await retriever.similarity_search(question)
 
-            all_chunks.extend(result["chunks"])
-
-            confidence = max(
-                confidence,
-                result["confidence"] or 0.0,
-            )
-
-            used_vector_db = (
-                used_vector_db
-                or result["used_vector_db"]
-            )
+            all_chunks = result["chunks"]
+            confidence = result["confidence"] or 0.0
+            used_vector_db = result["used_vector_db"]
 
         # 6. Build context
 
