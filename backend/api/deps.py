@@ -19,7 +19,7 @@ from backend.core.retriever import Retriever
 
 # Tells FastAPI where clients send their token.
 # tokenUrl is used only for the OpenAPI docs "Authorize" button.
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/login")
 
 _auth_service = AuthService()
 

@@ -16,7 +16,7 @@ from backend.api.deps import get_current_user, get_db
 from backend.models.auth_schemas import UserResponse
 from backend.models.models import User
 
-router = APIRouter(prefix="/users", tags=["users"])
+router = APIRouter()
 
 
 # ---------------------------------------------------------------------------

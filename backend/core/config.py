@@ -1,3 +1,4 @@
+from pydantic import SecretStr
 from pathlib import Path
 from pydantic_settings import BaseSettings,SettingsConfigDict
 from typing import Optional
@@ -36,6 +37,14 @@ class Settings(BaseSettings):
     confidence_threshold: float = 0.3
     chunk_size: int = 600
     chunk_overlap: int = 150
+
+    #mailtrap
+    mail_server: str = "localhost"
+    mail_port: int = 587
+    mail_username: str = ""
+    mail_password: SecretStr = SecretStr("")
+    mail_from: str = "noreply@example.com"
+    mail_use_tls: bool = True
 
     # Database URL
     DATABASE_URL: str 

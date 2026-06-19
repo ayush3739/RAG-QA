@@ -6,6 +6,8 @@ No business logic here — pure crypto primitives used by auth_service.
 """
 
 from datetime import datetime, timedelta, timezone
+import secrets
+import hashlib
 
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -60,3 +62,15 @@ def decode_token(token: str) -> int | None:
         return int(user_id)
     except JWTError:
         return None
+
+# ---------------------------------------------------------------------------
+# Password Reset Tokens
+# ---------------------------------------------------------------------------
+
+def generate_reset_token() -> str:
+    """Generate a secure, random token for password reset."""
+    return secrets.token_urlsafe(32)
+
+def hash_reset_token(token: str) -> str:
+    """Hash the token using SHA-256 for secure database storage."""
+    return hashlib.sha256(token.encode()).hexdigest()

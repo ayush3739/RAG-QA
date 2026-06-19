@@ -8,7 +8,8 @@ POST /auth/login      → verify credentials, return token
 GET  /auth/me         → return current user profile
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Form, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.api.deps import get_current_user, get_db
@@ -17,11 +18,16 @@ from backend.models.auth_schemas import (
     UserLogin,
     UserRegister,
     UserResponse,
+    ForgotPasswordRequest,
+    ResetPasswordRequest,
 )
 from backend.models.models import User
 from backend.services.auth_service import AuthService
+from backend.services.security import create_access_token
+from backend.services.email_service import send_reset_email
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+
+router = APIRouter()
 
 _auth_service = AuthService()
 
@@ -32,14 +38,16 @@ _auth_service = AuthService()
     status_code=status.HTTP_201_CREATED,
 )
 async def register(
-    body: UserRegister,
+    name: str = Form(...),
+    email: str = Form(...),
+    password: str = Form(...),
     db: AsyncSession = Depends(get_db),
 ):
     try:
         user = await _auth_service.register_user(
-            name=body.name,
-            email=body.email,
-            password=body.password,
+            name=name,
+            email=email,
+            password=password,
             db=db,
         )
     except ValueError as exc:
@@ -48,20 +56,19 @@ async def register(
             detail=str(exc),
         )
 
-    from backend.services.security import create_access_token
     token = create_access_token(subject=user.id)
     return TokenResponse(access_token=token)
 
 
 @router.post("/login", response_model=TokenResponse)
 async def login(
-    body: UserLogin,
+    form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_db),
 ):
     try:
         token = await _auth_service.login_user(
-            email=body.email,
-            password=body.password,
+            email=form_data.username,
+            password=form_data.password,
             db=db,
         )
     except ValueError as exc:
@@ -77,3 +84,29 @@ async def login(
 @router.get("/me", response_model=UserResponse)
 async def me(current_user: User = Depends(get_current_user)):
     return current_user
+
+@router.post("/forgot-password")
+async def forgot_password(
+    body: ForgotPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    token = await _auth_service.create_password_reset_token(body.email, db)
+    if token:
+        await send_reset_email(to_email=body.email, reset_token=token)
+    
+    # Always return a generic message to prevent email enumeration
+    return {"message": "If an account with that email exists, a password reset link has been sent."}
+
+@router.post("/reset-password")
+async def reset_password(
+    body: ResetPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        await _auth_service.reset_password(token=body.token, new_password=body.new_password, db=db)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        )
+    return {"message": "Password successfully reset."}
