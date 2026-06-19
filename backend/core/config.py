@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     groq_api_key: Optional[str] = None
     llm_provider: str = "github"
     llm_model : str ="gpt-4o-mini" or "openai/gpt-oss-20b"
+    secret_key: str = "change-me-in-production"
+    algorithm: str = "HS256"
+    access_token_expire_minutes: int = 60 * 24 * 7  # 1 week
 
 
     # Ollama
