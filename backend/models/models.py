@@ -18,7 +18,7 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(200),nullable=False)
     sessions: Mapped[list["Session"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     reset_tokens : Mapped[list["PasswordResetToken"]] = relationship(back_populates="user",cascade="all , delete-orphan")
-    documents: Mapped[list["Document"]] = relationship(back_populates="user")
+    documents: Mapped[list["Document"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 class PasswordResetToken(Base):
     __tablename__ = "password_reset_tokens"
 
@@ -80,7 +80,7 @@ class Document(Base):
     bm25_path: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     mime_type: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     file_size_kb: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    chunk_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    chunk_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=False,default=0)
     status: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)

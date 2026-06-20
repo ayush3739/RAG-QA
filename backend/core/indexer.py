@@ -16,10 +16,11 @@ from rank_bm25 import BM25Okapi
 
 
 class Indexer:
-    def __init__(self, file_path: str, db_session: AsyncSession, document_id: int):
+    def __init__(self, file_path: str, db_session: AsyncSession, document_id: int,document_public_id :int):
         self.file_path = Path(file_path)
         self.db = db_session
         self.document_id = document_id
+        self.document_public_id = document_public_id
         self.embedding_model = OpenAIEmbeddings(
             api_key=settings.github_token,
             model="text-embedding-3-small",
@@ -96,7 +97,7 @@ class Indexer:
                 for t, c in zip(texts, chunks)
             ]
             os.makedirs("data/bm25", exist_ok=True)
-            path = f"data/bm25/{self.document_id}_bm25.pkl"
+            path = f"data/bm25/{self.document_public_id}_bm25.pkl"
             with open(path, "wb") as f:
                 pickle.dump({"bm25": bm25, "meta": meta}, f)
             print(f"✓ BM25 persisted → {path}")

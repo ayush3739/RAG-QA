@@ -1,6 +1,6 @@
 """documents API — Upload, list, delete documents."""
 
-import asyncio
+import asyncio,os
 from fastapi import APIRouter, UploadFile, File, BackgroundTasks, Form, HTTPException, status, Depends
 from pathlib import Path
 from typing import Annotated
@@ -18,8 +18,10 @@ from backend.models.schemas import (
     DocumentListResponse,
     DocumentDeleteResponse,
     IndexJobStatusResponse,
+    DocumentItem
 )
 from backend.models import models
+from backend.services.session_service import SessionService
 
 router = APIRouter()
 
@@ -33,7 +35,7 @@ def _safe_filename(name: str) -> str:
 
 # ── Background job ────────────────────────────────────────────────────────────
 
-async def _run_index_job_async(job_id: str, document_id: int, file_path: str) -> None:
+async def _run_index_job_async(job_id: str, document_id: int,document_public_id :int, file_path: str) -> None:
     """
     Runs as an asyncio task on the main event loop.
     Gets its own AsyncSession — never shares the request session.
@@ -47,6 +49,7 @@ async def _run_index_job_async(job_id: str, document_id: int, file_path: str) ->
                 file_path=file_path,
                 db_session=db,
                 document_id=document_id,
+                document_public_id = document_public_id
             ).index()
 
             # Update document status + chunk count
@@ -125,7 +128,6 @@ async def upload_document(
     await db.refresh(doc)
 
     if session_id:
-        from backend.services.session_service import SessionService
         session_service = SessionService()
         
         # Verify the session exists and belongs to the user
@@ -148,7 +150,7 @@ async def upload_document(
 
     # Schedule as a real async task — does not block the response
     asyncio.create_task(
-        _run_index_job_async(job_id, doc.id, str(saved_path))
+        _run_index_job_async(job_id, doc.id,doc.public_id, str(saved_path))
     )
 
     return {
@@ -167,10 +169,18 @@ async def list_documents(
     """List all indexed documents."""
     try:
         result = await db.execute(
-            select(models.Document.name).where(models.Document.user_id == current_user.id)
+            select(models.Document).where(models.Document.user_id == current_user.id)
         )
-        names = result.scalars().all()
-        return {"documents": names}
+        docs = result.scalars().all()
+        return DocumentListResponse(documents=[
+            DocumentItem(name=doc.name, 
+            public_id=doc.public_id, 
+            chunk_count=doc.chunk_count,
+            status=doc.status, 
+            mime_type=doc.mime_type, 
+            file_size_kb=doc.file_size_kb
+            ) for doc in docs
+        ])
 
     except Exception as exc:
         raise HTTPException(
@@ -198,8 +208,28 @@ async def delete_document(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Document not found",
         )
+        
+    
+    # Store paths before deleting the DB row
+    file_path = doc.file_path
+    bm25_path = doc.bm25_path
+    
     await db.delete(doc)
     await db.commit()
+    
+    # Clean up physical files
+    if file_path and os.path.exists(file_path):
+        try:
+            os.remove(file_path)
+        except Exception:
+            pass
+            
+    if bm25_path and os.path.exists(bm25_path):
+        try:
+            os.remove(bm25_path)
+        except Exception:
+            pass
+
     return DocumentDeleteResponse(status="deleted", document=doc.name)
 
 @router.post("/test-retrieval")

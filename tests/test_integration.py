@@ -74,6 +74,7 @@ async def test_full_message_flow_and_ownership():
             headers=headers_a
         )
         assert res.status_code == 200
+        doc2_public_id = res.json()["document_id"]
 
     # 4. Check Ownership (User B tries to access User A's session)
     res = await client.get(f"/api/v1/sessions/{session_id}/history", headers=headers_b)
@@ -110,10 +111,21 @@ async def test_full_message_flow_and_ownership():
     assert res.status_code == 200
     history = res.json()["messages"]
     
-    # We should have exactly 2 messages: user's question, and assistant's response
+    # We should have the user's question and the assistant's combined stream response
     assert len(history) == 2
     assert history[0]["role"] == "user"
     assert history[0]["content"] == "What is in the document?"
     
     assert history[1]["role"] == "assistant"
-    assert history[1]["content"] == "Hello World" # Stream chunks combined
+    assert history[1]["content"] == "Hello World"
+    assert history[1]["confidence"] == 0.9
+
+    # 7. Cleanup
+    res = await client.delete(f"/api/v1/document/{doc_public_id}", headers=headers_a)
+    assert res.status_code == 200
+    
+    res = await client.delete(f"/api/v1/document/{doc2_public_id}", headers=headers_a)
+    assert res.status_code == 200
+
+    res = await client.delete(f"/api/v1/sessions/{session_id}", headers=headers_a)
+    assert res.status_code == 200

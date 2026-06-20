@@ -48,8 +48,16 @@ class DocumentUploadResponse(BaseModel):
 class Documentdeleterequest(BaseModel):
     public_id: int
 
+class DocumentItem(BaseModel):
+    public_id: str
+    name: str
+    chunk_count: Optional[int] = None 
+    status: str
+    mime_type: str
+    file_size_kb: int
+
 class DocumentListResponse(BaseModel):
-    documents: List[str]
+    documents: List[DocumentItem]
 
 
 class DocumentDeleteResponse(BaseModel):
@@ -97,9 +105,9 @@ class MessageCreateResponse(BaseModel):
     message_id: int
 class SessionDeleteResponse(BaseModel):
     status: str
-    session_id : Optional[UUID]  
-    session_name : Optional[str]
-    error : Optional[str]
+    session_id : Optional[UUID] = None
+    session_name : Optional[str] = None
+    error : Optional[str] = None
 
 # Feedback
 class FeedbackRequest(BaseModel):
