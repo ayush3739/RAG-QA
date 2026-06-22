@@ -1,293 +1,228 @@
-# 🏗️ DocuMind Architecture
+# DocuMind Architecture
 
-> System design, data flow, and design decisions for Phase 1 (RAG Core)
+DocuMind is a FastAPI-based, tool-routed RAG backend. It combines document retrieval, web search, direct LLM answers, session memory, source metadata, and SSE streaming behind API endpoints.
 
----
+## System Shape
 
-## 🔄 End-to-End Flow
-
-### Indexing Flow
-
-```
-User uploads PDF
-    ↓
-[Indexer.__init__] — check Qdrant connection, init BM25
-    ↓
-[index(pdf_path)] — main entry point
-    ├─ _delete_existing_collection() — wipe old chunks
-    ├─ _load_pdf() → extract pages (PyPDFLoader)
-    ├─ _chunk_text() → split with RecursiveCharacterTextSplitter
-    │  └─ chunk_size=600, overlap=150
-    ├─ make_chunk_id(page_num, chunk_idx) → deterministic ID
-    │  └─ format: "page_<N>_chunk_<I>"
-    ├─ Embed all chunks (OpenAIEmbeddings)
-    ├─ Save to Qdrant (QdrantVectorStore)
-    ├─ Build BM25 from tokens
-    └─ Persist BM25 to data/bm25/{collection}_bm25.pkl
-    ↓
-✅ Collection indexed, ready for queries
-```
-
-### Retrieval Flow
-
-```
-User asks question
-    ↓
-[answer(query: str, k: int = 10)]
-    ├─ sanitize_query() → check length, block injections
-    └─ similarity_search() → hybrid retrieval
-        ├─ Parallel searches:
-        │  ├─ vector_db.similarity_search(query) → ~15 Qdrant results
-        │  └─ bm25.get_scores() → ~15 BM25 results
-        │
-        ├─ reciprocal_rank_fusion() → merge by chunk_id
-        │  └─ RRF formula: 1/(k + rank) per source
-        │  └─ dedup by chunk_id to avoid duplicates
-        │
-        ├─ rerank_(query, merged_results) → CrossEncoder
-        │  └─ Predict scores for top 15 (query, chunk) pairs
-        │  └─ Attach reranker_score to metadata
-        │  └─ Sort by score, keep top 10
-        │
-        └─ structured_chunks = [{chunk_id, page, text, bm25_score, reranker_score, vector_score}]
-    ↓
-[generate_response(query, retrieval_result)]
-    ├─ sanitize_query() — defensive sanitization
-    ├─ Build context from top 6 chunks
-    ├─ System prompt with rules
-    │  └─ "Answer ONLY from context, cite pages, <200 words"
-    ├─ Call LLM (gpt-4o-mini or Ollama)
-    │  └─ LLM returns plain text (no JSON mode)
-    ├─ Build citations from top 5 chunks
-    │  └─ {chunk_id, source, page_label, excerpt}
-    └─ Return structured dict:
-       ├─ answer (str)
-       ├─ citations (list)
-       ├─ chunks (full metadata)
-       ├─ confidence (float)
-       └─ debug (errors, qdrant status)
-    ↓
-[Frontend pretty-printer]
-    ├─ Shows "[Model-produced answer]" section
-    ├─ Shows "[Sources & metadata added by retriever]" section
-    └─ Prints sources with page, scores, excerpts
+```text
+Client / test frontend / API consumer
+    |
+    | HTTP + SSE
+    v
+FastAPI app: backend/main.py
+    |
+    +-- Auth and user dependencies
+    +-- Documents API
+    +-- Chat SSE API
+    +-- Research JSON API
+    +-- Sessions and feedback APIs
+    |
+    v
+Agent router: backend/agent/router.py
+    |
+    +-- Native tool-call decision when provider supports it
+    +-- JSON routing fallback for unsupported providers
+    +-- Deterministic low-confidence web escalation
+    +-- Final answer synthesis
+    |
+    +-- retrieve_from_document_impl -> Retriever
+    +-- web_search_impl             -> Tavily
+    +-- summarize_document_impl     -> indexed chunks + LLM
+    +-- generate_quiz_impl          -> indexed chunks + LLM
+    +-- zero tool calls             -> direct answer path
 ```
 
----
+## Main Data Stores
 
-## 🔑 Design Decisions & Trade-offs
+- PostgreSQL stores users, sessions, messages, documents, chunks, feedback, and pgvector embeddings.
+- `pgvector` enables vector similarity search directly from the `chunks.embedding` column.
+- BM25 indexes are persisted as pickle files under `backend/data/bm25`.
+- Uploaded source files are saved under `backend/data/uploads`.
 
-### 1. Hybrid Search (BM25 + Vector)
+## LLM Providers
 
-**Why:** BM25 catches exact/keyword matches; vector catches semantic similarity.
-- BM25 excels at: named entities, acronyms, exact phrases
-- Vector excels at: paraphrased questions, semantic concepts
+`backend/services/llm_provider.py` supports:
 
-**How:** RRF (Reciprocal Rank Fusion) merges results fairly:
-- Formula: `score = Σ 1/(k + rank)` per result
-- Avoids one method dominating
+- `github` through an OpenAI-compatible client.
+- `groq` through an OpenAI-compatible client.
+- `ollama` through `langchain_ollama`.
 
-**Trade-off:** Slower than vector-only, but more reliable for diverse queries.
+GitHub/Groq use native tool-call responses through `LLMProvider.tool_call(...)`. Ollama currently uses the router's strict JSON fallback unless a compatible local tool-call adapter is added.
 
----
+## Indexing Flow
 
-### 2. Deterministic `chunk_id`
+```text
+POST /api/v1/documents/upload
+    |
+    +-- authenticate user
+    +-- save uploaded file
+    +-- create Document row with status="queued"
+    +-- optionally link document to session_id
+    +-- create in-memory indexing job
+    +-- schedule _run_index_job_async(...)
 
-**Format:** `"page_<N>_chunk_<I>"`  
-Example: `"page_5_chunk_3"` = page 5, chunk 3 within that page
-
-**Why:**
-- Stable across BM25 and Qdrant (different systems, same ID)
-- RRF deduplication: two searches returning same chunk don't duplicate
-- UI traceability: trace answer back to exact location
-
-**Trade-off:** Requires encoding page number + chunk index; small overhead.
-
----
-
-### 3. CrossEncoder Reranking
-
-**Model:** `cross-encoder/ms-marco-MiniLM-L-6-v2`  
-**Why:** Fine-tuned on MS Marco dataset; predicts query-passage relevance directly
-
-**vs LLM embedding distance:**
-- Reranker: direct relevance prediction
-- Embedding distance: proxy for similarity
-
-**Trade-off:** Extra model inference ~10-50ms, but improves answer quality significantly.
-
----
-
-### 4. Query Sanitization (Prompt Injection Defense)
-
-**Layers:**
-1. Max length: 1000 chars (prevent token bloat)
-2. Pattern blocking: "ignore all instructions", "ignore previous", etc.
-3. Defensive sanitization in both `answer()` and `generate_response()`
-
-**Why layered:**
-- Defense in depth (fails safely)
-- Even if first layer misses, second catches it
-
-**Trade-off:** Might block legitimate queries with keywords; acceptable for security.
-
----
-
-### 5. Qdrant Fallback to BM25-Only
-
-**Flow:**
-```
-try:
-  vector_db = QdrantVectorStore.from_existing_collection(...)
-  qdrant_available = True
-except:
-  vector_db = None
-  qdrant_available = False
-  proceed with BM25 only
+Indexer.index()
+    |
+    +-- load PDF with PyPDFLoader
+    +-- split pages with RecursiveCharacterTextSplitter
+    |      chunk_size=600, chunk_overlap=150
+    +-- create deterministic chunk_id from source/page/text hash
+    +-- build BM25 from chunk tokens
+    +-- save BM25 pickle to backend/data/bm25/{document_public_id}_bm25.pkl
+    +-- embed chunk texts with text-embedding-3-small
+    +-- insert Chunk rows with page text, metadata, and pgvector embedding
+    +-- mark Document status="indexed"
 ```
 
-**Why:** 
-- Dev environment: Qdrant not always running
-- Production: network issues shouldn't crash the app
+Important detail: `Retriever` currently looks for BM25 files by numeric document id, while `Indexer` writes them by document public id. If BM25 is not loading during retrieval, this naming mismatch is the first thing to check.
 
-**Trade-off:** BM25-only is slower/less semantic, but better than complete failure.
+## Retrieval Flow
 
----
+```text
+retrieve_from_document_impl(query, document_ids, db)
+    |
+    v
+Retriever(document_ids, db).similarity_search(query)
+    |
+    +-- sanitize query
+    +-- embed query
+    +-- pgvector cosine-distance search over selected document ids
+    +-- BM25 keyword search when a BM25 index is available
+    +-- reciprocal-rank fusion merge
+    +-- CrossEncoder rerank top merged chunks
+    +-- return structured chunks, raw confidence, used_vector_db
+```
 
-### 6. JSON Assembly in Python (Not LLM)
-
-**Before:** LLM produces `response_format={"type":"json_object"}` JSON
-**Now:** LLM produces plain text, Python builds JSON
-
-**Why:**
-- LLM JSON mode costs 2-3x more tokens
-- Python assembly is deterministic & reliable
-- Easier to add/remove fields without prompt engineering
-
-**Trade-off:** LLM doesn't control output format; but we enforce via system prompt.
-
----
-
-### 7. Confidence Scoring
-
-**Current:** max reranker score from top-10 results
-- Range: typically -15 to +20 (reranker trains on 0-5 but can exceed)
-- Negative = low confidence
-- Positive = high confidence
-
-**UI Interpretation:**
-- `> 5` → 🟢 High
-- `0-5` → 🟡 Medium
-- `< 0` → 🔴 Low
-
-**Trade-off:** Heuristic, not calibrated; good enough for relative ordering.
-
----
-
-## 🗂️ Data Structures
-
-### Chunk Metadata
+Returned chunks include:
 
 ```python
 {
-  "chunk_id": "page_5_chunk_2",        # deterministic ID
-  "page_label": "5",                   # page number
-  "page_content": "...",               # actual text
-  "source": "docs/report.pdf",         # filename
-  "bm25_score": 12.34,                 # if from BM25
-  "reranker_score": 1.82,              # if reranked
-  "vector_score": None,                # TODO: capture from Qdrant
+    "chunk_id": "...",
+    "page_label": 4,
+    "source": "...",
+    "text": "...",
+    "bm25_score": 1.2,
+    "reranker_score": 3.4,
+    "vector_score": 0.82,
 }
 ```
 
-### Retrieval Result Payload
+The agent router normalizes raw reranker confidence with a sigmoid before exposing it to SSE metadata or API responses.
+
+## Chat Flow
+
+```text
+POST /api/v1/chat/{session_id}
+    |
+    +-- validate session exists and belongs to current user
+    +-- save user message
+    +-- load recent history with limit=6
+    +-- pass only role/content history into answer_query(...)
+    +-- load document ids linked to the session
+    +-- run agent router
+    +-- stream answer as SSE token events
+    +-- save assistant message
+    +-- emit metadata event
+```
+
+History passed to the LLM is intentionally compact:
 
 ```python
-{
-  "chunks": [chunk_metadata, ...],
-  "used_vector_db": True,
-  "debug": {"qdrant_error": None},
-  "confidence": 1.82,
-}
+{"role": "user" | "assistant", "content": "..."}
 ```
 
-### Final Response
+It does not include chunks, citations, confidence, vector scores, debug objects, or source metadata.
+
+SSE event shape:
+
+```text
+event: token
+data: partial text
+
+event: metadata
+data: {"confidence": ..., "sources": [...], "chunks": [...], "tool_trace": [...]}
+
+event: done
+data: [DONE]
+```
+
+## Research Flow
+
+`POST /api/v1/research` is non-streaming and report/API oriented.
+
+```text
+ResearchRequest(topic, collection?, include_web, output_format)
+    |
+    +-- authenticate user
+    +-- if collection is provided, resolve it as document public_id or numeric id
+    +-- run answer_query(...) with those document ids
+    +-- return ResearchResponse
+```
+
+`/research` uses the same agent brain as chat but does not require a session and does not write chat history.
+
+## Tool Routing
+
+The LLM-visible tools are:
+
+- `retrieve_from_document(query)`
+- `web_search(query)`
+- `summarize_document(query)`
+- `generate_quiz(query, num_questions=5)`
+
+There is no LLM-visible `direct_answer` tool. For simple greetings, math, or general questions, the native tool-call response should contain zero tool calls. The router records this as:
+
+```json
+"tool_trace": ["none"]
+```
+
+For providers that fall back to JSON routing, `"tools": ["none"]` means the same thing.
+
+Backend-only context injection:
 
 ```python
-{
-  "answer": "...",                     # LLM-produced answer
-  "citations": [
-    {
-      "chunk_id": "page_5_chunk_2",
-      "source": "report.pdf",
-      "page_label": "5",
-      "excerpt": "...",                # 20-30 word quote
-    }
-  ],
-  "chunks": [full_chunk_metadata, ...], # top 10 with all scores
-  "confidence": 1.82,
-  "used_vector_db": True,
-  "debug": {"qdrant_error": None},
-}
-
----
-
-## Database & Schema Placement
-
-- Persistence infra (engine, sessions, Base) is in `backend/db/base.py`.
-- ORM models (tables like `sessions` and `messages`) should be placed in `backend/models/models.py` and import `Base` from `backend.db.base`.
-- Alembic (migrations) should be configured to reference `backend.models.models` as the place that defines metadata for autogeneration.
+await retrieve_from_document_impl(
+    query=tool_call["args"]["query"],
+    document_ids=session_document_ids,
+    db=db,
+)
 ```
 
----
+The model never receives `db`, `document_ids`, `user_id`, session ids, JWTs, or API keys.
 
-## 🔌 External Dependencies
+## Design Decisions
 
-| Service | Purpose | Fallback |
-|---------|---------|----------|
-| **Postgres + pgvector** | Vector store (pgvector extension) and session storage | BM25-only mode / SQLite for dev |
-| **OpenAI API** | Embeddings (text-embedding-3-large) | ❌ Required |
-| **GitHub Model** | LLM (gpt-4o-mini) | Ollama (local) |
-| **Ollama** | Local LLM alternative | ❌ Required if no GitHub token |
+### Postgres + pgvector instead of Qdrant
 
----
+The current code stores embeddings in PostgreSQL with the `pgvector` extension. This keeps document metadata, user ownership, chunks, sessions, and vectors in one database boundary.
 
-## 📊 Performance Characteristics
+### Hybrid retrieval
 
-| Operation | Latency | Notes |
-|-----------|---------|-------|
-| Index PDF (10 pages) | ~2-5s | Embedding + Qdrant write |
-| Vector search | ~50-100ms | Qdrant similarity_search |
-| BM25 search | ~10-20ms | In-memory scoring |
-| RRF merge | ~5ms | Small merge operation |
-| Reranking | ~50-200ms | 15 pairs × CrossEncoder |
-| LLM generation | ~1-3s | Network + inference |
-| **Total retrieval** | **~2-4s** | Parallel searches + LLM |
+Vector search catches semantic matches. BM25 catches exact terms, names, and keywords. Reciprocal rank fusion merges both result sets while deduplicating by `chunk_id`.
 
----
+### Reranking
 
-## 🛡️ Error Handling
+A CrossEncoder reranker scores query/chunk pairs after hybrid retrieval. The top reranker score is used as raw retrieval confidence, then the agent normalizes it for the API/UI.
 
-| Scenario | Behavior |
-|----------|----------|
-| **Qdrant down** | Use BM25-only, set `qdrant_available=False` |
-| **No embeddings API** | Fail at startup with clear error |
-| **Query too long** | Truncate to 1000 chars |
-| **Malicious query** | Raise `ValueError`, return error dict |
-| **Reranker fails** | Fall back to top-10 unranked |
-| **LLM timeout** | Raise `RuntimeError` to caller |
+### Tool schema vs implementation
 
----
+`@tool` functions in `backend/agent/tools.py` define safe public schemas for the model. They deliberately raise if called directly. Real execution happens in `*_impl()` functions, where Python injects trusted backend state.
 
-## 🔮 Future Improvements
+### Direct answers as zero tool calls
 
-1. **Vector score capture** — extract similarity distance from Qdrant
-2. **Adaptive confidence** — calibrate via feedback loop
-3. **Multi-language support** — detect & translate if needed
-4. **Caching layer** — Redis for frequent queries
-5. **Streaming retrieval** — don't wait for full reranking
-6. **Graph-based retrieval** — chunk relationships via LangGraph
+Direct answers are not modeled as a tool because no external capability is needed. This matches the PRD: the model either calls a tool or answers directly.
 
----
+### Chat vs research
 
-**Last Updated:** May 19, 2026
+`/chat` is conversational, session-based, and streamed.
+
+`/research` is stateless, non-streaming, and structured for API consumers.
+
+## Known Gaps
+
+- Chat streams a completed answer split by words, not true provider token streaming.
+- `/research` follow-up questions are currently empty.
+- `/research` key findings use simple text splitting.
+- BM25 index file naming should be verified because indexing and retrieval currently appear to use different identifiers.
+- In-memory indexing jobs are lost on server restart.
+- Guardrails, RAGAS evals, and groundedness checks are not implemented yet.

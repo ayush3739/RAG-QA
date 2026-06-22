@@ -168,7 +168,6 @@ Q: what is this document about and what is Newton's third law?
                 "tools": ["none"],
                 "tool_args": {"none": {"query": query}},
                 "reason": "model answered with zero tool calls",
-                "direct_response": response,
             }
     else:
         response = ""
@@ -383,16 +382,10 @@ async def answer_query(
     tool_trace.extend(selected_tools)
 
     if selected_tools == ["none"]:
-        if route.get("direct_response"):
-            result = {
-                "answer": route["direct_response"],
-                "sources": [],
-                "confidence": None,
-            }
-        else:
-            result = await direct_answer_impl(
-                tool_args.get("none", {}).get("query", query)
-            )
+        result = await direct_answer_impl(
+            tool_args.get("none", {}).get("query", query),
+            history=history,
+        )
         return {
             "answer": result["answer"],
             "sources": result["sources"],

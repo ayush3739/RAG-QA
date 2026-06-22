@@ -273,7 +273,17 @@ async def web_search_impl(query: str):
     }
 
 
-async def direct_answer_impl(query: str):
+def _history_messages(history: list[dict] | None) -> list[dict]:
+    messages = []
+    for item in (history or [])[-6:]:
+        role = item.get("role")
+        content = item.get("content")
+        if role in {"user", "assistant"} and content:
+            messages.append({"role": role, "content": content})
+    return messages
+
+
+async def direct_answer_impl(query: str, history: list[dict] | None = None):
     """Tool: Answer directly via LLM (no retrieval)."""
     llm = LLMProvider()
     answer = await llm.invoke(
@@ -281,10 +291,14 @@ async def direct_answer_impl(query: str):
             {
                 "role": "system",
                 "content": (
-                    "Answer the user's question directly and concisely. "
-                    "Do not invent document citations."
+                    "You are DocuMind, a document research and RAG assistant. "
+                    "Answer direct/general questions briefly in that product "
+                    "context. For greetings, introduce yourself as DocuMind and "
+                    "offer help with documents, research, summaries, citations, "
+                    "or general questions. Do not invent document citations."
                 ),
             },
+            *_history_messages(history),
             {"role": "user", "content": query},
         ]
     )

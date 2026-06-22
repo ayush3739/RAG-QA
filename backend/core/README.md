@@ -1,319 +1,260 @@
-# 🎯 Core Modules — RAG Pipeline Components
+# Core
 
-> Phase 1 core: Indexer, Retriever, Utils. These are the heart of the RAG system.
+The `backend/core/` folder contains the lower-level RAG pieces used by the API and agent layers: configuration, PDF indexing, document retrieval, and shared utilities.
 
----
+## Files
 
-## 📚 Module Overview
-
-| Module | Purpose | Status |
-|--------|---------|--------|
-| **indexer.py** | PDF → chunks with IDs → Qdrant + BM25 | ✅ Complete |
-| **retriever.py** | Hybrid search, reranking, LLM generation | ✅ Complete |
-| **utils.py** | Tokenizer, helpers | ✅ Complete |
-| **config.py** | Pydantic settings (Phase 2) | 🚀 WIP |
-
----
-
-## 📖 `indexer.py` — PDF Indexing
-
-### Class: `Indexer`
-
-```python
-Indexer(file_path: str, collection_name: str = None)
+```text
+backend/core/
+├── config.py      Pydantic settings loaded from `.env`
+├── indexer.py     PDF -> chunks -> BM25 -> embeddings -> Chunk rows
+├── retriever.py   pgvector + BM25 retrieval, RRF merge, CrossEncoder rerank
+└── utils.py       BM25 tokenizer and shared reranker instance
 ```
 
-**Attributes:**
-- `file_path` — Path to PDF file
-- `collection_name` — Name for Qdrant collection (defaults to filename)
-- `loader` — PyPDFLoader instance
-- `splitter` — RecursiveCharacterTextSplitter (600/150)
-- `embedding_model` — OpenAIEmbeddings
-- `vector_db` — QdrantVectorStore
-- `bm25` — BM25Okapi instance
+## `config.py`
 
-### Key Methods
+Defines the global `settings` object with `pydantic-settings`.
 
-#### `index() → None`
-Main entry point to index a PDF.
+Important fields:
 
-**Steps:**
-1. Delete existing collection in Qdrant (no duplicates)
-2. Load PDF pages
-3. Split into chunks (600 chars, 150 overlap)
-4. Create deterministic chunk_id per chunk
-5. Embed chunks via OpenAI API
-6. Save to Qdrant
-7. Build BM25 index from chunk texts
-8. Pickle BM25 to `data/bm25/{collection_name}_bm25.pkl`
+- `DATABASE_URL`
+- `github_token`
+- `groq_api_key`
+- `llm_provider`
+- `llm_model`
+- `secret_key`
+- `algorithm`
+- `access_token_expire_minutes`
+- `ollama_base_url`
+- `ollama_model`
+- `tavily_api_key`
+- `enable_web_search`
+- `top_k`
+- `rerank_top_n`
+- `confidence_threshold`
+- `chunk_size`
+- `chunk_overlap`
+- mail settings
 
-**Example:**
-```python
-indexer = Indexer("docs/report.pdf")
-indexer.index()  # ~2-5s for 10-page PDF
-```
+`.env` is loaded from the repository root.
 
-#### `make_chunk_id(page_num: int, chunk_idx: int) → str`
-Generate deterministic chunk identifier.
+## `indexer.py`
 
-**Format:** `"page_<page_num>_chunk_<chunk_idx>"`
-
-**Example:** `"page_5_chunk_2"` = page 5, chunk 2
-
-**Why:** Stable across BM25 and Qdrant; enables deduplication in RRF.
-
-#### `_delete_existing_collection() → None`
-Wipe collection from Qdrant before re-indexing (prevents duplicates).
-
-#### `_load_pdf() → list[Document]`
-Load PDF pages via PyPDFLoader. Each page includes metadata: page_label, source.
-
-#### `_chunk_text(docs: list) → list[Document]`
-Split documents into chunks with RecursiveCharacterTextSplitter.
-- chunk_size = 600
-- chunk_overlap = 150
-- Preserves metadata (page_label, source)
-
----
-
-## 🔍 `retriever.py` — RAG Pipeline
-
-### Class: `Retriever`
+Main class:
 
 ```python
-Retriever(collection_name: str)
+Indexer(
+    file_path: str,
+    db_session: AsyncSession,
+    document_id: int,
+    document_public_id: int,
+)
 ```
 
-**Attributes:**
-- `collection_name` — Qdrant collection to query
-- `openai_client` — GitHub model API client
-- `llm` — OllamaLLM for local inference
-- `embedding_model` — OpenAIEmbeddings
-- `vector_db` — QdrantVectorStore (or None if unavailable)
-- `qdrant_available` — Boolean flag
-- `bm25` — Loaded BM25Okapi model
-- `bm25_texts` — Chunk texts for BM25
-- `bm25_meta` — Chunk metadata for BM25
-- `reranker` — CrossEncoder model
+### What It Does
 
-### Key Methods
+`Indexer.index()`:
 
-#### `answer(query: str, k: int = 10) → dict`
-Main entry point to get an answer.
+1. Loads the PDF with `PyPDFLoader`.
+2. Splits pages with `RecursiveCharacterTextSplitter`.
+3. Uses chunk size `600` and overlap `150`.
+4. Creates a deterministic `chunk_id` from `source | page_label | normalized_text`.
+5. Persists a BM25 index to `data/bm25/{document_public_id}_bm25.pkl`.
+6. Embeds all chunks with `text-embedding-3-small`.
+7. Inserts `Chunk` rows into PostgreSQL.
+8. Rolls back the DB transaction and raises `RuntimeError` if indexing fails.
 
-**Flow:**
-1. Sanitize query
-2. Call `similarity_search()` → hybrid retrieval + reranking
-3. Call `generate_response()` → LLM generation + citations
-4. Return structured JSON
+### Stored Chunk Fields
 
-**Response format:**
+Each indexed chunk becomes a `Chunk` ORM row with:
+
+- `document_id`
+- `chunk_id`
+- `page_content`
+- `page_number`
+- `chunk_index`
+- `source`
+- `embedding`
+
+### BM25 File
+
+The BM25 pickle stores:
+
 ```python
 {
-  "answer": "...",
-  "citations": [{chunk_id, source, page_label, excerpt}, ...],
-  "chunks": [full_metadata, ...],
-  "confidence": 0.82,
-  "used_vector_db": True,
-  "debug": {"qdrant_error": None}
+    "bm25": BM25Okapi(...),
+    "meta": [
+        {
+            "chunk_id": "...",
+            "page_content": "...",
+            "page_label": "...",
+            "source": "...",
+        }
+    ]
 }
 ```
 
-#### `similarity_search(query: str, k: int = 10) → dict`
-Hybrid search: BM25 + vector → RRF → rerank.
+Important: `Indexer` writes the BM25 file by `document_public_id`. `Retriever` currently looks for files by numeric document id. If BM25 search is not loading, align these identifiers.
 
-**Steps:**
-1. Sanitize query
-2. Vector search (Qdrant): ~15 results with metadata
-3. BM25 search: ~15 results with bm25_score
-4. RRF merge by chunk_id (deduplication)
-5. CrossEncoder reranking: top 15 → top 10
-6. Build structured chunk metadata
-7. Return payload with chunks + confidence
+## `retriever.py`
 
-**Returns:**
+Main class:
+
+```python
+Retriever(document_ids: list[int], db: AsyncSession)
+```
+
+The retriever is scoped to one or more document ids and an async database session.
+
+### Initialization
+
+On init it:
+
+- Reads GitHub token and settings.
+- Creates an OpenAI-compatible client for GitHub Models.
+- Creates an Ollama LLM instance.
+- Creates an OpenAI embedding model.
+- Loads BM25 metadata for selected documents if files exist.
+- Builds a combined BM25 corpus.
+- Reuses `RERANKER` from `utils.py`.
+
+### `sanitize_query(query)`
+
+Basic query guard:
+
+- Truncates to 1000 characters.
+- Blocks simple prompt-injection phrases:
+  - `ignore all instructions`
+  - `ignore previous`
+  - `you are now`
+
+### `similarity_search(query, k=10)`
+
+Main retrieval method used by the agent tool implementation.
+
+Flow:
+
+1. Sanitize query.
+2. Embed query.
+3. Run pgvector cosine-distance search:
+   ```python
+   Chunk.embedding.cosine_distance(query_embedding)
+   ```
+4. Build vector result objects with:
+   - `chunk_id`
+   - `page_label`
+   - `source`
+   - `vector_score`
+5. Run BM25 search if a BM25 corpus exists.
+6. Merge vector and BM25 results with reciprocal rank fusion.
+7. Rerank top merged results with CrossEncoder.
+8. Return structured chunks and raw confidence.
+
+Return shape:
+
 ```python
 {
-  "chunks": [structured_chunk_dict, ...],
-  "used_vector_db": bool,
-  "debug": {"qdrant_error": str or None},
-  "confidence": float
+    "chunks": [
+        {
+            "chunk_id": "...",
+            "page_label": 4,
+            "source": "...",
+            "text": "...",
+            "bm25_score": 1.23,
+            "reranker_score": 4.56,
+            "vector_score": 0.82,
+            "bm25_len": 15,
+        }
+    ],
+    "used_vector_db": True,
+    "debug": {},
+    "confidence": 4.56,
 }
 ```
 
-#### `generate_response(query: str, retrieval_result: dict) → dict`
-LLM generation + citation building.
+### `reciprocal_rank_fusion(vector_results, bm25_results, k=60)`
 
-**Steps:**
-1. Defensively sanitize query
-2. Build context from top 6 chunks
-3. System prompt with grounding rules
-4. Call LLM (gpt-4o-mini or Ollama)
-5. LLM returns plain text (no JSON)
-6. Build citations from top 5 chunks
-7. Return structured dict
+Merges ranked vector and BM25 lists.
 
-**System prompt enforces:**
-- Answer ONLY from context
-- Cite page numbers
-- Keep under 200 words
-- No hallucination
-- If not found: "I could not find this information..."
+Deduplication key:
 
-#### `sanitize_query(query: str) → str`
-Input validation and injection prevention.
+- Prefer `metadata["chunk_id"]`.
+- Fall back to `page_content`.
 
-**Checks:**
-- Max 1000 characters (truncate if longer)
-- Block injection patterns: "ignore all instructions", "ignore previous", "you are now"
-- Raise ValueError if malicious
+Score:
 
-#### `reciprocal_rank_fusion(vector_results, bm25_results, k: int = 60) → list[Document]`
-Merge two ranked lists fairly using RRF.
-
-**Formula:**
-```
-score = Σ 1/(k + rank)  per result
+```text
+1 / (k + rank)
 ```
 
-**Deduplication:** By chunk_id (stable across sources)
+### `rerank_(query, chunks, top_n=5)`
 
-**Returns:** Merged + sorted by RRF score
+Uses the shared CrossEncoder to score `(query, chunk_text)` pairs.
 
-#### `rerank_(query: str, chunks: list, top_n: int = 5) → tuple`
-CrossEncoder reranking.
-
-**Steps:**
-1. Build (query, chunk_text) pairs
-2. Predict relevance scores via CrossEncoder
-3. Attach reranker_score to chunk.metadata
-4. Sort by score descending
-5. Keep top_n
-
-**Returns:** `(ranked_chunks, max_score)`
-
----
-
-## 🛠️ `utils.py` — Helpers
-
-### Function: `simple_tokenize(text: str) → list[str]`
-
-Simple whitespace + lowercase tokenizer for BM25.
-
-**Example:**
-```python
-tokens = simple_tokenize("Hello, World!")
-# ["hello", "world"]
-```
-
-### Function: `format_context(chunks: list) → str`
-
-Format chunk metadata into LLM context string.
-
----
-
-## 🔐 Query Sanitization
-
-**Two-layer defense:**
-
-1. **In `answer()`:** Sanitize before retrieval & generation
-2. **In `generate_response()`:** Defensive sanitization before LLM call
-
-**Protection against:**
-- Prompt injection ("ignore all instructions and...")
-- Token bloat (>1000 chars)
-- Malformed input
-
----
-
-## 📊 Data Flow in `retriever.py`
-
-```
-Query: "What is MongoDB?"
-    ↓
-sanitize_query() → "what is mongodb?"
-    ↓
-similarity_search()
-  ├─ vector_db.similarity_search() → 15 Document objects
-  │  └─ each has metadata: {chunk_id, page_label, source}
-  ├─ bm25.get_scores() → 15 BM25 scores
-  │  └─ matched to bm25_meta list
-  ├─ reciprocal_rank_fusion() → merge by chunk_id
-  ├─ rerank_() → CrossEncoder top 10
-  └─ structured_chunks = [
-       {chunk_id, page_label, source, text, bm25_score, reranker_score, vector_score},
-       ...
-     ]
-    ↓
-generate_response()
-  ├─ Build context from top 6 chunks
-  ├─ System prompt
-  ├─ LLM call → answer text
-  ├─ Build citations from top 5
-  └─ Return:
-     {
-       "answer": "MongoDB is a...",
-       "citations": [...],
-       "chunks": [...],
-       "confidence": 0.82
-     }
-```
-
----
-
-## 🔌 Environment Variables Required
-
-```
-GITHUB_TOKEN=ghp_xxx              # Must be set; raises error if missing
-QDRANT_URL=http://localhost:6333  # Optional; defaults shown
-OLLAMA_BASE_URL=http://localhost:11434
-```
-
----
-
-## 🧪 Testing
-
-### Unit Tests (`tests/test_unit_rag.py`)
+Returns:
 
 ```python
-# Mocks BM25, reranker, LLM
-# Verifies: sanitization, RRF, reranker scores, generate_response
-pytest tests/test_unit_rag.py -v
+(ranked_chunks[:top_n], max_score)
 ```
 
-### Integration Test (`tests/rag_output.py`)
+If no chunks are available, returns:
 
 ```python
-# Real retriever, real queries
-# Pretty-prints output showing [Model-produced answer] vs [Sources & metadata]
-python tests/rag_output.py
+([], 0.0)
 ```
 
----
+### `generate_response(...)` and `answer(...)`
 
-## 🚀 Future Enhancements
+These methods still support direct RAG answering from the retriever itself:
 
-1. **Vector score capture** — extract Qdrant similarity distance
-2. **Caching** — Redis for frequent queries
-3. **Multi-language** — detect query language, translate if needed
-4. **Streaming** — partial results before full reranking
-5. **Adaptive k** — adjust `k` based on query type/confidence
+- `answer(query)` calls retrieval and then `generate_response(...)`.
+- `generate_response(...)` builds a strict document-context prompt and calls GitHub Models.
 
----
+The main chat and research APIs now usually go through `backend/agent/router.py`, which uses `similarity_search(...)` through `retrieve_from_document_impl(...)`.
 
-## 📋 Checklist for Phase 1 Completion
+## `utils.py`
 
-- [x] Indexer: PDF → chunks with deterministic IDs
-- [x] Retriever: Hybrid search (BM25 + vector)
-- [x] RRF merge by chunk_id
-- [x] CrossEncoder reranking
-- [x] Query sanitization (prompt injection defense)
-- [x] LLM grounding system prompt
-- [x] Citation building
-- [x] Confidence scoring
-- [x] Qdrant fallback
-- [x] Error handling
+### `simple_tokenize(text)`
 
----
+Lowercases text and extracts word tokens for BM25:
 
-**Last Updated:** May 19, 2026
+```python
+re.findall(r"\w+", text.lower())
+```
+
+### `RERANKER`
+
+Loads:
+
+```text
+cross-encoder/ms-marco-MiniLM-L-6-v2
+```
+
+with `local_files_only=True`.
+
+If the model is not available locally, `RERANKER` becomes `None` and retrieval reranking can fail unless handled by the caller. In the current retriever, rerank failures fall back to the pre-reranked merged results.
+
+## Core Data Flow
+
+```text
+Upload PDF
+    -> documents.py creates Document
+    -> Indexer.index()
+    -> Chunk rows + BM25 pickle
+
+Chat/research question
+    -> agent router chooses retrieve_from_document
+    -> retrieve_from_document_impl(...)
+    -> Retriever.similarity_search(...)
+    -> chunks returned to router
+    -> router synthesizes final answer
+```
+
+## Operational Notes
+
+- The codebase currently uses PostgreSQL + pgvector for vector search, not Qdrant.
+- `settings.qdrant_url` remains in config but is not the active vector store path.
+- Query history is handled above core, in `ChatService` and `agent/router.py`.
+- Source/citation shaping for chat metadata is handled in `agent/router.py`, not in `Retriever.similarity_search(...)`.
+- Indexing runs asynchronously from the documents route using its own DB session.
