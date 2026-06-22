@@ -61,7 +61,7 @@ class Message(Base):
     citations: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSONB, nullable=True)
     chunks : Mapped[Optional[Dict[str, Any]]] = mapped_column(JSONB, nullable=True)
     confidence: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
-    tool_used : Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    tool_used : Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     used_vector_db : Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
     debug : Mapped[Optional[Dict[str, Any]]] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))

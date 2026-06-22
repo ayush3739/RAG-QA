@@ -304,7 +304,9 @@ Rules:
 - If chunks contradict each other, mention both findings and their pages.
 - If the context doesn't contain the answer, respond with:
   "I could not find this information in the provided document."
-- Keep answers under 200 words unless the question requires more detail.
+- Keep answers under 200 words by default.
+- If the user asks for a summary, detailed explanation, in-depth answer, or specifies a longer length, provide the requested depth up to 1000 words.
+- If the user asks for more than 1000 words, keep the answer under 1000 words and focus on the most useful details.
 - Do not infer or extrapolate beyond what is explicitly stated in the chunks.
 
 CONTEXT:

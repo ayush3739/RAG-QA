@@ -227,4 +227,5 @@ idea/
 # uploaded PDFs (too large for git) 
 docs/ 
 plan.md 
-learn.md
+learn.md 
+frontend/dev-config.json

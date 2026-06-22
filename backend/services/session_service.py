@@ -47,6 +47,9 @@ class SessionService:
         tool_used: str | None = None,
     ) -> MessageCreateResponse:
         """Add message to session history."""
+        if tool_used and len(tool_used) > 100:
+            tool_used = tool_used[:97] + "..."
+
         mess = Message(
             session_id = session_id,
             role = role,

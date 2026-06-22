@@ -18,6 +18,7 @@ Messages must follow OpenAI format everywhere:
 
 from __future__ import annotations
 
+import json
 from typing import AsyncGenerator
 
 from backend.core.config import settings
@@ -89,6 +90,42 @@ class LLMProvider:
             stream=False,
         )
         return response.choices[0].message.content or ""
+
+    def supports_native_tool_calls(self) -> bool:
+        return self.provider in {"groq", "github"}
+
+    async def tool_call(self, messages: list[dict], tools: list[dict]) -> dict:
+        if not self.supports_native_tool_calls():
+            return {"content": await self.invoke(messages), "tool_calls": []}
+
+        response = await self._client.chat.completions.create(
+            model=settings.llm_model,
+            messages=messages,
+            tools=tools,
+            tool_choice="auto",
+            stream=False,
+        )
+        message = response.choices[0].message
+        tool_calls = []
+
+        for call in message.tool_calls or []:
+            try:
+                args = json.loads(call.function.arguments or "{}")
+            except json.JSONDecodeError:
+                args = {}
+
+            tool_calls.append(
+                {
+                    "id": call.id,
+                    "name": call.function.name,
+                    "args": args,
+                }
+            )
+
+        return {
+            "content": message.content or "",
+            "tool_calls": tool_calls,
+        }
 
     # ------------------------------------------------------------------
     # stream  –  async-generator, yields string tokens

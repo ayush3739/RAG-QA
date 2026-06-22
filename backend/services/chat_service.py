@@ -1,18 +1,17 @@
 from uuid import UUID
 from typing import AsyncGenerator
+import json
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.services.session_service import SessionService
-from backend.core.retriever import Retriever
-from backend.services.llm_provider import LLMProvider
+from backend.agent.router import answer_query
 
 
 class ChatService:
 
     def __init__(self):
         self.session_service = SessionService()
-        self.llm = LLMProvider()
 
     async def stream_chat(
         self,
@@ -62,95 +61,86 @@ class ChatService:
             db=db,
         )
 
-        # 5. Retrieval
+        # 5. Route through the agent layer
 
-        all_chunks = []
-        confidence = 0.0
-        used_vector_db = False
-
-        if document_ids:
-            retriever = Retriever(
+        try:
+            result = await answer_query(
+                query=question,
                 document_ids=document_ids,
                 db=db,
+                history=[
+                    {"role": msg.role, "content": msg.content}
+                    for msg in history.messages[:-1]
+                ],
+                include_web=True,
             )
-
-            result = await retriever.similarity_search(question)
-
-            all_chunks = result["chunks"]
-            confidence = result["confidence"] or 0.0
-            used_vector_db = result["used_vector_db"]
-
-        # 6. Build context
-
-        context = "\n\n".join(
-            chunk["text"]
-            for chunk in all_chunks[:10]
-        )
-
-        # 7. Build messages
-        # System prompt first, then history (which already contains the user question).
-
-        messages = [
-            {
-                "role": "system",
-                "content": f"""You are DocuMind, a document question-answering assistant.
-
-Answer using the provided document context.
-If the answer is not present in the context, say so clearly.
-
-Context:
-{context}""",
-            }
-        ]
-
-        for msg in history.messages:
-            messages.append(
-                {
-                    "role": msg.role,
-                    "content": msg.content,
-                }
+        except Exception as exc:
+            error_message = (
+                "Sorry, I couldn't complete this response because the agent "
+                f"failed: {exc}"
             )
+            await self.session_service.add_message(
+                session_id=session_id,
+                role="assistant",
+                content=error_message,
+                db=db,
+                confidence=0.0,
+                sources=[],
+                tool_used="error",
+            )
+            yield ("error", error_message)
+            yield ("done", "[DONE]")
+            return
 
-        # 8. LLM stream
+        full_response = result["answer"]
 
-        full_response = ""
-
-        async for token in self.llm.stream(messages):
-            full_response += token
-            yield ("token", token)
+        # The agent currently returns a full synthesized answer. Keep the SSE
+        # contract stable by emitting it as token events.
+        for token in full_response.split():
+            yield ("token", token + " ")
 
         # 9. Save assistant message
 
-        sources = [
-            {
-                "chunk_id": chunk["chunk_id"],
-                "page": chunk["page_label"],
-                "source": chunk["source"],
-            }
-            for chunk in all_chunks[:10]
-        ]
+        sources = result.get("sources", [])
+        confidence = result.get("confidence")
+        stored_confidence = confidence if confidence is not None else 0.0
+        tool_trace = result.get("tool_trace", [])
+        routing_reason = result.get("routing_reason", "")
+        used_vector_db = result.get("used_vector_db", False)
+        chunks = result.get("chunks", [])
+        retrieved_chunks = result.get("retrieved_chunks", [])
 
-        await self.session_service.add_message(
-            session_id=session_id,
-            role="assistant",
-            content=full_response,
-            db=db,
-            confidence=confidence,
-            sources=sources,
-        )
+        try:
+            await self.session_service.add_message(
+                session_id=session_id,
+                role="assistant",
+                content=full_response,
+                db=db,
+                confidence=stored_confidence,
+                sources=sources,
+                tool_used=" -> ".join(tool_trace) if tool_trace else None,
+            )
+        except Exception as exc:
+            yield ("error", f"Answer was generated but history save failed: {exc}")
+            yield ("done", "[DONE]")
+            return
 
         # 10. Metadata
 
         yield (
             "metadata",
-            {
+            json.dumps({
                 "confidence": confidence,
                 "documents": document_ids,
-                "chunks_found": len(all_chunks),
+                "chunks_found": len(chunks),
                 "used_vector_db": used_vector_db,
-            },
+                "sources": sources,
+                "chunks": retrieved_chunks,
+                "tool_trace": tool_trace,
+                "routing_reason": routing_reason,
+            }),
         )
 
         # 11. Done
 
-        yield ("done", {})
+        yield ("done", "[DONE]")

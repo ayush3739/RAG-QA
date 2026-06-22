@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DocuMind Session History</title>
+    <link rel="stylesheet" href="/frontend/styles.css" />
+  </head>
+  <body>
+    <main class="app history-app">
+      <section class="panel controls">
+        <h1>Session History</h1>
+
+        <label>
+          API base URL
+          <input id="apiBase" value="http://127.0.0.1:8000/api/v1" />
+        </label>
+
+        <label>
+          Session ID
+          <input id="sessionId" placeholder="7104554b-dfe9-4f4c-bd9e-7568a639bf9b" />
+        </label>
+
+        <label>
+          Bearer token
+          <input id="token" type="password" placeholder="Paste access token" />
+        </label>
+
+        <div class="actions">
+          <button id="loadBtn">Load History</button>
+          <button id="clearBtn" type="button">Clear</button>
+        </div>
+
+        <p id="status" class="status">Idle</p>
+        <p class="status">
+          Chat stream page:
+          <a href="/test-chat">/test-chat</a>
+        </p>
+      </section>
+
+      <section class="panel chat-panel">
+        <div class="section-title">
+          <h2>Conversation</h2>
+          <span id="messageCount" class="badge">0 messages</span>
+        </div>
+        <div id="chatHistory" class="chat-history empty">Load a session to view messages.</div>
+      </section>
+    </main>
+
+    <script src="/frontend/history.js"></script>
+  </body>
+</html>

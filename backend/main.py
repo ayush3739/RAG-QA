@@ -1,8 +1,12 @@
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 import logging
+from pathlib import Path
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
@@ -18,6 +22,8 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
+ROOT_DIR = Path(__file__).resolve().parents[1]
+FRONTEND_DIR = ROOT_DIR / "frontend"
 
 
 @asynccontextmanager
@@ -43,6 +49,38 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(title="DocuMind API", version="2.0.0", lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://127.0.0.1:5500",
+        "http://localhost:5500",
+        "http://127.0.0.1:8001",
+        "http://localhost:8001",
+        "null",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+if FRONTEND_DIR.exists():
+    app.mount(
+        "/frontend",
+        StaticFiles(directory=FRONTEND_DIR),
+        name="frontend",
+    )
+
+
+@app.get("/test-chat", include_in_schema=False)
+async def test_chat_page():
+    return FileResponse(FRONTEND_DIR / "index.html")
+
+
+@app.get("/test-history", include_in_schema=False)
+async def test_history_page():
+    return FileResponse(FRONTEND_DIR / "history.html")
+
 
 # Include routers
 app.include_router(documents.router, prefix="/api/v1", tags=["Documents"])
