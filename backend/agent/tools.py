@@ -35,18 +35,11 @@ async def generate_quiz(query: str, num_questions: int = 5):
     raise RuntimeError("Tool schema only. Execute via generate_quiz_impl().")
 
 
-@tool
-async def direct_answer(query: str):
-    """Answer directly when no document retrieval or live web search is needed."""
-    raise RuntimeError("Tool schema only. Execute via direct_answer_impl().")
-
-
 TOOLS = [
     retrieve_from_document,
     web_search,
     summarize_document,
     generate_quiz,
-    direct_answer,
 ]
 
 
@@ -137,27 +130,6 @@ OPENAI_TOOL_SCHEMAS = [
                         "maximum": 10,
                         "default": 5,
                     },
-                },
-                "required": ["query"],
-                "additionalProperties": False,
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "direct_answer",
-            "description": (
-                "Answer directly for math, general knowledge, greetings, coding, "
-                "or reasoning when document retrieval and live web are not needed."
-            ),
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "query": {
-                        "type": "string",
-                        "description": "The direct-answer query.",
-                    }
                 },
                 "required": ["query"],
                 "additionalProperties": False,

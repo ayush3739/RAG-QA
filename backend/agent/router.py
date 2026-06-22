@@ -24,7 +24,6 @@ ROUTER_TOOLS = {
     "web_search",
     "summarize_document",
     "generate_quiz",
-    "direct_answer",
 }
 
 
@@ -80,13 +79,7 @@ def _fallback_select_tools(
     ):
         tools.append("web_search")
 
-    if has_documents and tools and any(
-        signal in normalized
-        for signal in ("what is", "explain", "define", "law", "principle", "meaning")
-    ):
-        tools.append("direct_answer")
-
-    return list(dict.fromkeys(tools)) or ["direct_answer"]
+    return list(dict.fromkeys(tools)) or ["none"]
 
 
 async def _select_tool(query: str, has_documents: bool, include_web: bool) -> dict:
@@ -101,22 +94,21 @@ Available tools:
 - summarize_document: Use when the user asks for a summary, overview, key points, main ideas, or chapter/section summary of the uploaded document.
 - generate_quiz: Use when the user asks for a quiz, MCQs, practice questions, or to be tested on the uploaded document.
 - web_search: Use for current, recent, latest, today/news queries, or when live web information is required. This tool is {"enabled" if include_web else "disabled"}.
-- direct_answer: Use for simple math, general knowledge, greetings, coding/help questions, reasoning questions, or anything that does not require the uploaded document or live web.
 
 Routing rules:
 - Do NOT choose retrieve_from_document merely because documents are attached.
-- If the query can be answered without the document and without live web, choose direct_answer.
+- If the query can be answered without the document and without live web, do not call any tool. Answer directly.
 - For compound questions, choose multiple tools. Example: if the user asks about the document AND today's weather, choose ["retrieve_from_document", "web_search"].
-- Include direct_answer with another tool when one part of the question is document-specific and another part is general knowledge.
+- For compound questions with a general-knowledge part, call tools only for the document/web parts. The final answer can answer the general part directly.
 - If web_search is disabled, do not choose web_search.
 - If no documents are attached, do not choose document tools.
-- When native tool calling is available, call the selected tool or tools instead of writing JSON.
+- When native tool calling is available, call the selected tool or tools. If no tool is needed, answer the user directly with zero tool calls.
 - If native tool calling is not available, return ONLY valid JSON with this exact shape:
-  {{"tools": ["direct_answer"], "reason": "short reason"}}
+  {{"tools": ["none"], "reason": "short reason"}}
 
 Examples:
 Q: what is 2+2?
-{{"tools": ["direct_answer"], "reason": "simple arithmetic; no document needed"}}
+{{"tools": ["none"], "reason": "simple arithmetic; no document needed"}}
 
 Q: summarize this pdf
 {{"tools": ["summarize_document"], "reason": "asks for uploaded document summary"}}
@@ -131,7 +123,7 @@ Q: what is this document about and also tell me the weather of today in Noida?
 {{"tools": ["retrieve_from_document", "web_search"], "reason": "asks about uploaded document content and current weather"}}
 
 Q: what is this document about and what is Newton's third law?
-{{"tools": ["retrieve_from_document", "direct_answer"], "reason": "asks about uploaded document content and general knowledge"}}
+{{"tools": ["retrieve_from_document"], "reason": "asks about uploaded document content; general part needs no tool"}}
 """,
         },
         {
@@ -171,6 +163,13 @@ Q: what is this document about and what is Newton's third law?
                 "tool_args": tool_args,
                 "reason": "native tool call",
             }
+        if response:
+            return {
+                "tools": ["none"],
+                "tool_args": {"none": {"query": query}},
+                "reason": "model answered with zero tool calls",
+                "direct_response": response,
+            }
     else:
         response = ""
 
@@ -205,6 +204,10 @@ Q: what is this document about and what is Newton's third law?
 
     tools = []
     for tool in raw_tools:
+        if tool == "none":
+            if not tools:
+                tools.append("none")
+            continue
         if tool not in ROUTER_TOOLS:
             continue
         if tool in {"retrieve_from_document", "summarize_document", "generate_quiz"} and not has_documents:
@@ -216,6 +219,8 @@ Q: what is this document about and what is Newton's third law?
 
     if not tools:
         tools = _fallback_select_tools(query, has_documents, include_web)
+    if len(tools) > 1 and "none" in tools:
+        tools = [tool for tool in tools if tool != "none"]
 
     return {
         "tools": tools,
@@ -246,10 +251,6 @@ def _format_web_results(results: list[dict]) -> str:
         for result in results[:5]
         if result.get("content")
     )
-
-
-def _format_direct_answer(answer: str) -> str:
-    return answer.strip() if answer else ""
 
 
 def _normalize_confidence(score: float | None) -> float | None:
@@ -296,14 +297,14 @@ def _metadata_chunks(chunks: list[dict]) -> list[dict]:
 def _synthesis_system_prompt(
     doc_context: str,
     web_context: str,
-    has_direct_context: bool = False,
 ) -> str:
-    if doc_context and not web_context and not has_direct_context:
+    if doc_context and not web_context:
         return f"""You are a helpful assistant that answers questions strictly based on context
 retrieved from a PDF document.
 
 Rules:
 - Answer ONLY using the provided context chunks. Do not use prior knowledge.
+- Exception: if the user's question also contains a clearly separate general-knowledge part that is not asking about the document, answer that part from your own knowledge and do not cite it as document-supported.
 - If the answer spans multiple chunks, synthesize them into one clear response.
 - Always cite the relevant page number(s) at the end, e.g., (Page 4, 12).
 - You may tell the user where to read more, e.g., "You can read more on Page 4", only when that page number appears in the context metadata.
@@ -320,13 +321,12 @@ CONTEXT:
 {doc_context}"""
 
     return (
-        "You are DocuMind. Answer using only the provided document context, web "
-        "context, and direct-answer context. Document, web, and direct-answer "
-        "sources are labeled separately. Cite document pages as (Page X) and web "
-        "sources by URL/title when used. Direct-answer context may be used only "
-        "for the non-document part of a compound question. If the provided context "
-        "does not support a document-specific answer, say that clearly. Do not "
-        "claim direct-answer content came from the document.\n\n"
+        "You are DocuMind. Use the provided document and web context when the "
+        "question asks about those sources. Cite document pages as (Page X) and "
+        "web sources by URL/title when used. For clearly separate general-knowledge "
+        "parts of a compound question, you may answer directly from your own "
+        "knowledge, but do not cite that as document-supported. If the provided "
+        "context does not support a document-specific answer, say that clearly.\n\n"
         f"DOCUMENT CONTEXT:\n{doc_context or 'None'}\n\n"
         f"WEB CONTEXT:\n{web_context or 'None'}"
     )
@@ -336,20 +336,15 @@ async def _synthesize(
     query: str,
     doc_chunks: list[dict],
     web_results: list[dict],
-    direct_context: str,
     history: list[dict] | None,
 ) -> str:
     llm = LLMProvider()
     doc_context = _format_doc_chunks(doc_chunks)
     web_context = _format_web_results(web_results)
-    direct_answer_context = _format_direct_answer(direct_context)
     system_prompt = _synthesis_system_prompt(
         doc_context,
         web_context,
-        has_direct_context=bool(direct_answer_context),
     )
-    if direct_answer_context:
-        system_prompt += f"\n\nDIRECT-ANSWER CONTEXT:\n{direct_answer_context}"
 
     messages = [
         {
@@ -361,25 +356,6 @@ async def _synthesize(
     ]
 
     return await llm.invoke(messages)
-
-
-async def _direct_general_context(query: str) -> str:
-    llm = LLMProvider()
-    return await llm.invoke(
-        [
-            {
-                "role": "system",
-                "content": (
-                    "Answer only the general-knowledge or reasoning part of the "
-                    "user's compound question. Do not answer any part that asks "
-                    "about an uploaded document, PDF, report, page, chapter, or "
-                    "section. If there is no general-knowledge part, reply with "
-                    "an empty string."
-                ),
-            },
-            {"role": "user", "content": query},
-        ]
-    )
 
 
 async def answer_query(
@@ -394,7 +370,6 @@ async def answer_query(
     sources: list[dict] = []
     doc_chunks: list[dict] = []
     web_results: list[dict] = []
-    direct_context = ""
     confidence: float | None = None
 
     route = await _select_tool(
@@ -407,16 +382,16 @@ async def answer_query(
     routing_reason = route.get("reason", "")
     tool_trace.extend(selected_tools)
 
-    if selected_tools == ["direct_answer"]:
-        if route.get("direct_answer"):
+    if selected_tools == ["none"]:
+        if route.get("direct_response"):
             result = {
-                "answer": route["direct_answer"],
+                "answer": route["direct_response"],
                 "sources": [],
                 "confidence": None,
             }
         else:
             result = await direct_answer_impl(
-                tool_args.get("direct_answer", {}).get("query", query)
+                tool_args.get("none", {}).get("query", query)
             )
         return {
             "answer": result["answer"],
@@ -472,11 +447,6 @@ async def answer_query(
         selected_tools.append("retrieve_from_document")
         tool_trace.append("retrieve_from_document (document context for compound query)")
 
-    if "direct_answer" in selected_tools:
-        direct_context = await _direct_general_context(
-            tool_args.get("direct_answer", {}).get("query", query)
-        )
-
     if "retrieve_from_document" in selected_tools:
         result = await retrieve_from_document_impl(
             query=tool_args.get("retrieve_from_document", {}).get("query", query),
@@ -513,7 +483,6 @@ async def answer_query(
         query=query,
         doc_chunks=doc_chunks,
         web_results=web_results,
-        direct_context=direct_context,
         history=history,
     )
 

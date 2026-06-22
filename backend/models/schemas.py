@@ -1,7 +1,7 @@
 """Pydantic schemas for request/response models."""
 
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Literal, Optional
 from uuid import UUID
 from datetime import datetime
 class Item(BaseModel):
@@ -26,14 +26,14 @@ class ResearchRequest(BaseModel):
     topic: str
     collection: Optional[str] = None
     include_web: bool = True
-    output_format: str = "structured"  # structured | bullet | prose
+    output_format: Literal["structured", "bullet", "prose"] = "structured"
 
 
 class ResearchResponse(BaseModel):
     summary: str
     key_findings: List[str]
     sources: List[dict]
-    confidence: float
+    confidence: Optional[float] = None
     tool_trace: List[str]
     follow_up_questions: List[str]
 

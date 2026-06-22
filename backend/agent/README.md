@@ -35,11 +35,9 @@ These are decorated with `@tool` and can be passed to LangChain/OpenAI-style too
   - Schema: generate quiz/practice questions from the uploaded document.
   - LLM-visible args: `query`, `num_questions`.
 
-- `direct_answer(query)`
-  - Schema: answer directly without document retrieval or live web.
-  - LLM-visible args: `query`.
+There is no `direct_answer` tool. If the model can answer without document retrieval or web search, it should return zero tool calls. The router records that as `tool_trace: ["none"]`.
 
-These schema functions deliberately raise if called directly. They exist so the LLM can choose tools safely; real execution happens through the implementation functions below.
+These schema functions deliberately raise if called directly. They exist so the LLM can choose external tools safely; real execution happens through the implementation functions below.
 
 `TOOLS` contains these LangChain tool schema objects:
 
@@ -49,7 +47,6 @@ TOOLS = [
     web_search,
     summarize_document,
     generate_quiz,
-    direct_answer,
 ]
 ```
 
@@ -69,7 +66,8 @@ TOOLS = [
 
 - `direct_answer_impl(query)`
   - Calls `LLMProvider` without retrieval.
-  - Used for simple math, general knowledge, greetings, coding/help questions, or reasoning that does not need the uploaded document or live web.
+  - Used by the router fallback when a provider does not support native zero-tool direct responses.
+  - This is not exposed as an LLM-callable tool.
 
 - `summarize_document_impl(query, document_ids, db)`
   - Loads indexed chunks from Postgres and asks the LLM for a concise document summary.
@@ -130,11 +128,11 @@ Responsibilities:
 - Ask an LLM routing prompt which tool or tools to use.
 - Support multi-tool compound queries, for example:
   - document + web: "What is this document about and today's weather?"
-  - document + direct answer: "What is this document about and Newton's third law?"
+  - document + general answer: "What is this document about and Newton's third law?"
 - Execute the selected tools by calling `*_impl` functions with backend context.
 - Normalize raw reranker confidence into `0.0-1.0` with a sigmoid.
 - Escalate low-confidence document retrieval to web search once when web is enabled.
-- Synthesize the final answer from document/web/direct-answer context.
+- Synthesize the final answer from document/web context, while allowing direct general knowledge for clearly separate non-document subquestions.
 - Return answer text plus metadata for SSE/frontend display.
 
 Important functions:
@@ -154,10 +152,8 @@ Important functions:
 - `_synthesize(...)`
   - Builds the final answer prompt and calls `LLMProvider.invoke`.
   - Keeps document answers grounded and page-cited.
+  - Allows clearly separate general-knowledge subquestions to be answered directly without claiming they came from the document.
   - Allows longer answers up to 1000 words when the user asks for detail/summary.
-
-- `_direct_general_context(...)`
-  - For compound document + general-knowledge questions, answers only the general-knowledge portion so the final synthesis can combine it with document-grounded content without claiming it came from the document.
 
 - `_normalize_confidence(...)`
   - Converts CrossEncoder raw scores/logits into a frontend-friendly `0.0-1.0` confidence value.
@@ -196,12 +192,13 @@ The current chat path is:
 
 3. `backend/agent/router.py`
    - Asks the LLM for native tool calls when supported.
+   - Treats zero tool calls as the direct-answer path.
    - Validates tool names against allowed tools.
    - Injects backend-only context such as `document_ids` and `db`.
    - Executes implementation functions and synthesizes the response.
 
 4. `backend/agent/tools.py`
-   - Performs retrieval, web search, direct answer, summary, or quiz generation.
+   - Performs retrieval, web search, summary, quiz generation, or direct fallback generation.
 
 ## SSE Metadata
 
@@ -225,7 +222,6 @@ This lets the UI show the answer immediately while still displaying citations/ch
 ## Current Limitations
 
 - The final answer is generated with `LLMProvider.invoke()` and then emitted as word-like SSE token events. It is not true provider-token streaming yet.
-- `research.py` is still a placeholder and does not call this router yet.
 - Native tool calls are currently enabled for OpenAI-compatible providers handled by `LLMProvider` (`github`, `groq`). Ollama still uses the JSON routing fallback unless a compatible tool-call adapter is added for the selected local model.
 - `tool_used` in the `messages` table is a compact string. Full traces are returned in SSE metadata; for production, a separate JSONB `tool_trace` column would be cleaner.
 - Retrieval confidence is based on reranker scores, normalized with sigmoid. This is useful for display/routing but is not a full groundedness check.
