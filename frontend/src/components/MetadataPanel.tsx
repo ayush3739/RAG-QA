@@ -2,6 +2,26 @@ import React from "react";
 import { SourceDocument, ModelParams } from "../types";
 import { FileText, FileSpreadsheet, Globe, Sliders, Sparkles, BookOpen } from "lucide-react";
 import { cn } from "../lib/utils";
+import { motion } from "framer-motion";
+
+const inspectorVariants = {
+  hidden: { x: "100%", opacity: 0.8 },
+  visible: { 
+    x: 0, 
+    opacity: 1,
+    transition: { 
+      type: "spring", 
+      stiffness: 260, 
+      damping: 26, 
+      mass: 0.8 
+    } 
+  },
+  exit: { 
+    x: "100%", 
+    opacity: 0.5,
+    transition: { duration: 0.2, ease: "easeIn" } 
+  }
+};
 
 interface MetadataPanelProps {
   documents: SourceDocument[];
@@ -26,7 +46,11 @@ export default function MetadataPanel({
   };
 
   return (
-    <aside
+    <motion.aside
+      variants={inspectorVariants}
+      initial="hidden"
+      animate="visible"
+      exit="exit"
       id="metadata-panel"
       className="hidden xl:flex w-80 flex-col bg-surface-container-lowest border-l border-border p-6 overflow-y-auto select-none space-y-8"
     >
@@ -154,6 +178,6 @@ export default function MetadataPanel({
           </div>
         </section>
       </div>
-    </aside>
+    </motion.aside>
   );
 }

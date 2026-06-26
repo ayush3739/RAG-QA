@@ -98,6 +98,21 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+@keyframes border-beam {
+  100% {
+    offset-distance: 100%;
+  }
+}
+
+@keyframes shimmer {
+  0%, 90%, 100% {
+    background-position: calc(-100% - var(--shimmer-width)) 0;
+  }
+  30%, 60% {
+    background-position: calc(100% + var(--shimmer-width)) 0;
+  }
+}
+
 /* Premium Scrollbar */
 ::-webkit-scrollbar {
   width: 5px;
@@ -119,4 +134,64 @@ body {
   background: rgba(var(--background), 0.85);
   backdrop-filter: blur(12px);
   border: 1px solid var(--border);
+}
+
+/* Premium Card (SaaS Critique) */
+@layer components {
+  .premium-card {
+    @apply bg-surface-container-lowest border border-border shadow-premium rounded-xl transition-all duration-200;
+  }
+  .dark .premium-card {
+    @apply bg-zinc-900/50 backdrop-blur-md border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)];
+  }
+  .premium-card:hover {
+    @apply -translate-y-[1px] shadow-lg;
+  }
+  .dark .premium-card:hover {
+    @apply shadow-black/20;
+  }
+  
+  .glow-hover {
+    @apply relative overflow-hidden;
+  }
+  .glow-hover::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-transparent to-transparent opacity-0 transition-opacity duration-500 pointer-events-none;
+  }
+  .group:hover .glow-hover::before,
+  .glow-hover:hover::before {
+    @apply opacity-100;
+  }
+}
+
+@keyframes tokenFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(2px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.streamed-token {
+  display: inline-block;
+  animation: tokenFadeIn 0.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes skeletonShimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton-shimmer-bar {
+  background: linear-gradient(
+    90deg,
+    var(--surface-container) 25%,
+    var(--surface-container-high) 50%,
+    var(--surface-container) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.6s infinite linear;
 }

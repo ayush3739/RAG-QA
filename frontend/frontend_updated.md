@@ -148,8 +148,8 @@ Use an **8px base grid** exclusively: `4, 8, 12, 16, 24, 32, 48, 64`. No arbitra
 ### 2.7 Dark Mode
 
 - Full dark mode support from day one using Tailwind's `dark:` prefix
-- Dark surface hierarchy: `slate-950 → slate-900 → slate-800 → slate-700`
-- Brand color stays `#1A56DB`; text shifts to `slate-100/200/400`
+- Dark surface hierarchy: `zinc-950 → zinc-900 → zinc-800 → zinc-700`
+- Brand color stays `#1A56DB`; text shifts to `zinc-100/200/400`
 - Store preference in `uiStore`, persist to `localStorage`
 - Toggle in the top bar as a sun/moon icon button
 
@@ -357,7 +357,7 @@ The primary interaction surface. Conversational interface powered by SSE streami
 #### Chat Thread
 
 - Auto-scrolls to bottom on new message. **Stops** auto-scroll if user has manually scrolled up.
-- **User messages:** right-aligned, `slate-800` bg, white text.
+- **User messages:** right-aligned, `zinc-800` bg, white text.
 - **Assistant messages:** left-aligned, white card, `1px border`, `shadow-sm`.
 - Each assistant card contains: rendered markdown answer, confidence badge, source chips, feedback bar (👍 / 👎).
 - Clicking any message in the thread updates the Inspector with that message's metadata.
@@ -634,7 +634,7 @@ Props: `status: string`, `progress?: number`, `size?: 'sm' | 'md'`
 | `> 0.7` | Green | High Confidence | — |
 | `0.4 – 0.7` | Amber | Medium Confidence | — |
 | `< 0.4` | Red | Low Confidence | "This answer may be incomplete." |
-| `null / 0` | Slate | Direct Answer | "Answered from general knowledge." |
+| `null / 0` | Zinc | Direct Answer | "Answered from general knowledge." |
 
 - **`ConfidenceMeter`:** horizontal bar 0–1, animated fill (600ms ease-out on mount), color matches badge.
 - Both components accept `confidence: number` prop. Always rendered together in the Inspector.
@@ -658,7 +658,7 @@ Two variants: `document` and `web`.
 | `retrieve_from_document` | `FileSearch` | Blue | Retrieved from document |
 | `web_search` | `Globe` | Green | Web search |
 | both (escalated) | Both | Blue + Green | Doc + web |
-| `none` | `Sparkles` | Slate | Answered directly |
+| `none` | `Sparkles` | Zinc | Answered directly |
 
 - When multiple tools were used, pills are shown **in order** with an arrow between them.
 - Used in both the Inspector Panel and the Research Report.

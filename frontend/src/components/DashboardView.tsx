@@ -91,11 +91,11 @@ export default function DashboardView({
         className="space-y-8"
       >
         {/* Row 1: Quick Action Cards (Bento style) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-12 gap-6">
           <motion.div 
             variants={itemVariants}
             onClick={onTriggerUploadModal}
-            className="group relative p-6 bg-surface-container-lowest border border-border rounded-2xl shadow-premium hover:shadow-premium-panel transition-all duration-300 cursor-pointer overflow-hidden"
+            className="col-span-12 md:col-span-4 group relative p-6 premium-card cursor-pointer overflow-hidden"
           >
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             <div className="relative z-10">
@@ -115,7 +115,7 @@ export default function DashboardView({
           <motion.div 
             variants={itemVariants}
             onClick={onNewResearch}
-            className="group relative p-6 bg-surface-container-lowest border border-border rounded-2xl shadow-premium hover:shadow-premium-panel transition-all duration-300 cursor-pointer overflow-hidden"
+            className="col-span-12 md:col-span-4 group relative p-6 premium-card cursor-pointer overflow-hidden"
           >
             <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             <div className="relative z-10">
@@ -135,7 +135,7 @@ export default function DashboardView({
           <motion.div 
             variants={itemVariants}
             onClick={() => setCurrentTab("research")}
-            className="group relative p-6 bg-surface-container-lowest border border-border rounded-2xl shadow-premium hover:shadow-premium-panel transition-all duration-300 cursor-pointer overflow-hidden"
+            className="col-span-12 md:col-span-4 group relative p-6 premium-card cursor-pointer overflow-hidden"
           >
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             <div className="relative z-10">
@@ -154,10 +154,10 @@ export default function DashboardView({
         </div>
 
         {/* Row 2: Recent Sessions & Recent Documents (Bento Grid) */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-12 gap-6">
           
           {/* Recent Sessions */}
-          <motion.div variants={itemVariants} className="lg:col-span-3 flex flex-col p-6 bg-surface-container-lowest border border-border rounded-2xl shadow-premium">
+          <motion.div variants={itemVariants} className="col-span-12 md:col-span-8 flex flex-col p-6 premium-card">
             <div className="flex items-center justify-between mb-5">
               <h4 className="font-semibold text-sm text-foreground flex items-center tracking-tight">
                 <Clock className="w-4 h-4 mr-2 text-muted-foreground" />
@@ -185,7 +185,7 @@ export default function DashboardView({
                     </p>
                   </div>
                   <div className="flex items-center space-x-3 flex-shrink-0">
-                    <span className="text-[10px] font-medium text-muted-foreground">
+                    <span className="text-[10px] font-mono text-muted-foreground">
                       {conv.messages.length} msgs
                     </span>
                     <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -201,7 +201,7 @@ export default function DashboardView({
           </motion.div>
 
           {/* Recent Documents */}
-          <motion.div variants={itemVariants} className="lg:col-span-2 flex flex-col p-6 bg-surface-container-lowest border border-border rounded-2xl shadow-premium">
+          <motion.div variants={itemVariants} className="col-span-12 md:col-span-4 flex flex-col p-6 premium-card">
             <div className="flex items-center justify-between mb-5">
               <h4 className="font-semibold text-sm text-foreground flex items-center tracking-tight">
                 <Database className="w-4 h-4 mr-2 text-muted-foreground" />
@@ -252,8 +252,8 @@ export default function DashboardView({
         </div>
 
         {/* Row 3: Activity Chart */}
-        <div className="grid grid-cols-1 gap-4">
-          <motion.div variants={itemVariants} className="flex flex-col p-6 bg-surface-container-lowest border border-border rounded-2xl shadow-premium h-[300px]">
+        <div className="grid grid-cols-12 gap-6">
+          <motion.div variants={itemVariants} className="col-span-12 flex flex-col p-6 premium-card h-[300px]">
             <div className="flex items-center justify-between mb-6">
               <h4 className="font-semibold text-sm text-foreground flex items-center tracking-tight">
                 <Activity className="w-4 h-4 mr-2 text-muted-foreground" />
@@ -299,7 +299,7 @@ export default function DashboardView({
         <div className="flex items-center space-x-2 bg-surface-container px-3 py-1.5 rounded-md border border-border">
           <span className={cn("w-1.5 h-1.5 rounded-full", healthStatus === "online" ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse" : "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]")} />
           <span className="font-medium">
-            {healthStatus === "online" ? `Online (Verified ${healthTime})` : "Disconnected"}
+            {healthStatus === "online" ? <>Online (Verified <span className="font-mono text-[10px] ml-1">{healthTime}</span>)</> : "Disconnected"}
           </span>
         </div>
       </motion.div>

@@ -3,7 +3,7 @@ import {
   Search, Sliders, Sparkles, FileText, ArrowRight, Copy, Share, Send, ChevronRight, Globe
 } from "lucide-react";
 import { SourceDocument, Citation } from "../types";
-import { motion } from "framer-motion";
+import { motion, Variants } from "framer-motion";
 import { cn } from "../lib/utils";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -11,6 +11,23 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+
+const reportContainerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.08, delayChildren: 0.05 }
+  }
+};
+
+const reportItemVariants: Variants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { type: "spring", stiffness: 300, damping: 25 } 
+  }
+};
 
 interface ResearchViewProps {
   documents: SourceDocument[];
@@ -136,10 +153,10 @@ ${report.follow_up_questions.map(q => `- ${q}`).join("\n")}
         </p>
       </div>
 
-      <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="max-w-[1200px] mx-auto flex flex-col lg:flex-row gap-8">
         
         {/* Left Column: Form Setup (1/3) */}
-        <div className="lg:col-span-1 bg-surface-container-lowest p-6 rounded-2xl border border-border shadow-premium h-fit space-y-6">
+        <div className="w-full lg:w-80 flex-shrink-0 bg-surface-container-lowest p-6 rounded-2xl border border-border shadow-premium h-fit space-y-6">
           <h3 className="text-xs uppercase font-semibold tracking-wider text-muted-foreground flex items-center">
             <Sliders className="w-3.5 h-3.5 mr-2" />
             Parameters
@@ -256,18 +273,18 @@ ${report.follow_up_questions.map(q => `- ${q}`).join("\n")}
         </div>
 
         {/* Right Column: Dynamic Report output results or loading skeleton (2/3) */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="flex-1 space-y-6 max-w-[840px] mx-auto w-full">
           
           {/* Skeleton state */}
           {isResearching && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-surface-container-lowest border border-border rounded-2xl p-8 space-y-6 shadow-sm">
-              <div className="h-4 bg-muted/20 rounded-md w-1/3 animate-pulse"></div>
-              <div className="h-24 bg-muted/10 rounded-md w-full animate-pulse"></div>
-              <div className="h-6 bg-muted/20 rounded-md w-1/4 animate-pulse"></div>
+              <div className="h-4 skeleton-shimmer-bar rounded-md w-1/3"></div>
+              <div className="h-24 skeleton-shimmer-bar rounded-md w-full"></div>
+              <div className="h-6 skeleton-shimmer-bar rounded-md w-1/4"></div>
               <div className="space-y-3">
-                <div className="h-10 bg-muted/10 rounded-md w-full animate-pulse"></div>
-                <div className="h-10 bg-muted/10 rounded-md w-full animate-pulse"></div>
-                <div className="h-10 bg-muted/10 rounded-md w-full animate-pulse"></div>
+                <div className="h-10 skeleton-shimmer-bar rounded-md w-full"></div>
+                <div className="h-10 skeleton-shimmer-bar rounded-md w-full"></div>
+                <div className="h-10 skeleton-shimmer-bar rounded-md w-full"></div>
               </div>
             </motion.div>
           )}
@@ -285,10 +302,15 @@ ${report.follow_up_questions.map(q => `- ${q}`).join("\n")}
 
           {/* Realized Report Panel */}
           {report && !isResearching && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-surface-container-lowest border border-border rounded-2xl p-8 space-y-8 shadow-premium">
+            <motion.div 
+              variants={reportContainerVariants} 
+              initial="hidden" 
+              animate="visible" 
+              className="bg-surface-container-lowest border border-border rounded-2xl p-8 space-y-8 shadow-premium"
+            >
               
               {/* Header metadata row */}
-              <div className="flex flex-wrap items-center justify-between gap-4 pb-5 border-b border-border">
+              <motion.div variants={reportItemVariants} className="flex flex-wrap items-center justify-between gap-4 pb-5 border-b border-border">
                 <div>
                   <span className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground block">Topic</span>
                   <h4 className="text-lg font-bold text-foreground mt-1 truncate max-w-md tracking-tight">{topic}</h4>
@@ -301,18 +323,18 @@ ${report.follow_up_questions.map(q => `- ${q}`).join("\n")}
                     {report.tool_trace.join(" + ")}
                   </span>
                 </div>
-              </div>
+              </motion.div>
 
               {/* Prose Report Summary */}
-              <div className="space-y-2">
+              <motion.div variants={reportItemVariants} className="space-y-2">
                 <h4 className="text-[11px] font-semibold uppercase text-muted-foreground tracking-wider">Executive Summary</h4>
                 <div className="text-[14px] text-foreground leading-relaxed prose prose-sm max-w-none dark:prose-invert prose-p:leading-relaxed prose-pre:bg-surface prose-pre:border prose-pre:border-border">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{report.summary}</ReactMarkdown>
                 </div>
-              </div>
+              </motion.div>
 
               {/* Key Findings List */}
-              <div className="space-y-3">
+              <motion.div variants={reportItemVariants} className="space-y-3">
                 <h4 className="text-[11px] font-semibold uppercase text-muted-foreground tracking-wider">Grounded Takeaways</h4>
                 <div className="grid grid-cols-1 gap-2">
                   {report.key_findings.map((finding, idx) => (
@@ -324,36 +346,36 @@ ${report.follow_up_questions.map(q => `- ${q}`).join("\n")}
                     </div>
                   ))}
                 </div>
-              </div>
+              </motion.div>
 
               {/* Grounding Citations */}
               {report.sources && report.sources.length > 0 && (
-                <div className="space-y-3">
+                <motion.div variants={reportItemVariants} className="space-y-3">
                   <h4 className="text-[11px] font-semibold uppercase text-muted-foreground tracking-wider">Sources</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {report.sources.map((src, sIdx) => (
-                      <div key={sIdx} className="p-3 bg-background border border-border rounded-lg space-y-2">
+                      <div key={sIdx} className="p-3 bg-background border border-border rounded-lg space-y-2 glow-hover group cursor-default">
                         <div className="flex items-center justify-between">
-                          <span className="text-[11px] font-semibold text-foreground truncate max-w-[150px] uppercase flex items-center space-x-2">
+                          <span className="text-[11px] font-semibold text-foreground truncate max-w-[150px] uppercase flex items-center space-x-2 relative z-10">
                             <FileText className="w-3 h-3 mr-1 text-muted-foreground" />
                             {src.name}
                           </span>
-                          <span className="text-[10px] bg-surface border border-border text-foreground font-semibold px-1.5 py-0.5 rounded-md">
+                          <span className="text-[10px] bg-surface border border-border text-foreground font-semibold px-1.5 py-0.5 rounded-md relative z-10">
                             {src.fitScore}% Match
                           </span>
                         </div>
-                        <p className="text-[11px] text-muted-foreground font-mono leading-relaxed truncate">
+                        <p className="text-[11px] text-muted-foreground font-mono leading-relaxed truncate relative z-10">
                           {src.snippet}
                         </p>
                       </div>
                     ))}
                   </div>
-                </div>
+                </motion.div>
               )}
 
               {/* Follow up questions chips */}
               {report.follow_up_questions && report.follow_up_questions.length > 0 && (
-                <div className="space-y-3 pt-6 border-t border-border">
+                <motion.div variants={reportItemVariants} className="space-y-3 pt-6 border-t border-border">
                   <h4 className="text-[11px] font-semibold uppercase text-muted-foreground tracking-wider">Recommended Next Inquiries</h4>
                   <div className="flex flex-wrap gap-2">
                     {report.follow_up_questions.map((q, qIdx) => (
@@ -367,11 +389,11 @@ ${report.follow_up_questions.map(q => `- ${q}`).join("\n")}
                       </button>
                     ))}
                   </div>
-                </div>
+                </motion.div>
               )}
 
               {/* Action Rows */}
-              <div className="flex flex-wrap items-center justify-between gap-4 pt-6 border-t border-border">
+              <motion.div variants={reportItemVariants} className="flex flex-wrap items-center justify-between gap-4 pt-6 border-t border-border">
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={handleCopyJson}
@@ -396,7 +418,7 @@ ${report.follow_up_questions.map(q => `- ${q}`).join("\n")}
                   <Send className="w-3.5 h-3.5" />
                   <span>Migrate to Chat</span>
                 </button>
-              </div>
+              </motion.div>
 
             </motion.div>
           )}

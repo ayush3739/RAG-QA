@@ -9,6 +9,7 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface LibraryViewProps {
   documents: SourceDocument[];
@@ -31,6 +32,8 @@ export function LibraryView({
   onAddDocument,
 }: LibraryViewProps) {
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragCounter, setDragCounter] = useState(0);
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<UploadFormValues>({
     resolver: zodResolver(uploadSchema),
@@ -65,8 +68,49 @@ export function LibraryView({
 
   const selectedDoc = documents.find(d => d.id === selectedDocId) || documents[0];
 
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragCounter(prev => prev + 1);
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragCounter(prev => prev - 1);
+    if (dragCounter - 1 === 0) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    setDragCounter(0);
+    // In a real implementation, you would process e.dataTransfer.files here
+  };
+
   return (
-    <div className="flex-1 overflow-hidden flex select-none bg-background">
+    <div 
+      className="flex-1 overflow-hidden flex select-none bg-background relative"
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      <AnimatePresence>
+        {isDragging && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm z-40 pointer-events-none"
+          />
+        )}
+      </AnimatePresence>
       
       {/* Left List of Documents */}
       <div className="flex-1 overflow-y-auto px-6 md:px-12 py-10 space-y-8">
@@ -87,10 +131,10 @@ export function LibraryView({
               key={doc.id}
               onClick={() => setSelectedDocId(doc.id)}
               className={cn(
-                "p-5 rounded-2xl border transition-all duration-200 relative cursor-pointer shadow-sm",
+                "p-5 premium-card relative cursor-pointer glow-hover group",
                 doc.active
-                  ? "bg-surface-container-lowest border-primary/20"
-                  : "bg-background border-border hover:bg-surface-container-lowest",
+                  ? "border-primary/30 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)]"
+                  : "",
                 selectedDocId === doc.id ? "ring-1 ring-primary" : ""
               )}
             >
@@ -109,7 +153,7 @@ export function LibraryView({
                   </div>
                   <div>
                     <h4 className="text-sm font-semibold text-foreground truncate max-w-[150px]">{doc.name}</h4>
-                    <p className="text-[11px] text-muted-foreground font-semibold uppercase mt-0.5">{doc.size}</p>
+                    <p className="text-[11px] text-muted-foreground font-semibold font-mono mt-0.5">{doc.size}</p>
                   </div>
                 </div>
                 
@@ -147,7 +191,17 @@ export function LibraryView({
         </div>
 
         {/* Ingest New Source Form */}
-        <div className="bg-surface-container-lowest shadow-premium rounded-2xl p-6 border border-border">
+        <motion.div 
+          animate={isDragging ? { scale: 1.02 } : { scale: 1 }}
+          whileHover={!isDragging ? { scale: 1.005 } : {}}
+          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+          className={cn(
+            "premium-card p-6 border-2 transition-colors relative z-50",
+            isDragging 
+              ? "border-primary border-solid shadow-[0_0_30px_rgba(99,102,241,0.2)] bg-surface-container-high" 
+              : "border-dashed border-border hover:border-primary/50"
+          )}
+        >
           <h3 className="text-xs font-semibold uppercase text-muted-foreground tracking-wider mb-5">Ingest Knowledge Text</h3>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -204,7 +258,7 @@ export function LibraryView({
               </button>
             </div>
           </form>
-        </div>
+        </motion.div>
       </div>
 
       {/* Right Drawer Panel: Auto-Summary Card Detail */}
