@@ -1,0 +1,122 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --background: #FAFAFA;
+    --foreground: #09090B;
+    
+    --surface: #F4F4F5;           /* zinc-100 */
+    --surface-container-lowest: #FFFFFF; 
+    --surface-container-low: #FAFAFA;    
+    --surface-container: #F4F4F5;
+    --surface-container-high: #E4E4E7;   /* zinc-200 */
+    
+    /* Vibrant Accent (Indigo) */
+    --primary: #4F46E5;
+    --primary-foreground: #FFFFFF;
+    
+    --secondary: #3F3F46;
+    --muted: #71717A;
+    --muted-foreground: #A1A1AA;
+    
+    --border: #E4E4E7;
+    --ring: #4F46E5;
+  }
+
+  .dark {
+    --background: #09090B;
+    --foreground: #FAFAFA;
+    
+    --surface: #18181B;           /* zinc-900 */
+    --surface-container-lowest: #000000; 
+    --surface-container-low: #09090B;    
+    --surface-container: #18181B;
+    --surface-container-high: #27272A;   /* zinc-800 */
+    
+    /* Vibrant Accent (Indigo) */
+    --primary: #6366F1;
+    --primary-foreground: #FFFFFF;
+    
+    --secondary: #A1A1AA;
+    --muted: #A1A1AA;
+    --muted-foreground: #52525B;
+    
+    --border: #27272A;
+    --ring: #6366F1;
+  }
+
+  * {
+    border-color: var(--border);
+  }
+}
+
+@theme {
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-container-lowest: var(--surface-container-lowest);
+  --color-surface-container-low: var(--surface-container-low);
+  --color-surface-container: var(--surface-container);
+  --color-surface-container-high: var(--surface-container-high);
+  
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  
+  --color-secondary: var(--secondary);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+
+  /* Brand colors */
+  --color-brand: #4F46E5;
+  --color-brand-light: #EEF2FF;
+  --color-brand-dark: #3730A3;
+  
+  /* Animation */
+  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  
+  /* Custom Shadows */
+  --shadow-premium: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-premium-hover: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.025);
+  --shadow-premium-panel: 0 10px 15px -3px rgba(0, 0, 0, 0.03), 0 4px 6px -4px rgba(0, 0, 0, 0.025);
+  
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--background);
+  color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Premium Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(161, 161, 170, 0.2);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(161, 161, 170, 0.4);
+}
+
+/* Glass panel */
+.premium-glass {
+  background: rgba(var(--background), 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+}

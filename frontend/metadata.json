@@ -1,0 +1,6 @@
+{
+  "name": "RAG Intelligence",
+  "description": "An advanced vector-grounded RAG engine enabling real-time synthesis of custom document libraries, dynamic source citation, and semantic retrieval parameters.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

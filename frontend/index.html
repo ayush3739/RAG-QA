@@ -1,69 +1,13 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>DocuMind SSE Test Client</title>
-    <link rel="stylesheet" href="/frontend/styles.css" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Google AI Studio App</title>
   </head>
   <body>
-    <main class="app">
-      <section class="panel controls">
-        <h1>DocuMind Chat Stream</h1>
-
-        <label>
-          API base URL
-          <input id="apiBase" value="http://127.0.0.1:8000/api/v1" />
-        </label>
-
-        <label>
-          Session ID
-          <input id="sessionId" placeholder="7104554b-dfe9-4f4c-bd9e-7568a639bf9b" />
-        </label>
-
-        <label>
-          Bearer token
-          <input id="token" type="password" placeholder="Paste access token" />
-        </label>
-
-        <label>
-          Question
-          <textarea id="question" rows="4">what is this document about and also tell me the weather of today in noida ?</textarea>
-        </label>
-
-        <div class="actions">
-          <button id="sendBtn">Send</button>
-          <button id="clearBtn" type="button">Clear</button>
-        </div>
-
-        <p id="status" class="status">Idle</p>
-      </section>
-
-      <section class="panel output">
-        <div class="section-title">
-          <h2>Answer Stream</h2>
-          <div class="badges">
-            <span id="elapsedTime" class="badge">time: n/a</span>
-            <span id="toolTrace" class="badge">No tool yet</span>
-          </div>
-        </div>
-        <article id="answer" class="answer"></article>
-      </section>
-
-      <section class="panel metadata">
-        <div class="section-title">
-          <h2>Sources</h2>
-          <span id="confidence" class="badge">confidence: n/a</span>
-        </div>
-        <div id="sources" class="cards empty">Sources appear after metadata arrives.</div>
-      </section>
-
-      <section class="panel metadata">
-        <h2>Retrieved Chunks</h2>
-        <div id="chunks" class="cards empty">Chunks appear after metadata arrives.</div>
-      </section>
-    </main>
-
-    <script src="/frontend/app.js"></script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
+

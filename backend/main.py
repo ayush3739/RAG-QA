@@ -2,6 +2,7 @@ from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
@@ -51,14 +52,29 @@ async def lifespan(_app: FastAPI):
 app = FastAPI(title="DocuMind API", version="2.0.0", lifespan=lifespan)
 
 app.add_middleware(
+    TrustedHostMiddleware,
+    allowed_hosts=[
+        "localhost",
+        "127.0.0.1",
+        "0.0.0.0",
+        "*.trycloudflare.com",
+        "*.run.app",
+    ],
+)
+
+origin_regex = (
+    r"https://.*\.run\.app|"
+    r"https?://.*\.trycloudflare\.com|"
+    r"http://localhost(:\d+)?|"
+    r"http://127\.0\.0\.1(:\d+)?"
+)
+
+app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://127.0.0.1:5500",
-        "http://localhost:5500",
-        "http://127.0.0.1:8001",
-        "http://localhost:8001",
         "null",
     ],
+    allow_origin_regex=origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -90,6 +106,10 @@ app.include_router(feedback.router, prefix="/api/v1", tags=["Feedback"])
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"])
 app.include_router(user.router, prefix="/api/v1/user", tags=["User"])
 app.include_router(sessions.router, prefix="/api/v1/sessions", tags=["Sessions"])
+
+@app.get("/", tags=["Health"])
+async def root():
+    return {"status": "ok", "message": "DocuMind API server is running"}
 
 @app.get("/health")
 async def health_check(db: Annotated[AsyncSession, Depends(get_db)]):
