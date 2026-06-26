@@ -7,6 +7,7 @@ import DashboardView from "./components/DashboardView";
 import ResearchView from "./components/ResearchView";
 import SessionsView from "./components/SessionsView";
 import SettingsView from "./components/SettingsView";
+import AuthView from "./components/AuthView";
 import { LibraryView } from "./components/OtherPanels";
 import { Message, Conversation, DocType, SourceDocument } from "./types";
 import { Menu, Database, Sparkles } from "lucide-react";
@@ -20,6 +21,7 @@ export default function App() {
   const isMobileSidebarOpen = useStore(s => s.isMobileSidebarOpen);
   const setIsMobileSidebarOpen = useStore(s => s.setIsMobileSidebarOpen);
   const theme = useStore(s => s.theme);
+  const isAuthenticated = useStore(s => s.isAuthenticated);
 
   useEffect(() => {
     if (theme === "dark") {
@@ -298,6 +300,10 @@ export default function App() {
   };
 
   const activeConversation = conversations.find((c) => c.id === activeConvId) || conversations[0];
+
+  if (!isAuthenticated) {
+    return <AuthView />;
+  }
 
   return (
     <div className="bg-background text-foreground flex h-screen overflow-hidden font-sans selection:bg-primary/20 selection:text-primary">

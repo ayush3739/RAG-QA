@@ -22,6 +22,11 @@ interface AppState {
   setParams: (params: Partial<ModelParams>) => void;
   setIsProcessing: (isProcessing: boolean) => void;
   toggleDocumentActive: (id: string) => void;
+  
+  isAuthenticated: boolean;
+  setIsAuthenticated: (val: boolean) => void;
+  authMode: 'login' | 'register';
+  setAuthMode: (mode: 'login' | 'register') => void;
 }
 
 export const useStore = create<AppState>()(
@@ -29,6 +34,11 @@ export const useStore = create<AppState>()(
     (set) => ({
       theme: "dark",
       setTheme: (theme) => set({ theme }),
+      isAuthenticated: false,
+      setIsAuthenticated: (val) => set({ isAuthenticated: val }),
+      authMode: 'login',
+      setAuthMode: (mode) => set({ authMode: mode }),
+      
       currentTab: 'dashboard',
       isMobileSidebarOpen: false,
       documents: INITIAL_DOCUMENTS,
@@ -93,6 +103,7 @@ export const useStore = create<AppState>()(
       name: 'documind-storage',
       partialize: (state) => ({ 
         theme: state.theme,
+        isAuthenticated: state.isAuthenticated,
         documents: state.documents, 
         conversations: state.conversations,
         params: state.params
