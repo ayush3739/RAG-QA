@@ -68,7 +68,7 @@ export default function DashboardView({
   const healthTime = healthData?.time ? new Date(healthData.time).toLocaleTimeString() : new Date().toLocaleTimeString();
 
   return (
-    <div className="flex-1 overflow-y-auto px-6 md:px-12 py-10 space-y-10 bg-background selection:bg-primary/10">
+    <div className="flex-1 overflow-y-auto px-6 md:px-12 py-10 space-y-10 bg-transparent selection:bg-white/20 selection:text-white">
       
       {/* Title */}
       <motion.div 
@@ -176,7 +176,7 @@ export default function DashboardView({
                 <div
                   key={conv.id}
                   onClick={() => onSelectSession(conv.id)}
-                  className="px-4 py-3 bg-background border border-transparent hover:border-border rounded-xl transition-all duration-200 cursor-pointer flex items-center justify-between group"
+                  className="px-4 py-3 bg-black/20 hover:bg-black/40 border border-transparent hover:border-border rounded-xl transition-all duration-200 cursor-pointer flex items-center justify-between group"
                 >
                   <div className="min-w-0 flex-1 pr-4">
                     <h5 className="text-sm font-medium text-foreground truncate">{conv.title}</h5>
@@ -219,7 +219,7 @@ export default function DashboardView({
               {documents.slice(0, 4).map((doc) => (
                 <div
                   key={doc.id}
-                  className="px-4 py-3 bg-background border border-transparent hover:border-border rounded-xl flex items-center justify-between transition-colors"
+                  className="px-4 py-3 bg-black/20 hover:bg-black/40 border border-transparent hover:border-border rounded-xl flex items-center justify-between transition-colors"
                 >
                   <div className="flex items-center space-x-3 min-w-0">
                     <div className={cn(

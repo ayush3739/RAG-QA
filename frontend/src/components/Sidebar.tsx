@@ -6,6 +6,7 @@ import {
 import { motion } from "framer-motion";
 import { cn } from "../lib/utils";
 import { useStore } from "../store/useStore";
+import AnimatedGradientBackground from "./ui/animated-gradient-background";
 
 interface SidebarProps {
   currentTab: string;
@@ -34,8 +35,18 @@ export default function Sidebar({
   return (
     <aside
       id="rag-sidebar"
-      className="hidden md:flex h-screen w-[260px] flex-col p-5 space-y-6 bg-surface-container-lowest border-r border-border select-none"
+      className="relative hidden md:flex h-full w-[260px] flex-col p-5 space-y-6 border-r border-border select-none overflow-hidden bg-surface-container-lowest dark:bg-transparent"
     >
+      {theme === 'dark' && (
+        <AnimatedGradientBackground 
+          Breathing={true}
+          animationSpeed={0.015}
+          gradientColors={["#000000", "#040b16", "#0a192f", "#0d1b33", "#15243b", "#0d1b33", "#000000"]}
+          gradientStops={[20, 40, 50, 60, 75, 90, 100]}
+          containerClassName="opacity-30 pointer-events-none -z-10" 
+        />
+      )}
+
       {/* Brand Logo & Header */}
       <div className="flex items-center space-x-3 px-3 mt-2">
         <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-on-primary-container shadow-premium">

@@ -138,18 +138,7 @@ const AnimatedGradientBackground: React.FC<AnimatedGradientBackgroundProps> = ({
    return (
       <motion.div
          key="animated-gradient-background"
-         initial={{
-            opacity: 0,
-            scale: 1.5,
-         }}
-         animate={{
-            opacity: 1,
-            scale: 1,
-            transition: {
-               duration: 2,
-               ease: [0.25, 0.1, 0.25, 1], // Cubic bezier easing
-             },
-         }}
+         initial={{ opacity: 1, scale: 1 }}
          className={`absolute inset-0 overflow-hidden ${containerClassName}`}
       >
          <div
