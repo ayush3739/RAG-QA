@@ -7,21 +7,25 @@ from backend.db.base import get_db
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-router = APIRouter()
+from backend.api.deps import get_current_user
+
+router = APIRouter(prefix="/feedback")
 
 
-@router.post("/feedback")
-async def submit_feedback(request: FeedbackRequest, db : Annotated[AsyncSession,Depends(get_db)]):
+@router.post("")
+async def submit_feedback(
+    request: FeedbackRequest, 
+    db : Annotated[AsyncSession,Depends(get_db)],
+    current_user = Depends(get_current_user)
+):
     """Submit feedback on an answer."""
-    # TODO: Store feedback to SQLite
-    
     feedback = models.Feedback(
         message_id = request.message_id,
-        user_id = 1,
+        user_id = current_user.id,
         rating = request.rating,
         comment = request.comment,
     )
     db.add(feedback)
     await db.commit()
-    await db.refresh
-    return {"status": "received", "feedback_id": "1"}
+    await db.refresh(feedback)
+    return {"status": "received", "feedback_id": feedback.id}

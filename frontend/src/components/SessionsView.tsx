@@ -210,6 +210,13 @@ ${msg.citations.map(cit => `- **${cit.name}** (${cit.fitScore}% Match): "${cit.s
                         <Download className="w-4 h-4" />
                       </button>
                       <button
+                        onClick={() => handleStartRename(conv.id, conv.title)}
+                        title="Rename Session"
+                        className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-surface rounded-md cursor-pointer transition-colors"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
                         onClick={() => onSelectSession(conv.id)}
                         title="Open Conversation Window"
                         className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-surface rounded-md cursor-pointer transition-colors"

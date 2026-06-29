@@ -191,27 +191,42 @@ export default function App() {
     }
   }, [currentTab, activeConvId, isAuthenticated]);
 
-  useQuery({
+  const { data: historyMessages } = useQuery({
     queryKey: ['sessionHistory', activeConvId],
     queryFn: async () => {
       if (!activeConvId) return [];
       const histRes = await api.getSessionHistory(activeConvId);
       const messages = histRes.messages || [];
-      const formatted = messages.map((m: any, idx: number) => ({
-        id: m.id || `msg-${m.created_at}-${idx}`,
+      return messages.map((m: any, idx: number) => ({
+        id: m.message_id ? String(m.message_id) : `msg-${m.created_at}-${idx}`,
+        dbId: m.message_id || undefined,
         sender: m.role,
         text: m.content,
         timestamp: m.created_at,
         citations: m.citations || [],
         chunks: m.chunks || undefined
       }));
-      setActiveMessages(formatted);
-      return formatted;
     },
     enabled: isAuthenticated && !!activeConvId && currentTab === "conversations",
     retry: 1,
     refetchOnWindowFocus: false,
   });
+
+  const [lastLoadedConvId, setLastLoadedConvId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (activeConvId !== lastLoadedConvId) {
+      if (historyMessages) {
+        setActiveMessages(historyMessages);
+        setLastLoadedConvId(activeConvId);
+      } else if (activeConvId === "") {
+        setActiveMessages([]);
+        setLastLoadedConvId("");
+      }
+    } else if (historyMessages && activeMessages.length === 0 && historyMessages.length > 0) {
+      setActiveMessages(historyMessages);
+    }
+  }, [activeConvId, historyMessages, lastLoadedConvId, activeMessages.length]);
 
   useQuery({
     queryKey: ['sessions'],
@@ -222,7 +237,7 @@ export default function App() {
       const mappedSessions = sessions.map((s: any) => ({
         id: s.session_id,
         title: s.title,
-        timestamp: new Date().toISOString(),
+        timestamp: s.updated_at || new Date().toISOString(),
         messages: []
       }));
       if (mappedSessions.length > 0) {
@@ -247,15 +262,23 @@ export default function App() {
         const createRes = await api.createSession();
         targetConvId = createRes.session_id;
         
+        const words = text.trim().split(/\s+/);
+        const title = words.length <= 6 
+          ? text.trim() 
+          : words.slice(0, 6).join(" ") + "...";
+        
         const newConv = {
           id: targetConvId,
-          title: text.substring(0, 30) + (text.length > 30 ? "..." : ""),
+          title,
           timestamp: new Date().toISOString(),
           messages: []
         };
         setConversations(prev => [newConv, ...prev]);
         setActiveConvId(targetConvId);
         setActiveMessages([]);
+        
+        // Save the first query title immediately in the database
+        await api.renameSession(targetConvId, title);
         
         for (const docId of draftLinkedDocIds) {
           await api.linkDocumentToSession(targetConvId, docId);
@@ -310,7 +333,10 @@ export default function App() {
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
-      let currentText = "";
+      var currentText = "";
+      var finalCitations: Citation[] = [];
+      var finalChunks: any = undefined;
+      var finalMessageId: number | undefined = undefined;
       let currentEvent = "message";
 
       while (true) {
@@ -327,12 +353,13 @@ export default function App() {
           
           if (line.startsWith('event: ')) {
             currentEvent = line.slice(7);
-          } else if (line.startsWith('data: ')) {
-            const dataStr = line.slice(6);
+          } else if (line.startsWith('data: ') || line === 'data:') {
+            const dataStr = line.startsWith('data: ') ? line.slice(6) : '';
             if (dataStr === '[DONE]') continue;
             
             if (currentEvent === 'token') {
-              currentText += dataStr;
+              const tokenText = dataStr === '' ? '\n' : dataStr;
+              currentText += tokenText;
               setActiveMessages((prev) => prev.map(m => m.id === botMsgId ? { ...m, text: currentText } : m));
             } else if (currentEvent === 'metadata') {
               try {
@@ -361,8 +388,12 @@ export default function App() {
                     chunk_id: s.chunk_id,
                   };
                 });
+                finalCitations = mappedSources;
+                finalChunks = data.chunks || undefined;
+                finalMessageId = data.message_id || undefined;
                 setActiveMessages((prev) => prev.map(m => m.id === botMsgId ? { 
                   ...m, 
+                  dbId: data.message_id || undefined,
                   citations: mappedSources,
                   chunks: data.chunks || undefined
                 } : m));
@@ -372,15 +403,34 @@ export default function App() {
         }
       }
     } catch (error) {
+       const errorMsgText = `⚠️ **Workspace Query Refusal**: Connection to backend failed.`;
+       currentText = errorMsgText;
        const errorMsg: Message = {
-        id: `msg-${Date.now() + 2}`,
+        id: `msg-error-${Date.now()}`,
         sender: "assistant",
-        text: `⚠️ **Workspace Query Refusal**: Connection to backend failed.`,
+        text: errorMsgText,
         timestamp: new Date().toISOString(),
       };
       setActiveMessages(prev => [...prev, errorMsg]);
     } finally {
       setIsProcessing(false);
+
+      const finalAssistantMsg: Message = {
+        id: botMsgId,
+        dbId: finalMessageId,
+        sender: "assistant",
+        text: currentText || "⚠️ **Workspace Query Refusal**: Connection to backend failed.",
+        timestamp: new Date().toISOString(),
+        citations: finalCitations,
+        chunks: finalChunks
+      };
+
+      queryClient.setQueryData(['sessionHistory', finalConvId], (old: any) => {
+        const filtered = (old || []).filter((m: any) => m.id !== botMsgId && m.id !== userMsg.id && !m.id.startsWith("msg-error-"));
+        return [...filtered, userMsg, finalAssistantMsg];
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['sessions'] });
     }
   };
 
@@ -501,11 +551,7 @@ export default function App() {
 
   const deleteSessionMutation = useMutation({
     mutationFn: async (id: string) => {
-      // Actually we don't have deleteSession in api.ts yet, let's just use raw fetch or add it if needed
-      await fetch(`http://localhost:8000/api/v1/sessions/${id}`, { 
-        method: "DELETE",
-        headers: { "Authorization": `Bearer ${useStore.getState().accessToken}` }
-      });
+      await api.deleteSession(id);
     }
   });
 
@@ -516,11 +562,7 @@ export default function App() {
 
   const renameSessionMutation = useMutation({
     mutationFn: async ({ id, newName }: { id: string, newName: string }) => {
-      await fetch(`/api/v1/sessions/${id}/rename`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newName })
-      });
+      await api.renameSession(id, newName);
     }
   });
 
@@ -571,7 +613,7 @@ export default function App() {
         />
       </div>
 
-      <main className="flex-1 flex flex-col min-w-0 pt-14 md:pt-0">
+      <main className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden pt-14 md:pt-0">
         {currentTab === "dashboard" && (
           <DashboardView
             documents={documents}
@@ -595,6 +637,7 @@ export default function App() {
               onLinkDocument={(docId) => handleLinkDocument(activeConvId, docId)}
               onUnlinkDocument={!activeConvId ? ((docId) => setDraftLinkedDocIds(prev => prev.filter(id => id !== docId))) : undefined}
               selectedModel={params.selectedModel}
+              sessionTitle={activeConvId === "" ? "New Chat" : (activeConversation?.title || "New Chat")}
             />
           </div>
         )}

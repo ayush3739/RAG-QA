@@ -115,6 +115,18 @@ export function DocumentsView({
           </p>
         </div>
 
+        {/* Upload Zone */}
+        <div 
+          onClick={() => fileInputRef.current?.click()}
+          className="border-2 border-dashed border-border hover:border-primary/50 transition-colors rounded-2xl bg-surface-container-lowest p-8 flex flex-col items-center justify-center cursor-pointer group"
+        >
+          <div className="w-12 h-12 rounded-xl bg-surface-container border border-border flex items-center justify-center text-muted-foreground group-hover:text-primary group-hover:bg-primary/10 transition-colors mb-4">
+            <UploadCloud className="w-6 h-6" />
+          </div>
+          <h3 className="text-sm font-semibold text-foreground tracking-tight mb-1">Click or drag documents to ingest</h3>
+          <p className="text-xs text-muted-foreground">Supports PDF, Markdown, TXT, CSV, and XLSX files</p>
+        </div>
+
         {/* Existing Documents Grid */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
           {documents.map((doc) => {
@@ -218,26 +230,6 @@ export function DocumentsView({
               </div>
             );
           })}
-        </div>
-        
-        {documents.length === 0 && (
-          <div className="text-center p-12 border-2 border-dashed border-border rounded-2xl bg-surface-container-lowest">
-            <FolderOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-            <h3 className="text-lg font-semibold text-foreground mb-1">Your library is empty</h3>
-            <p className="text-sm text-muted-foreground">Upload documents to start building your knowledge base.</p>
-          </div>
-        )}
-
-        {/* Upload Zone */}
-        <div 
-          onClick={() => fileInputRef.current?.click()}
-          className="mt-8 border-2 border-dashed border-border hover:border-primary/50 transition-colors rounded-2xl bg-surface-container-lowest p-8 flex flex-col items-center justify-center cursor-pointer group"
-        >
-          <div className="w-12 h-12 rounded-xl bg-surface-container border border-border flex items-center justify-center text-muted-foreground group-hover:text-primary group-hover:bg-primary/10 transition-colors mb-4">
-            <UploadCloud className="w-6 h-6" />
-          </div>
-          <h3 className="text-sm font-semibold text-foreground tracking-tight mb-1">Click or drag documents to ingest</h3>
-          <p className="text-xs text-muted-foreground">Supports PDF, Markdown, TXT, CSV, and XLSX files</p>
         </div>
       </div>
 

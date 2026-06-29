@@ -16,7 +16,8 @@ from backend.models.schemas import (
     SessionList,
     MessageList,
     SessionDeleteResponse,
-    DocumentListResponse
+    DocumentListResponse,
+    SessionRenameRequest
 )
 
 router = APIRouter()
@@ -107,3 +108,19 @@ async def link_document_to_session(
     # Link the document
     await _session_service.link_document_to_session(session_id=session_id, document_id=doc.id, db=db)
     return {"status": "linked", "session_id": str(session_id), "document_public_id": document_public_id}
+
+
+@router.post("/{session_id}/rename", status_code=status.HTTP_200_OK)
+async def rename_session(
+    session_id: UUID,
+    request: SessionRenameRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Rename a specific chat session."""
+    session = await _session_service.get_session(session_id=session_id, db=db)
+    if not session or session.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
+        
+    updated = await _session_service.rename_session(session_id=session_id, new_name=request.name, db=db)
+    return {"status": "renamed", "session_id": str(session_id), "new_name": updated.title}

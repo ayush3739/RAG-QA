@@ -77,9 +77,13 @@ class IndexJobStatusResponse(BaseModel):
 class SessionCreate(BaseModel):
     session_id : UUID
 
+class SessionRenameRequest(BaseModel):
+    name: str
+
 class SessionItem(BaseModel):
     session_id:UUID
     title: str
+    updated_at: datetime
 
 class SessionList(BaseModel):
     sessions: list[SessionItem]
@@ -88,6 +92,7 @@ class SessionDocumentList(BaseModel):
     document_ids : list[int]
 
 class MessageItem(BaseModel):
+    message_id: Optional[int] = None
     session_id : UUID
     role : str
     content : str

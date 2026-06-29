@@ -22,6 +22,7 @@ export interface Citation {
 
 export interface Message {
   id: string;
+  dbId?: number;
   sender: "user" | "assistant";
   text: string;
   timestamp: string;

@@ -1,23 +1,31 @@
-"""Session Service — Post Gres Chat history storage."""
+"""Session Service — Postgres Chat history storage."""
 from sqlalchemy import select
 from backend.db.base import AsyncSession
-from backend.models.models import Session,Message,SessionDocument,Document
-from backend.models.schemas import (SessionCreate,SessionList,
-SessionItem,MessageItem,MessageList, SessionDeleteResponse,MessageCreateResponse,SessionDocumentList, DocumentItem, DocumentListResponse)
+from backend.models.models import Session, Message, SessionDocument, Document
+from backend.models.schemas import (
+    SessionCreate,
+    SessionList,
+    SessionItem,
+    MessageItem,
+    MessageList,
+    SessionDeleteResponse,
+    MessageCreateResponse,
+    DocumentItem,
+    DocumentListResponse
+)
 from uuid import UUID
 from datetime import datetime
 
 class SessionService:
     """Manage chat sessions and history."""
     
-    async def create_session(self,user_id: int,db: AsyncSession) -> SessionCreate:
+    async def create_session(self, user_id: int, db: AsyncSession) -> SessionCreate:
         session = Session(
             title=f"Chat {datetime.now():%Y-%m-%d}",
             user_id=user_id,
         )
 
         db.add(session)
-
         await db.commit()
         await db.refresh(session)
 
@@ -63,9 +71,9 @@ class SessionService:
         await db.commit()
         await db.refresh(mess)
 
-        return MessageCreateResponse(status="message added",message_id= mess.id)
+        return MessageCreateResponse(status="message added", message_id=mess.id)
         
-    async def get_messages(self,session_id: UUID, db: AsyncSession, ) -> MessageList:
+    async def get_messages(self, session_id: UUID, db: AsyncSession) -> MessageList:
         """Get all messages in chronological order."""
 
         result = await db.execute(
@@ -79,6 +87,7 @@ class SessionService:
         return MessageList(
             messages=[
                 MessageItem(
+                    message_id=m.id,
                     session_id=m.session_id,
                     role=m.role,
                     content=m.content,
@@ -94,7 +103,7 @@ class SessionService:
             ]
         )
     
-    async def get_recent_history(self, session_id: UUID, db: AsyncSession, limit: int = 10,) -> MessageList:
+    async def get_recent_history(self, session_id: UUID, db: AsyncSession, limit: int = 10) -> MessageList:
         """Get latest N messages for LLM context."""
 
         result = await db.execute(
@@ -109,6 +118,7 @@ class SessionService:
         return MessageList(
             messages=[
                 MessageItem(
+                    message_id=m.id,
                     session_id=m.session_id,
                     role=m.role,
                     content=m.content,
@@ -124,17 +134,21 @@ class SessionService:
             ]
         )
     
-    async def list_sessions(self,user_id :int, db: AsyncSession) -> SessionList:
+    async def list_sessions(self, user_id: int, db: AsyncSession) -> SessionList:
         """List all sessions for a user."""
-        result = await db.execute(select(Session)
+        result = await db.execute(
+            select(Session)
             .where(Session.user_id == user_id)
-            .order_by(Session.updated_at.desc()
-        ))
+            .order_by(Session.updated_at.desc())
+        )
 
         sessions = result.scalars().all()
-        return SessionList(sessions=[SessionItem(session_id=s.id,title=s.title) for s in sessions])    
+        return SessionList(sessions=[
+            SessionItem(session_id=s.id, title=s.title, updated_at=s.updated_at) 
+            for s in sessions
+        ])    
     
-    async def get_session_documents(self, session_id: UUID, db: AsyncSession,) -> list[int]:
+    async def get_session_documents(self, session_id: UUID, db: AsyncSession) -> list[int]:
         result = await db.execute(
             select(SessionDocument.document_id)
             .where(SessionDocument.session_id == session_id)
@@ -166,16 +180,27 @@ class SessionService:
         db.add(session_doc)
         await db.commit()
         
-    async def delete_session(self, session_id: UUID,db: AsyncSession) ->SessionDeleteResponse:
+    async def delete_session(self, session_id: UUID, db: AsyncSession) -> SessionDeleteResponse:
         """Delete a session."""
-        result  = await db.execute(select(Session).where(Session.id == session_id))
+        result = await db.execute(select(Session).where(Session.id == session_id))
         session = result.scalars().first()
         if not session:
             return SessionDeleteResponse(
                 status="Not Deleted",
                 error="Session not found"
-        )
+            )
         await db.delete(session)
         await db.commit()     
 
-        return SessionDeleteResponse(status="deleted",session_id=session.id,session_name=session.title)
+        return SessionDeleteResponse(status="deleted", session_id=session.id, session_name=session.title)
+
+    async def rename_session(self, session_id: UUID, new_name: str, db: AsyncSession) -> Session | None:
+        """Rename a session's title."""
+        result = await db.execute(select(Session).where(Session.id == session_id))
+        session = result.scalars().first()
+        if not session:
+            return None
+        session.title = new_name
+        await db.commit()
+        await db.refresh(session)
+        return session

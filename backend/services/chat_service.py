@@ -120,8 +120,9 @@ class ChatService:
         chunks = result.get("chunks", [])
         retrieved_chunks = result.get("retrieved_chunks", [])
 
+        message_id = None
         try:
-            await self.session_service.add_message(
+            msg_res = await self.session_service.add_message(
                 session_id=session_id,
                 role="assistant",
                 content=full_response,
@@ -130,6 +131,7 @@ class ChatService:
                 sources=sources,
                 tool_used=" -> ".join(tool_trace) if tool_trace else None,
             )
+            message_id = msg_res.message_id
         except Exception as exc:
             yield ("error", f"Answer was generated but history save failed: {exc}")
             yield ("done", "[DONE]")
@@ -140,6 +142,7 @@ class ChatService:
         yield (
             "metadata",
             json.dumps({
+                "message_id": message_id,
                 "confidence": confidence,
                 "documents": document_ids,
                 "chunks_found": len(chunks),

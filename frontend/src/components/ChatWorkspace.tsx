@@ -8,6 +8,8 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../lib/utils";
+import { api } from "../lib/api";
+import FeedbackDialog from "./FeedbackDialog";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -22,6 +24,7 @@ interface ChatWorkspaceProps {
   onLinkDocument?: (documentId: string) => void;
   onUnlinkDocument?: (documentId: string) => void;
   selectedModel: string;
+  sessionTitle?: string;
 }
 
 export default function ChatWorkspace({
@@ -35,6 +38,7 @@ export default function ChatWorkspace({
   onLinkDocument,
   onUnlinkDocument,
   selectedModel,
+  sessionTitle = "New Chat",
 }: ChatWorkspaceProps) {
   const [inputText, setInputText] = useState("");
   const [isMicActive, setIsMicActive] = useState(false);
@@ -45,6 +49,7 @@ export default function ChatWorkspace({
   
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [feedbacks, setFeedbacks] = useState<Record<string, 'up' | 'down'>>({});
+  const [activeFeedbackMsg, setActiveFeedbackMsg] = useState<{ id: string; dbId: number; rating: number; type: 'up' | 'down' } | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -114,7 +119,41 @@ export default function ChatWorkspace({
   };
 
   const handleFeedback = (id: string, type: 'up' | 'down') => {
-    setFeedbacks(prev => ({ ...prev, [id]: type }));
+    const msg = messages.find(m => m.id === id);
+    if (!msg) return;
+    if (!msg.dbId) {
+      console.warn("Cannot submit feedback: message database ID not available yet.");
+      return;
+    }
+    setActiveFeedbackMsg({
+      id: msg.id,
+      dbId: msg.dbId,
+      rating: type === 'up' ? 5 : 2,
+      type
+    });
+  };
+
+  const handleFeedbackSubmit = async (rating: number, comment: string) => {
+    if (!activeFeedbackMsg) return;
+    const msgIndex = messages.findIndex(m => m.id === activeFeedbackMsg.id);
+    const prevMsg = msgIndex > 0 ? messages[msgIndex - 1] : null;
+    const queryText = prevMsg?.text || "Workspace query";
+    const answerText = messages.find(m => m.id === activeFeedbackMsg.id)?.text || "";
+
+    try {
+      await api.submitFeedback({
+        message_id: activeFeedbackMsg.dbId,
+        query: queryText,
+        answer: answerText,
+        rating,
+        comment,
+        confidence: 0.9,
+        tool_used: "RAG Pipeline"
+      });
+      setFeedbacks(prev => ({ ...prev, [activeFeedbackMsg.id]: activeFeedbackMsg.type }));
+    } catch (err) {
+      console.error("Failed to submit feedback", err);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -166,10 +205,7 @@ export default function ChatWorkspace({
         {/* Header */}
         <header className="absolute top-0 left-0 right-0 h-14 flex justify-between items-center px-6 bg-background/80 backdrop-blur-md border-b border-border z-20">
           <div className="flex items-center space-x-3">
-            <span className="text-sm font-medium text-foreground tracking-tight">Active Session</span>
-            <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full uppercase tracking-wider">
-              Research Auto
-            </span>
+            <span className="text-sm font-semibold text-foreground tracking-tight">{sessionTitle}</span>
             <span className="text-xs text-muted-foreground flex items-center">
               <Paperclip className="w-3.5 h-3.5 mr-1" />
               {documents.length} Docs
@@ -596,6 +632,13 @@ export default function ChatWorkspace({
           </motion.div>
         )}
       </AnimatePresence>
+
+      <FeedbackDialog
+        isOpen={!!activeFeedbackMsg}
+        onClose={() => setActiveFeedbackMsg(null)}
+        onSubmit={handleFeedbackSubmit}
+        defaultRating={activeFeedbackMsg?.rating || 5}
+      />
     </div>
   );
 }

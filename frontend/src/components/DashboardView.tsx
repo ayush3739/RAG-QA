@@ -7,7 +7,8 @@ import { SourceDocument, Conversation } from "../types";
 import { motion } from "framer-motion";
 import { cn } from "../lib/utils";
 import { useQuery } from "@tanstack/react-query";
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { api } from "../lib/api";
 
 interface DashboardViewProps {
   documents: SourceDocument[];
@@ -56,12 +57,14 @@ export default function DashboardView({
   const { data: healthData, isError } = useQuery({
     queryKey: ['health'],
     queryFn: async () => {
-      const res = await fetch("/api/health");
-      if (!res.ok) throw new Error("Offline");
-      return res.json();
+      return api.getHealth();
     },
-    refetchInterval: 30000,
-    retry: false
+    staleTime: Infinity,
+    gcTime: Infinity,
+    retry: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
   });
 
   const healthStatus = isError ? "offline" : (healthData ? "online" : "offline");
@@ -268,24 +271,49 @@ export default function DashboardView({
             </div>
             <div className="flex-1 w-full min-h-0">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={mockActivityData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                <AreaChart data={mockActivityData} margin={{ top: 15, right: 10, left: -25, bottom: 0 }}>
                   <defs>
-                    <linearGradient id="colorQueries" x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.4}/>
-                      <stop offset="100%" stopColor="#06b6d4" stopOpacity={0.4}/>
+                    <linearGradient id="colorQueries" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.12}/>
+                      <stop offset="95%" stopColor="#06b6d4" stopOpacity={0.0}/>
                     </linearGradient>
                     <linearGradient id="lineColor" x1="0" y1="0" x2="1" y2="0">
                       <stop offset="0%" stopColor="#8b5cf6" stopOpacity={1}/>
                       <stop offset="100%" stopColor="#06b6d4" stopOpacity={1}/>
                     </linearGradient>
                   </defs>
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--color-muted-foreground)' }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--color-muted-foreground)' }} />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: 'var(--color-surface-container-lowest)', borderColor: 'var(--color-border)', borderRadius: '8px', fontSize: '12px' }}
-                    itemStyle={{ color: 'var(--color-foreground)', fontWeight: 600 }}
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.05)" />
+                  <XAxis 
+                    dataKey="name" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fontSize: 10, fill: '#9ca3af', fontWeight: 500 }} 
                   />
-                  <Area type="monotone" dataKey="queries" stroke="url(#lineColor)" strokeWidth={3} fillOpacity={1} fill="url(#colorQueries)" />
+                  <YAxis 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fontSize: 10, fill: '#9ca3af', fontWeight: 500 }} 
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'rgba(17, 17, 19, 0.95)', 
+                      borderColor: 'rgba(255, 255, 255, 0.08)', 
+                      borderRadius: '12px', 
+                      fontSize: '12px',
+                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)' 
+                    }}
+                    itemStyle={{ color: '#ffffff', fontWeight: 600 }}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="queries" 
+                    stroke="url(#lineColor)" 
+                    strokeWidth={3} 
+                    fillOpacity={1} 
+                    fill="url(#colorQueries)" 
+                    dot={{ r: 4, stroke: '#8b5cf6', strokeWidth: 1.5, fill: '#121214' }}
+                    activeDot={{ r: 6, stroke: '#06b6d4', strokeWidth: 2, fill: '#ffffff' }}
+                  />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
