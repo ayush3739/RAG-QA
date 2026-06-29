@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import { 
-  Settings, Cpu, Sliders, User, Shield, RefreshCw, Moon, Sun
+  Settings, Cpu, Sliders, User, Shield, RefreshCw, Moon, Sun, LogOut, Trash2, Save, Check
 } from "lucide-react";
 import { ModelParams } from "../types";
 import { cn } from "../lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { useStore } from "../store/useStore";
+import { api } from "../lib/api";
+import ConfirmDialog from "./ConfirmDialog";
 
 interface SettingsViewProps {
   params: ModelParams;
@@ -24,7 +26,12 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
     return localStorage.getItem("setting_inspector_open") !== "false";
   });
   
-  const [displayName, setDisplayName] = useState("Alex Sterling");
+  const user = useStore(s => s.user);
+  const logout = useStore(s => s.logout);
+  const [displayName, setDisplayName] = useState(user?.name || "");
+  const [nameSaved, setNameSaved] = useState(false);
+  const [isSavingName, setIsSavingName] = useState(false);
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
 
   const theme = useStore(s => s.theme);
   const setTheme = useStore(s => s.setTheme);
@@ -58,6 +65,30 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
 
   const handleCheckHealth = () => {
     refetch();
+  };
+
+  const handleSaveName = async () => {
+    if (!displayName.trim() || isSavingName) return;
+    setIsSavingName(true);
+    try {
+      await api.updateMe(displayName.trim());
+      setNameSaved(true);
+      setTimeout(() => setNameSaved(false), 2000);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSavingName(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      await api.deleteMe();
+    } catch (e) {
+      // 204 means success
+    } finally {
+      logout();
+    }
   };
 
   return (
@@ -214,12 +245,23 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
               {/* Display Name */}
               <div className="space-y-1.5">
                 <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block">Display Name</label>
-                <input
-                  type="text"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  className="w-full text-sm font-medium bg-background border border-border rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 shadow-sm transition-all"
-                />
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="text"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
+                    className="flex-1 text-sm font-medium bg-background border border-border rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 shadow-sm transition-all"
+                  />
+                  <button
+                    onClick={handleSaveName}
+                    disabled={isSavingName || !displayName.trim()}
+                    className="p-2 rounded-lg bg-surface border border-border hover:bg-surface-container text-foreground transition-all cursor-pointer disabled:opacity-40"
+                    title="Save name"
+                  >
+                    {nameSaved ? <Check className="w-4 h-4 text-emerald-500" /> : <Save className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
 
               {/* Readonly Email */}
@@ -228,7 +270,7 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
                 <input
                   type="text"
                   readOnly
-                  value="alex.sterling@deepforest.intel"
+                  value={user?.email || ""}
                   className="w-full text-sm font-medium bg-surface border border-border rounded-lg px-3 py-2 text-muted-foreground cursor-not-allowed focus:outline-none"
                 />
               </div>
@@ -243,6 +285,33 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
                   className="w-full text-sm font-medium bg-surface border border-border rounded-lg px-3 py-2 text-muted-foreground cursor-not-allowed focus:outline-none"
                 />
               </div>
+              
+              {/* Logout + Delete Account */}
+              <div className="pt-2 space-y-2">
+                <button
+                  onClick={logout}
+                  className="w-full flex items-center justify-center space-x-2 bg-surface hover:bg-surface-container border border-border text-foreground font-semibold text-sm py-2.5 rounded-lg transition-all"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Log Out</span>
+                </button>
+                <button
+                  onClick={() => setShowDeleteAccount(true)}
+                  className="w-full flex items-center justify-center space-x-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 font-semibold text-sm py-2.5 rounded-lg transition-all border border-red-500/20"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Delete Account</span>
+                </button>
+              </div>
+
+              <ConfirmDialog
+                isOpen={showDeleteAccount}
+                title="Delete your account?"
+                description="This will permanently delete your account, all your documents, sessions, and messages. This action is irreversible."
+                confirmLabel="Yes, Delete Everything"
+                onConfirm={handleDeleteAccount}
+                onCancel={() => setShowDeleteAccount(false)}
+              />
 
             </div>
           </div>

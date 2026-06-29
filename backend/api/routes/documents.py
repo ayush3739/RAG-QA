@@ -1,12 +1,14 @@
 """documents API — Upload, list, delete documents."""
 
-import asyncio,os
+import asyncio,os,json
 from fastapi import APIRouter, UploadFile, File, BackgroundTasks, Form, HTTPException, status, Depends
 from pathlib import Path
 from typing import Annotated
 from uuid import UUID, uuid4
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi.responses import StreamingResponse
+
 
 from backend.db.base import get_db, AsyncSessionLocal
 from backend.api.deps import get_current_user
@@ -260,13 +262,22 @@ async def test_answer(
 
     return await retriever.answer(query)
 
-@router.get("/documents/status/{job_id}", response_model=IndexJobStatusResponse)
+@router.get("/documents/status/{job_id}")
 async def get_indexing_status(job_id: str):
-    """Get indexing job progress."""
-    job = _INDEX_JOBS.get(job_id)
-    if not job:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Job not found or server was restarted",
-        )
-    return IndexJobStatusResponse(job_id=job_id, **job)
+    """Stream indexing job progress via Server-Sent Events."""
+    async def event_generator():
+        while True:
+            job = _INDEX_JOBS.get(job_id)
+            if not job:
+                yield f"data: {json.dumps({'status': 'failed', 'error': 'Job not found'})}\n\n"
+                break
+            
+            # Yield current status
+            yield f"data: {json.dumps({'job_id': job_id, 'status': job['status'], 'document_id': job.get('document_id'), 'filename': job.get('filename'), 'error': job.get('error')})}\n\n"
+            
+            if job["status"] in ["completed", "failed"]:
+                break
+                
+            await asyncio.sleep(1)
+            
+    return StreamingResponse(event_generator(), media_type="text/event-stream")

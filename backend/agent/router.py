@@ -19,6 +19,22 @@ from backend.services.llm_provider import LLMProvider
 
 
 CONFIDENCE_ESCALATE_THRESHOLD = 0.4
+
+# Signals that a query is explicitly document-scoped — never escalate to web for these
+_DOC_SCOPE_SIGNALS = (
+    "this document", "the document", "the pdf", "the report", "the file",
+    "the notes", "the presentation", "the slide", "the paper",
+    "page ", "pages ", "chapter ", "section ", "paragraph ",
+    "second page", "first page", "last page",
+    "from the doc", "in the doc", "from this", "in this",
+    "according to the", "based on the",
+)
+
+
+def _is_document_scoped(query: str) -> bool:
+    """Return True if the query is clearly about an uploaded document, not general web knowledge."""
+    q = query.lower()
+    return any(sig in q for sig in _DOC_SCOPE_SIGNALS)
 ROUTER_TOOLS = {
     "retrieve_from_document",
     "web_search",
@@ -296,10 +312,14 @@ def _metadata_chunks(chunks: list[dict]) -> list[dict]:
 def _synthesis_system_prompt(
     doc_context: str,
     web_context: str,
+    document_names: list[str] | None = None,
 ) -> str:
+    doc_names_str = ""
+    if document_names:
+        doc_names_str = "\n\nThe linked document(s) in this session are named: " + ", ".join(f'"{n}"' for n in document_names) + "."
     if doc_context and not web_context:
         return f"""You are a helpful assistant that answers questions strictly based on context
-retrieved from a PDF document.
+retrieved from a PDF document.{doc_names_str}
 
 Rules:
 - Answer ONLY using the provided context chunks. Do not use prior knowledge.
@@ -325,7 +345,8 @@ CONTEXT:
         "web sources by URL/title when used. For clearly separate general-knowledge "
         "parts of a compound question, you may answer directly from your own "
         "knowledge, but do not cite that as document-supported. If the provided "
-        "context does not support a document-specific answer, say that clearly.\n\n"
+        "context does not support a document-specific answer, say that clearly."
+        + doc_names_str + "\n\n"
         f"DOCUMENT CONTEXT:\n{doc_context or 'None'}\n\n"
         f"WEB CONTEXT:\n{web_context or 'None'}"
     )
@@ -336,6 +357,7 @@ async def _synthesize(
     doc_chunks: list[dict],
     web_results: list[dict],
     history: list[dict] | None,
+    document_names: list[str] | None = None,
 ) -> str:
     llm = LLMProvider()
     doc_context = _format_doc_chunks(doc_chunks)
@@ -343,6 +365,7 @@ async def _synthesize(
     system_prompt = _synthesis_system_prompt(
         doc_context,
         web_context,
+        document_names=document_names,
     )
 
     messages = [
@@ -363,6 +386,7 @@ async def answer_query(
     db: AsyncSession,
     history: list[dict] | None = None,
     include_web: bool = True,
+    document_names: list[str] | None = None,
 ) -> dict:
     """Route a chat query through document, web, summary, quiz, or direct answer."""
     tool_trace: list[str] = []
@@ -385,6 +409,7 @@ async def answer_query(
         result = await direct_answer_impl(
             tool_args.get("none", {}).get("query", query),
             history=history,
+            document_names=document_names,
         )
         return {
             "answer": result["answer"],
@@ -454,6 +479,7 @@ async def answer_query(
         if (
             include_web
             and "web_search" not in selected_tools
+            and not _is_document_scoped(query)
             and (confidence is None or confidence < CONFIDENCE_ESCALATE_THRESHOLD)
         ):
             web_result = await web_search_impl(
@@ -477,6 +503,7 @@ async def answer_query(
         doc_chunks=doc_chunks,
         web_results=web_results,
         history=history,
+        document_names=document_names,
     )
 
     return {

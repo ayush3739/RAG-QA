@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { Conversation, SourceDocument, Message } from "../types";
 import { cn } from "../lib/utils";
+import ConfirmDialog from "./ConfirmDialog";
 
 interface SessionsViewProps {
   conversations: Conversation[];
@@ -23,11 +24,9 @@ export default function SessionsView({
 }: SessionsViewProps) {
   const [search, setSearch] = useState("");
   const [selectedDocFilter, setSelectedDocFilter] = useState("all");
-  const [selectedConvId, setSelectedConvId] = useState<string | null>(null);
   const [editingConvId, setEditingConvId] = useState<string | null>(null);
   const [tempName, setTempName] = useState("");
-
-  const selectedConv = conversations.find(c => c.id === selectedConvId);
+  const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
 
   // Filter conversations
   const filteredConvs = conversations.filter(c => {
@@ -137,7 +136,7 @@ ${msg.citations.map(cit => `- **${cit.name}** (${cit.fitScore}% Match): "${cit.s
             <thead>
               <tr className="border-b border-border bg-surface text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">
                 <th className="p-3 pl-5">Research Title</th>
-                <th className="p-3">Messages</th>
+                <th className="p-3">Created</th>
                 <th className="p-3">Linked Docs</th>
                 <th className="p-3">Last Active</th>
                 <th className="p-3 pr-5 text-right">Actions</th>
@@ -147,11 +146,8 @@ ${msg.citations.map(cit => `- **${cit.name}** (${cit.fitScore}% Match): "${cit.s
               {filteredConvs.map((conv) => (
                 <tr 
                   key={conv.id}
-                  onClick={() => setSelectedConvId(conv.id)}
-                  className={cn(
-                    "hover:bg-surface/50 cursor-pointer transition-colors",
-                    selectedConvId === conv.id ? "bg-surface" : "bg-background"
-                  )}
+                  onClick={() => onSelectSession(conv.id)}
+                  className="hover:bg-surface/50 cursor-pointer transition-colors bg-background"
                 >
                   {/* Name column */}
                   <td className="p-3 pl-5">
@@ -178,13 +174,16 @@ ${msg.citations.map(cit => `- **${cit.name}** (${cit.fitScore}% Match): "${cit.s
                       >
                         <MessageSquare className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                         <span>{conv.title}</span>
+                        <span className="text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+                          Auto
+                        </span>
                       </div>
                     )}
                   </td>
 
-                  {/* Messages Count */}
-                  <td className="p-3 text-xs font-medium text-muted-foreground">
-                    {conv.messages.length} messages
+                  {/* Created Date */}
+                  <td className="p-3 text-xs font-mono text-muted-foreground">
+                    {new Date(conv.timestamp).toLocaleDateString()}
                   </td>
 
                   {/* Document Badge Count */}
@@ -218,7 +217,7 @@ ${msg.citations.map(cit => `- **${cit.name}** (${cit.fitScore}% Match): "${cit.s
                         <Maximize2 className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => onDeleteSession(conv.id)}
+                        onClick={() => setSessionToDelete(conv.id)}
                         title="Delete Session"
                         className="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-md cursor-pointer transition-colors"
                       >
@@ -240,93 +239,17 @@ ${msg.citations.map(cit => `- **${cit.name}** (${cit.fitScore}% Match): "${cit.s
         </div>
       </div>
 
-      {/* Right Drawer Panel (320px slide in) */}
-      {selectedConv && (
-        <div className="w-80 border-l border-border bg-surface-container-lowest h-full p-6 space-y-6 flex flex-col justify-between shadow-premium">
-          <div className="space-y-6 overflow-y-auto flex-1 pr-1">
-            {/* Drawer Header */}
-            <div className="flex items-start justify-between">
-              <div>
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Details</span>
-                <h3 className="text-sm font-bold text-foreground leading-tight mt-1">{selectedConv.title}</h3>
-              </div>
-              <button 
-                onClick={() => setSelectedConvId(null)}
-                className="p-1.5 hover:bg-surface rounded-md cursor-pointer transition-colors"
-              >
-                <X className="w-4 h-4 text-muted-foreground" />
-              </button>
-            </div>
-
-            {/* General Info */}
-            <div className="space-y-3 bg-background p-4 rounded-lg border border-border">
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span className="flex items-center font-medium"><Calendar className="w-3.5 h-3.5 mr-1.5" /> Created:</span>
-                <span className="font-mono">{new Date(selectedConv.timestamp).toLocaleDateString()}</span>
-              </div>
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span className="flex items-center font-medium"><MessageSquare className="w-3.5 h-3.5 mr-1.5" /> Size:</span>
-                <span className="font-medium text-foreground">{selectedConv.messages.length} Q&As</span>
-              </div>
-            </div>
-
-            {/* Attached files names checklist */}
-            <div className="space-y-2">
-              <h4 className="text-[10px] font-semibold uppercase text-muted-foreground tracking-wider">Grounding Scope</h4>
-              <div className="space-y-1.5">
-                {((selectedConv as any).attachedDocIds || []).map((docId: string) => {
-                  const doc = documents.find(d => d.id === docId);
-                  return (
-                    <div key={docId} className="flex items-center space-x-2 text-[11px] font-medium text-foreground bg-background p-2 rounded-md border border-border">
-                      <FileText className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                      <span className="truncate">{doc ? doc.name : docId}</span>
-                    </div>
-                  );
-                })}
-                {((selectedConv as any).attachedDocIds || []).length === 0 && (
-                  <p className="text-[11px] text-muted-foreground italic">No documents attached.</p>
-                )}
-              </div>
-            </div>
-
-            {/* Message Thread preview */}
-            <div className="space-y-3">
-              <h4 className="text-[10px] font-semibold uppercase text-muted-foreground tracking-wider">Thread Preview</h4>
-              <div className="space-y-3 max-h-60 overflow-y-auto">
-                {selectedConv.messages.slice(0, 3).map((msg, mIdx) => (
-                  <div key={msg.id || mIdx} className="p-3 bg-background border border-border rounded-lg space-y-1.5">
-                    <span className="text-[10px] font-semibold uppercase text-muted-foreground tracking-wider block">
-                      {msg.sender === "user" ? "👤 User Query" : "🤖 System"}
-                    </span>
-                    <p className="text-[11px] text-foreground leading-relaxed line-clamp-3">
-                      {msg.text}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Drawer Actions CTA bottom footer */}
-          <div className="pt-4 border-t border-border space-y-2 flex-shrink-0">
-            <button
-              onClick={() => onSelectSession(selectedConv.id)}
-              className="w-full py-2 bg-primary text-primary-foreground text-[11px] font-semibold rounded-md cursor-pointer hover:bg-primary/90 transition-all flex items-center justify-center space-x-1.5 shadow-sm"
-            >
-              <span>Launch Conversing Screen</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => handleExportMarkdown(selectedConv)}
-              className="w-full py-2 bg-background hover:bg-surface text-foreground text-[11px] font-semibold rounded-md border border-border cursor-pointer transition-all flex items-center justify-center space-x-1.5 shadow-sm"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Export Logbook</span>
-            </button>
-          </div>
-        </div>
-      )}
-
+      <ConfirmDialog
+        isOpen={!!sessionToDelete}
+        title="Delete Session?"
+        description="This will permanently delete this chat session and all its messages. This action cannot be undone."
+        confirmLabel="Delete Session"
+        onConfirm={() => {
+          if (sessionToDelete) onDeleteSession(sessionToDelete);
+          setSessionToDelete(null);
+        }}
+        onCancel={() => setSessionToDelete(null)}
+      />
     </div>
   );
 }

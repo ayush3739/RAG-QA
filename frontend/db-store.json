@@ -1,6 +1,18 @@
 {
   "documents": [
     {
+      "id": "doc-1782743389509",
+      "name": "Cheaters",
+      "type": "pdf",
+      "content": "dasd",
+      "addedAt": "Added Just Now",
+      "size": "1 KB",
+      "active": true,
+      "chunkCount": 1,
+      "embeddingModel": "text-embedding-3-large",
+      "summary": "1. Document title: Cheaters.\n2. Analyzed text contents successfully.\n3. Content matches RAG indexing patterns.\n4. Estimated word count of 1 words.\n5. Recommended reading time: 2 mins."
+    },
+    {
       "id": "doc-1",
       "name": "fiscal_projections_q3_revised.xlsx",
       "type": "spreadsheet",
@@ -39,22 +51,10 @@
   ],
   "sessions": [
     {
-      "id": "conv-1782486594498",
+      "id": "conv-1782720989506",
       "name": "New Research Workspace",
-      "created_at": "2026-06-26T15:09:54.498Z",
-      "lastActiveAt": "2026-06-26T15:09:54.498Z",
-      "documentCount": 1,
-      "lastMessagePreview": "No messages yet.",
-      "attachedDocIds": [
-        "doc-2"
-      ],
-      "messages": []
-    },
-    {
-      "id": "conv-1782483503689",
-      "name": "New Research Workspace",
-      "created_at": "2026-06-26T14:18:23.689Z",
-      "lastActiveAt": "2026-06-26T14:18:23.689Z",
+      "created_at": "2026-06-29T08:16:29.506Z",
+      "lastActiveAt": "2026-06-29T08:16:29.506Z",
       "documentCount": 2,
       "lastMessagePreview": "No messages yet.",
       "attachedDocIds": [
@@ -64,29 +64,15 @@
       "messages": []
     },
     {
-      "id": "conv-1782483502767",
+      "id": "conv-1782720687418",
       "name": "New Research Workspace",
-      "created_at": "2026-06-26T14:18:22.767Z",
-      "lastActiveAt": "2026-06-26T14:18:22.767Z",
+      "created_at": "2026-06-29T08:11:27.418Z",
+      "lastActiveAt": "2026-06-29T08:11:27.418Z",
       "documentCount": 2,
       "lastMessagePreview": "No messages yet.",
       "attachedDocIds": [
         "doc-1",
         "doc-2"
-      ],
-      "messages": []
-    },
-    {
-      "id": "conv-1782483500727",
-      "name": "New Research Workspace",
-      "created_at": "2026-06-26T14:18:20.727Z",
-      "lastActiveAt": "2026-06-26T14:18:20.727Z",
-      "documentCount": 3,
-      "lastMessagePreview": "No messages yet.",
-      "attachedDocIds": [
-        "doc-1",
-        "doc-2",
-        "doc-3"
       ],
       "messages": []
     },
@@ -162,5 +148,11 @@
       ]
     }
   ],
-  "jobs": {}
+  "jobs": {
+    "job-1782743389509": {
+      "status": "indexed",
+      "progress": 100,
+      "document_id": "doc-1782743389509"
+    }
+  }
 }

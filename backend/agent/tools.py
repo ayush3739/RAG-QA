@@ -283,9 +283,16 @@ def _history_messages(history: list[dict] | None) -> list[dict]:
     return messages
 
 
-async def direct_answer_impl(query: str, history: list[dict] | None = None):
+async def direct_answer_impl(query: str, history: list[dict] | None = None, document_names: list[str] | None = None):
     """Tool: Answer directly via LLM (no retrieval)."""
     llm = LLMProvider()
+    doc_names_str = ""
+    if document_names:
+        doc_names_str = (
+            "\n\nThe following document(s) are linked to this session: "
+            + ", ".join(f'"{n}"' for n in document_names)
+            + ". If the user asks about the document name or title, you MUST state it directly from this list."
+        )
     answer = await llm.invoke(
         [
             {
@@ -296,6 +303,7 @@ async def direct_answer_impl(query: str, history: list[dict] | None = None):
                     "context. For greetings, introduce yourself as DocuMind and "
                     "offer help with documents, research, summaries, citations, "
                     "or general questions. Do not invent document citations."
+                    + doc_names_str
                 ),
             },
             *_history_messages(history),

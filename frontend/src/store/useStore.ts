@@ -3,6 +3,11 @@ import { persist } from 'zustand/middleware';
 import { SourceDocument, Conversation, ModelParams, DocType } from '../types';
 import { INITIAL_DOCUMENTS } from '../data';
 
+interface UserData {
+  name: string;
+  email: string;
+}
+
 interface AppState {
   theme: "light" | "dark";
   setTheme: (theme: "light" | "dark") => void;
@@ -13,20 +18,27 @@ interface AppState {
   activeConvId: string | null;
   params: ModelParams;
   isProcessing: boolean;
-  
+  activeDocumentId: string | null;
+
   setCurrentTab: (tab: string) => void;
   setIsMobileSidebarOpen: (isOpen: boolean) => void;
+  setActiveDocumentId: (id: string | null) => void;
   setDocuments: (docs: SourceDocument[] | ((prev: SourceDocument[]) => SourceDocument[])) => void;
   setConversations: (convs: Conversation[] | ((prev: Conversation[]) => Conversation[])) => void;
   setActiveConvId: (id: string | null) => void;
   setParams: (params: Partial<ModelParams>) => void;
   setIsProcessing: (isProcessing: boolean) => void;
   toggleDocumentActive: (id: string) => void;
-  
+
   isAuthenticated: boolean;
   setIsAuthenticated: (val: boolean) => void;
   authMode: 'login' | 'register';
   setAuthMode: (mode: 'login' | 'register') => void;
+  accessToken: string | null;
+  setAccessToken: (token: string | null) => void;
+  user: UserData | null;
+  setUser: (user: UserData | null) => void;
+  logout: () => void;
 }
 
 export const useStore = create<AppState>()(
@@ -38,44 +50,18 @@ export const useStore = create<AppState>()(
       setIsAuthenticated: (val) => set({ isAuthenticated: val }),
       authMode: 'login',
       setAuthMode: (mode) => set({ authMode: mode }),
-      
+      accessToken: null,
+      setAccessToken: (token) => set({ accessToken: token, isAuthenticated: !!token }),
+      user: null,
+      setUser: (user) => set({ user }),
+      logout: () => set({ accessToken: null, isAuthenticated: false, activeConvId: null, user: null }),
+
       currentTab: 'dashboard',
       isMobileSidebarOpen: false,
+      activeDocumentId: null,
       documents: INITIAL_DOCUMENTS,
-      conversations: [
-        {
-          id: "conv-1",
-          title: "Modular RAG Analysis",
-          timestamp: new Date().toISOString(),
-          messages: [
-            {
-              id: "msg-1",
-              sender: "assistant",
-              text: "Analysis of the provided document set suggests a 24% increase in operational efficiency when applying the **Modular RAG Framework**. The core findings point toward three primary vectors:\n\n1. **Latency Reduction**: By caching semantic embeddings, we reduce retrieval time by 120ms.\n2. **Contextual Accuracy**: The use of hierarchical re-ranking improves result relevance.",
-              timestamp: new Date(Date.now() - 3600000).toISOString(),
-              citations: [
-                {
-                  name: "whitepaper_2024_v2.pdf",
-                  fitScore: 98,
-                  snippet: "The application of multi-stage validation ensures that generated text adheres to the ground truth provided by source documents. Feeding precise, re-ranked snippets rather than raw paragraphs increases accuracy by 34%."
-                },
-                {
-                  name: "internal_wiki_efficiency",
-                  fitScore: 82,
-                  snippet: "Deploying the Modular RAG Framework across the principal research directories has successfully triggered a 24% increase in research discovery rates and operational execution. Embedding generation latency: reduced to 18ms."
-                }
-              ]
-            },
-            {
-              id: "msg-2",
-              sender: "user",
-              text: "Can you cross-reference the efficiency gains with the Q3 fiscal projections for the Monolith project?",
-              timestamp: new Date(Date.now() - 1800000).toISOString()
-            }
-          ]
-        }
-      ],
-      activeConvId: "conv-1",
+      conversations: [],
+      activeConvId: null,
       params: {
         temperature: 0.7,
         tokenEfficiency: 89,
@@ -83,9 +69,10 @@ export const useStore = create<AppState>()(
         selectedModel: "gemini-3.5-flash",
       },
       isProcessing: false,
-      
+
       setCurrentTab: (tab) => set({ currentTab: tab }),
       setIsMobileSidebarOpen: (isOpen) => set({ isMobileSidebarOpen: isOpen }),
+      setActiveDocumentId: (id) => set({ activeDocumentId: id }),
       setDocuments: (docsOrUpdater) => set((state) => ({
         documents: typeof docsOrUpdater === 'function' ? docsOrUpdater(state.documents) : docsOrUpdater
       })),
@@ -103,11 +90,14 @@ export const useStore = create<AppState>()(
       name: 'documind-storage',
       partialize: (state) => ({ 
         theme: state.theme,
-        isAuthenticated: state.isAuthenticated,
-        documents: state.documents, 
-        conversations: state.conversations,
+        accessToken: state.accessToken,
         params: state.params
-      }), // only persist these fields
+      }),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+           state.isAuthenticated = !!state.accessToken;
+        }
+      }
     }
   )
 );

@@ -90,12 +90,38 @@ export default function DashboardView({
         animate="visible"
         className="space-y-8"
       >
+        {/* Row 0: Statistics Overview */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="bg-surface-container-lowest border border-border p-5 rounded-2xl shadow-sm flex flex-col justify-center">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Documents</span>
+            <span className="text-2xl font-bold text-foreground">{(documents || []).length}</span>
+          </div>
+          <div className="bg-surface-container-lowest border border-border p-5 rounded-2xl shadow-sm flex flex-col justify-center">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Chunks</span>
+            <span className="text-2xl font-bold text-foreground">{(documents || []).reduce((acc, doc: any) => acc + (doc.chunkCount || 0), 0)}</span>
+          </div>
+          <div className="bg-surface-container-lowest border border-border p-5 rounded-2xl shadow-sm flex flex-col justify-center">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Storage</span>
+            <span className="text-2xl font-bold text-foreground">
+              {(() => {
+                const totalSizeKb = (documents || []).reduce((acc, doc: any) => acc + (doc.sizeKb || 0), 0);
+                const totalSizeMb = totalSizeKb / 1024;
+                return totalSizeMb > 0 ? `${totalSizeMb.toFixed(1)} MB` : "0.0 MB";
+              })()}
+            </span>
+          </div>
+          <div className="bg-surface-container-lowest border border-border p-5 rounded-2xl shadow-sm flex flex-col justify-center">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Sessions</span>
+            <span className="text-2xl font-bold text-foreground">{(conversations || []).length}</span>
+          </div>
+        </div>
+
         {/* Row 1: Quick Action Cards (Bento style) */}
         <div className="grid grid-cols-12 gap-6">
           <motion.div 
             variants={itemVariants}
             onClick={onTriggerUploadModal}
-            className="col-span-12 md:col-span-4 group relative p-6 premium-card cursor-pointer overflow-hidden"
+            className="col-span-12 md:col-span-6 group relative p-6 premium-card cursor-pointer overflow-hidden"
           >
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             <div className="relative z-10">
@@ -115,39 +141,19 @@ export default function DashboardView({
           <motion.div 
             variants={itemVariants}
             onClick={onNewResearch}
-            className="col-span-12 md:col-span-4 group relative p-6 premium-card cursor-pointer overflow-hidden"
+            className="col-span-12 md:col-span-6 group relative p-6 premium-card cursor-pointer overflow-hidden"
           >
             <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             <div className="relative z-10">
               <div className="w-10 h-10 rounded-xl bg-surface-container border border-border flex items-center justify-center text-foreground mb-4">
                 <MessageSquare className="w-5 h-5" />
               </div>
-              <h3 className="font-semibold text-foreground tracking-tight mb-1.5">New Chat Thread</h3>
+              <h3 className="font-semibold text-foreground tracking-tight mb-1.5">New Chat</h3>
               <p className="text-xs text-muted-foreground leading-relaxed mb-4">
                 Launch a streaming conversation, attach specific materials, and ask questions with citations.
               </p>
               <span className="text-xs font-semibold text-violet-500 flex items-center opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all">
                 Start Conversing <ChevronRight className="w-3.5 h-3.5 ml-1" />
-              </span>
-            </div>
-          </motion.div>
-
-          <motion.div 
-            variants={itemVariants}
-            onClick={() => setCurrentTab("research")}
-            className="col-span-12 md:col-span-4 group relative p-6 premium-card cursor-pointer overflow-hidden"
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="relative z-10">
-              <div className="w-10 h-10 rounded-xl bg-surface-container border border-border flex items-center justify-center text-foreground mb-4">
-                <Search className="w-5 h-5" />
-              </div>
-              <h3 className="font-semibold text-foreground tracking-tight mb-1.5">Structured Research</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed mb-4">
-                Execute professional one-shot report generation with multi-source validation and web-search backups.
-              </p>
-              <span className="text-xs font-semibold text-emerald-500 flex items-center opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all">
-                Launch Research <ChevronRight className="w-3.5 h-3.5 ml-1" />
               </span>
             </div>
           </motion.div>
@@ -164,7 +170,7 @@ export default function DashboardView({
                 Recent Threads
               </h4>
               <button 
-                onClick={() => setCurrentTab("sessions")}
+                onClick={() => setCurrentTab("chats")}
                 className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
                 View all
@@ -176,7 +182,7 @@ export default function DashboardView({
                 <div
                   key={conv.id}
                   onClick={() => onSelectSession(conv.id)}
-                  className="px-4 py-3 bg-black/20 hover:bg-black/40 border border-transparent hover:border-border rounded-xl transition-all duration-200 cursor-pointer flex items-center justify-between group"
+                  className="px-4 py-3 bg-background border border-transparent hover:border-border rounded-xl transition-all duration-200 cursor-pointer flex items-center justify-between group"
                 >
                   <div className="min-w-0 flex-1 pr-4">
                     <h5 className="text-sm font-medium text-foreground truncate">{conv.title}</h5>
@@ -208,7 +214,7 @@ export default function DashboardView({
                 Library
               </h4>
               <button 
-                onClick={() => setCurrentTab("library")}
+                onClick={() => setCurrentTab("documents")}
                 className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
                 Manage
@@ -219,7 +225,7 @@ export default function DashboardView({
               {documents.slice(0, 4).map((doc) => (
                 <div
                   key={doc.id}
-                  className="px-4 py-3 bg-black/20 hover:bg-black/40 border border-transparent hover:border-border rounded-xl flex items-center justify-between transition-colors"
+                  className="px-4 py-3 bg-background border border-transparent hover:border-border rounded-xl flex items-center justify-between transition-colors"
                 >
                   <div className="flex items-center space-x-3 min-w-0">
                     <div className={cn(

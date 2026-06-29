@@ -43,27 +43,8 @@ class Retriever():
             self.bm25 = None
             self.bm25_texts = []
             self.bm25_meta = []
-            
-            for doc_id in self.document_ids:
-                bm25_file = (
-                    BASE_DIR
-                    / "data"
-                    / "bm25"
-                    / f"{doc_id}_bm25.pkl"
-                )
-                if bm25_file.exists():
-                    with open(bm25_file, "rb") as f:
-                        d = pickle.load(f)
-                        # meta is a list of dicts with page_content, page_label, source
-                        meta = d.get("meta", [])
-                        self.bm25_meta.extend(meta)
-                        self.bm25_texts.extend([m.get("page_content", "") for m in meta])
-                else:
-                    print(f"can't load the bm25 for document {doc_id}")
-            
-            if self.bm25_texts:
-                tokenized_corpus = [simple_tokenize(doc) for doc in self.bm25_texts]
-                self.bm25 = BM25Okapi(tokenized_corpus)
+            self.bm25_loaded = False
+            self.base_dir = BASE_DIR
 
             self.reranker = RERANKER
         except Exception as e:
@@ -134,7 +115,35 @@ class Retriever():
         return ordered
     
 
+    async def _load_bm25_from_db(self):
+        if self.bm25_loaded:
+            return
+        self.bm25_loaded = True
+        try:
+            result = await self.db.execute(
+                select(models.Document).where(models.Document.id.in_(self.document_ids))
+            )
+            docs = result.scalars().all()
+            for doc in docs:
+                if not doc.bm25_path: continue
+                bm25_file = self.base_dir / doc.bm25_path
+                if bm25_file.exists():
+                    with open(bm25_file, "rb") as f:
+                        d = pickle.load(f)
+                        meta = d.get("meta", [])
+                        self.bm25_meta.extend(meta)
+                        self.bm25_texts.extend([m.get("page_content", "") for m in meta])
+                else:
+                    print(f"can't load the bm25 for document {doc.id} at {bm25_file}")
+            
+            if self.bm25_texts:
+                tokenized_corpus = [simple_tokenize(doc) for doc in self.bm25_texts]
+                self.bm25 = BM25Okapi(tokenized_corpus)
+        except Exception as e:
+            print(f"Failed to load BM25 from DB paths: {e}")
+
     async def similarity_search(self, query: str, k: int = 10):
+        await self._load_bm25_from_db()
         try:
             query = self.sanitize_query(query)
 

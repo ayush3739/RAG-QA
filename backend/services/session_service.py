@@ -1,9 +1,9 @@
 """Session Service — Post Gres Chat history storage."""
 from sqlalchemy import select
 from backend.db.base import AsyncSession
-from backend.models.models import Session,Message,SessionDocument
+from backend.models.models import Session,Message,SessionDocument,Document
 from backend.models.schemas import (SessionCreate,SessionList,
-SessionItem,MessageItem,MessageList, SessionDeleteResponse,MessageCreateResponse,SessionDocumentList)
+SessionItem,MessageItem,MessageList, SessionDeleteResponse,MessageCreateResponse,SessionDocumentList, DocumentItem, DocumentListResponse)
 from uuid import UUID
 from datetime import datetime
 
@@ -140,6 +140,25 @@ class SessionService:
             .where(SessionDocument.session_id == session_id)
         )
         return result.scalars().all()
+
+    async def get_session_documents_full(self, session_id: UUID, db: AsyncSession) -> DocumentListResponse:
+        """Get the full documents linked to this session."""
+        result = await db.execute(
+            select(Document)
+            .join(SessionDocument, Document.id == SessionDocument.document_id)
+            .where(SessionDocument.session_id == session_id)
+        )
+        docs = result.scalars().all()
+        return DocumentListResponse(documents=[
+            DocumentItem(
+                name=doc.name, 
+                public_id=doc.public_id, 
+                chunk_count=doc.chunk_count,
+                status=doc.status, 
+                mime_type=doc.mime_type, 
+                file_size_kb=doc.file_size_kb
+            ) for doc in docs
+        ])
 
     async def link_document_to_session(self, session_id: UUID, document_id: int, db: AsyncSession) -> None:
         """Link an uploaded document to a session."""

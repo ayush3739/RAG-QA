@@ -61,6 +61,15 @@ class ChatService:
             db=db,
         )
 
+        # 4b. Get document names for context injection
+        document_names: list[str] = []
+        if document_ids:
+            doc_list = await self.session_service.get_session_documents_full(
+                session_id=session_id,
+                db=db,
+            )
+            document_names = [doc.name for doc in doc_list.documents]
+
         # 5. Route through the agent layer
 
         try:
@@ -73,6 +82,7 @@ class ChatService:
                     for msg in history.messages[:-1]
                 ],
                 include_web=True,
+                document_names=document_names,
             )
         except Exception as exc:
             error_message = (

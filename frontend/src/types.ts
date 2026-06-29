@@ -4,10 +4,11 @@ export interface SourceDocument {
   id: string;
   name: string;
   type: DocType;
-  content: string;
+  content?: string;
   addedAt: string;
   size: string;
   active: boolean;
+  status?: "queued" | "indexing" | "indexed" | "failed";
   summary?: string;
   chunkCount?: number;
   embeddingModel?: string;
