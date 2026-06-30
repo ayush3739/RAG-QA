@@ -8,6 +8,8 @@ from uuid import UUID, uuid4
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.responses import StreamingResponse
+import docx
+from pypdf import PdfReader
 
 
 from backend.db.base import get_db, AsyncSessionLocal
@@ -30,9 +32,39 @@ router = APIRouter()
 # Lightweight in-memory job tracker (replace with Redis/DB for production)
 _INDEX_JOBS: dict[str, dict] = {}
 
+ALLOWED_EXTENSIONS = {".pdf", ".txt", ".md", ".docx"}
+REJECTED_EXTENSIONS_WITH_HELP = {
+    ".doc": "Older Word format (.doc) is not supported. Please convert it to .docx before uploading.",
+    ".rtf": "Rich Text Format (.rtf) is not supported. Please convert it to .pdf, .docx, .md, or .txt before uploading."
+}
+ALLOWED_MIME_TYPES = {
+    "application/pdf",
+    "text/plain",
+    "text/markdown",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+}
+
+
 
 def _safe_filename(name: str) -> str:
     return Path(name).name
+
+
+def verify_magic_bytes(contents: bytes, ext: str) -> bool:
+    if ext == ".pdf":
+        return contents.startswith(b"%PDF")
+    if ext == ".docx":
+        # DOCX files are zip files starting with PK
+        return contents.startswith(b"PK\x03\x04")
+    if ext in {".txt", ".md"}:
+        try:
+            # Plain text files must be decodeable as UTF-8 or ASCII
+            contents[:2048].decode("utf-8")
+            return True
+        except UnicodeDecodeError:
+            return False
+    return False
+
 
 
 # ── Background job ────────────────────────────────────────────────────────────
@@ -54,19 +86,8 @@ async def _run_index_job_async(job_id: str, document_id: int,document_public_id 
                 document_public_id = document_public_id
             ).index()
 
-            # Update document status + chunk count
-            result = await db.execute(
-                select(models.Document).where(models.Document.id == document_id)
-            )
-            doc = result.scalars().first()
-            if doc:
-                from sqlalchemy import func
-                count_result = await db.execute(
-                    select(func.count()).where(models.Chunk.document_id == document_id)
-                )
-                doc.chunk_count = count_result.scalar()
-                doc.status = "indexed"
-                await db.commit()
+            # Redundant status and chunk count update is now handled within Indexer.index()
+            pass
 
         _INDEX_JOBS[job_id]["status"] = "completed"
 
@@ -96,9 +117,43 @@ async def upload_document(
     file: UploadFile = File(...),
     session_id: UUID | None = Form(None),
 ):
-    """Upload and index a PDF document."""
+    """Upload and index a PDF, Word, Markdown, or Text document."""
     if not file.filename:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing filename")
+    
+    # 1. Extension check
+    ext = Path(file.filename).suffix.lower()
+    if ext in REJECTED_EXTENSIONS_WITH_HELP:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=REJECTED_EXTENSIONS_WITH_HELP[ext]
+        )
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unsupported file extension '{ext}'. Allowed extensions: {', '.join(sorted(ALLOWED_EXTENSIONS))}"
+        )
+
+    # 2. MIME check
+    if file.content_type not in ALLOWED_MIME_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unsupported MIME type '{file.content_type}'. Allowed MIME types: {', '.join(sorted(ALLOWED_MIME_TYPES))}"
+        )
+
+    # 3. Check Content-Length header (if available) as a fast reject
+    max_size_bytes = 30 * 1024 * 1024  # 30 MB
+    content_length = file.headers.get("content-length")
+    if content_length:
+        try:
+            if int(content_length) > max_size_bytes:
+                raise HTTPException(
+                    status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                    detail="File size exceeds the 30 MB limit (max 30 MB)"
+                )
+        except ValueError:
+            pass
+
     if not settings.github_token:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -106,20 +161,76 @@ async def upload_document(
         )
 
     safe_name = _safe_filename(file.filename)
+    # Ensure name length fits in database column constraints
+    if len(safe_name) > 200:
+        name_path = Path(safe_name)
+        stem = name_path.stem
+        suffix = name_path.suffix
+        safe_name = stem[:200 - len(suffix)] + suffix
+
     upload_dir = Path("data/uploads")
     upload_dir.mkdir(parents=True, exist_ok=True)
 
+    # Read contents once for verification
     contents = await file.read()
+
+    # 4. Empty file check
+    if not contents or len(contents) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Uploaded file is empty."
+        )
+
+    # 5. File size check
+    if len(contents) > max_size_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="File size exceeds the 30 MB limit (max 30 MB)"
+        )
+
+    # 6. Magic bytes check
+    if not verify_magic_bytes(contents, ext):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File contents do not match the declared file extension."
+        )
+
+    # 7. Generate safe filename (UUID/public_id based, never original filename on disk)
     public_id = uuid4().hex
-    saved_path = upload_dir / f"{public_id}_{safe_name}"
+    saved_path = upload_dir / f"{public_id}{ext}"
     saved_path.write_bytes(contents)
+
+    # 8. Dry-run parser check to identify unreadable/corrupted files upfront
+    if ext == ".docx":
+        try:
+            # Attempt to parse document structure
+            _ = docx.Document(saved_path)
+        except Exception as e:
+            if saved_path.exists():
+                saved_path.unlink()
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Corrupted or invalid Word document (.docx). Please make sure it is a valid document. Error: {e}"
+            )
+    elif ext == ".pdf":
+        try:
+            reader = PdfReader(saved_path)
+            # Ensure we can read pages metadata without error
+            _ = len(reader.pages)
+        except Exception as e:
+            if saved_path.exists():
+                saved_path.unlink()
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Corrupted or unreadable PDF file. Please make sure it is valid. Error: {e}"
+            )
 
     # Create Document row first so Chunk FK constraint is satisfied
     doc = models.Document(
         user_id=current_user.id,
         public_id = public_id,
         name=safe_name,
-        file_path=str(saved_path),                           # filled in after we know doc.id
+        file_path=str(saved_path),
         bm25_path = f"data/bm25/{public_id}_bm25.pkl",
         status="queued",
         mime_type=file.content_type,

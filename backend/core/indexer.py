@@ -8,6 +8,11 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
 from sqlalchemy.ext.asyncio import AsyncSession
+from langchain_core.documents import Document
+import docx
+from sqlalchemy import select
+from backend.models import models
+
 
 from backend.core.config import settings
 from backend.core.utils import simple_tokenize
@@ -29,9 +34,32 @@ class Indexer:
 
     async def index(self):
         try:
-            # Step 1: load PDF — CPU/IO bound, offload to thread
-            loader = PyPDFLoader(file_path=str(self.file_path))
-            docs = await asyncio.to_thread(loader.load)
+            ext = self.file_path.suffix.lower()
+            if ext == ".pdf":
+                # Step 1: load PDF — CPU/IO bound, offload to thread
+                loader = PyPDFLoader(file_path=str(self.file_path))
+                docs = await asyncio.to_thread(loader.load)
+                for d in docs:
+                    d.metadata["source"] = self.file_path.name
+            elif ext == ".docx":
+                # load Word DOCX to text
+                text = await asyncio.to_thread(self._read_docx, self.file_path)
+                docs = [Document(page_content=text, metadata={"source": self.file_path.name})]
+            elif ext in {".txt", ".md"}:
+                # load Plain Text or Markdown with default page 1
+                text = await asyncio.to_thread(self._read_plain_text, self.file_path)
+                docs = [Document(
+                    page_content=text,
+                    metadata={
+                        "source": self.file_path.name,
+                        "page": 1,
+                        "page_label": "1"
+                    }
+                )]
+            elif ext == ".doc":
+                raise ValueError("Older binary .doc format is not supported for indexing. Please convert to .docx.")
+            else:
+                raise ValueError(f"Unsupported file format: {ext}")
 
             # Step 2: chunk — CPU bound, offload to thread
             text_splitter = RecursiveCharacterTextSplitter(
@@ -39,13 +67,19 @@ class Indexer:
                 chunk_overlap=150,
             )
             chunks = await asyncio.to_thread(text_splitter.split_documents, docs)
+            
+            # Guard against huge files to avoid huge billing or OOM
+            if len(chunks) > 10000:
+                raise ValueError("Document too large (exceeded 10,000 chunks limit).")
             print(f"Total chunks created: {len(chunks)}")
 
             # Stamp deterministic chunk_id on each chunk
             for chunk in chunks:
                 normalized_text = " ".join(chunk.page_content.split())
                 page_label = chunk.metadata.get("page_label", "")
-                source = chunk.metadata.get("source", str(self.file_path))
+                source = chunk.metadata.get("source", self.file_path.name)
+                # Ensure the metadata has source set to filename
+                chunk.metadata["source"] = source
                 chunk.metadata["chunk_id"] = self.make_chunk_id(
                     normalized_text, page_label, source
                 )
@@ -53,10 +87,11 @@ class Indexer:
             # Step 3: BM25 — CPU bound, offload to thread
             await asyncio.to_thread(self._persist_bm25, chunks)
 
-            # Step 4: embed — network + CPU bound, offload to thread
+            # Step 4: embed — Langchain OpenAIEmbeddings batches automatically internally
             texts = [c.page_content for c in chunks]
             embeddings = await asyncio.to_thread(
-                self.embedding_model.embed_documents, texts
+                self.embedding_model.embed_documents,
+                texts,
             )
 
             # Step 5: bulk insert chunks — pure async DB write
@@ -74,6 +109,17 @@ class Indexer:
             ]
 
             self.db.add_all(rows)
+            await self.db.flush()
+            
+            # Update parent Document's status and count within the transaction
+            result = await self.db.execute(
+                select(models.Document).where(models.Document.id == self.document_id)
+            )
+            doc = result.scalars().first()
+            if doc:
+                doc.chunk_count = len(rows)
+                doc.status = "indexed"
+                
             await self.db.commit()
             print(f"✓ {len(rows)} chunks committed to DB for document_id={self.document_id}")
 
@@ -109,3 +155,34 @@ class Indexer:
             f"{source}|{page_label}|{text}".encode("utf-8")
         ).hexdigest()
         return h[:16]
+
+    def _read_docx(self, path: Path) -> str:
+        try:
+            doc = docx.Document(path)
+            paragraphs_and_tables = []
+            
+            for element in doc.element.body:
+                if element.tag.endswith('p'):
+                    p = docx.text.paragraph.Paragraph(element, doc)
+                    if p.text.strip():
+                        paragraphs_and_tables.append(p.text)
+                elif element.tag.endswith('tbl'):
+                    t = docx.table.Table(element, doc)
+                    table_text = []
+                    for row in t.rows:
+                        row_text = [cell.text.strip() for cell in row.cells if cell.text.strip()]
+                        if row_text:
+                            table_text.append(" | ".join(row_text))
+                    if table_text:
+                        paragraphs_and_tables.append("\n".join(table_text))
+                        
+            return "\n\n".join(paragraphs_and_tables)
+        except Exception as e:
+            raise ValueError(f"Failed to parse Word Document (.docx): {e}")
+
+    def _read_plain_text(self, path: Path) -> str:
+        try:
+            with open(path, "r", encoding="utf-8", errors="ignore") as f:
+                return f.read()
+        except Exception as e:
+            raise ValueError(f"Failed to read text file: {e}")

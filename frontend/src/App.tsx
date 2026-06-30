@@ -12,6 +12,8 @@ import { Message, Conversation, DocType, SourceDocument, Citation } from "./type
 import { Menu, Database, Sparkles } from "lucide-react";
 import { useStore } from "./store/useStore";
 import { api } from "./lib/api";
+import { Toaster, toast } from 'sonner';
+import { useAuth, useUser } from '@clerk/react';
 
 export default function App() {
   const queryClient = useQueryClient();
@@ -21,7 +23,11 @@ export default function App() {
   const isMobileSidebarOpen = useStore(s => s.isMobileSidebarOpen);
   const setIsMobileSidebarOpen = useStore(s => s.setIsMobileSidebarOpen);
   const theme = useStore(s => s.theme);
-  const isAuthenticated = useStore(s => s.isAuthenticated);
+  const { isLoaded, isSignedIn } = useAuth();
+  const { user: clerkUser } = useUser();
+  const isAuthenticated = !!isSignedIn;
+  const user = useStore(s => s.user);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     if (theme === "dark") {
@@ -48,6 +54,55 @@ export default function App() {
   const setIsProcessing = useStore(s => s.setIsProcessing);
   
   const setUser = useStore(s => s.setUser);
+
+  const updateProfileMutation = useMutation({
+    mutationFn: async (body: { name?: string; email?: string }) => {
+      const data = await api.updateMe(body);
+      setUser(data);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['me'] });
+    }
+  });
+
+  useEffect(() => {
+    if (isSignedIn && isLoaded && clerkUser && user) {
+      const hasPlaceholderName = user.name === "Clerk User";
+      const hasPlaceholderEmail = user.email?.endsWith("@clerk.local");
+      
+      const clerkEmail = clerkUser.primaryEmailAddress?.emailAddress;
+      const clerkName = clerkUser.fullName;
+      
+      const updateBody: { name?: string; email?: string } = {};
+      
+      // 1. Sync email if it's a fallback placeholder
+      if (hasPlaceholderEmail && clerkEmail) {
+        updateBody.email = clerkEmail;
+      }
+      
+      // 2. Sync name if it's a fallback placeholder
+      if (hasPlaceholderName) {
+        if (clerkName) {
+          updateBody.name = clerkName;
+        } else {
+          // If Clerk doesn't have a name, show the onboarding prompt
+          setShowOnboarding(true);
+        }
+      }
+      
+      if (Object.keys(updateBody).length > 0) {
+        updateProfileMutation.mutate(updateBody);
+      }
+    }
+  }, [isSignedIn, isLoaded, clerkUser, user]);
+
+  // Automatically clear hash and redirect to dashboard when verification succeeds
+  useEffect(() => {
+    if (isSignedIn && isLoaded && window.location.hash.includes("verify")) {
+      window.location.hash = "";
+    }
+  }, [isSignedIn, isLoaded]);
 
   // Queries to sync data from backend
   useQuery({
@@ -276,6 +331,7 @@ export default function App() {
         setConversations(prev => [newConv, ...prev]);
         setActiveConvId(targetConvId);
         setActiveMessages([]);
+        lastLoadedConvIdRef.current = targetConvId; // Prevent useEffect from wiping our optimistic message
         
         // Save the first query title immediately in the database
         await api.renameSession(targetConvId, title);
@@ -510,6 +566,9 @@ export default function App() {
       } else if (data?.document_id) {
         setDraftLinkedDocIds(prev => Array.from(new Set([...prev, data.document_id])));
       }
+    },
+    onError: (error: any) => {
+      toast.error(`Upload failed: ${error.message || "An unknown error occurred"}`);
     }
   });
 
@@ -534,6 +593,43 @@ export default function App() {
     const alreadyLinked = sessionDocuments.some((d: any) => d.id === documentId || d.public_id === documentId);
     if (alreadyLinked) return;
     linkDocMutation.mutate({ sessionId, documentId });
+  };
+
+  const unlinkDocMutation = useMutation({
+    mutationFn: async ({ sessionId, documentId }: { sessionId: string, documentId: string }) => {
+      await api.unlinkDocumentFromSession(sessionId, documentId);
+    },
+    onSuccess: (_, { sessionId }) => {
+      queryClient.invalidateQueries({ queryKey: ['sessionDocuments', sessionId] });
+    }
+  });
+
+  const handleUnlinkDocument = async (sessionId: string, documentId: string) => {
+    if (!sessionId) {
+      setDraftLinkedDocIds(prev => prev.filter(id => String(id) !== String(documentId)));
+      return;
+    }
+    unlinkDocMutation.mutate({ sessionId, documentId });
+  };
+
+  const handleRetryMessage = async (messageId: string) => {
+    if (isProcessing) return;
+    const msgIdx = activeMessages.findIndex(m => m.id === messageId);
+    if (msgIdx === -1) return;
+
+    let userMsgIdx = -1;
+    for (let i = msgIdx - 1; i >= 0; i--) {
+      if (activeMessages[i].sender === "user") {
+        userMsgIdx = i;
+        break;
+      }
+    }
+    if (userMsgIdx === -1) return;
+
+    const userQuery = activeMessages[userMsgIdx].text;
+    
+    // Re-send the query directly so it appends to the bottom and preserves history
+    handleSendMessage(userQuery);
   };
 
   const deleteDocMutation = useMutation({
@@ -578,12 +674,21 @@ export default function App() {
 
   const activeConversation = activeConvId === "" ? null : conversations.find((c) => c.id === activeConvId) || conversations[0];
 
-  if (!isAuthenticated) {
+  if (!isLoaded) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-black">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!isSignedIn) {
     return <AuthView />;
   }
 
   return (
     <div className="bg-background text-foreground flex h-screen overflow-hidden font-sans selection:bg-primary/20 selection:text-primary">
+      <Toaster position="top-right" richColors />
       {/* Mobile Top Navigation rail bar */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-background/80 backdrop-blur-md border-b border-border flex items-center justify-between px-6 z-40 select-none">
         <div className="flex items-center space-x-2">
@@ -642,7 +747,8 @@ export default function App() {
               activeConvId={activeConvId}
               onAddDocument={(file) => handleAddDocument(file, activeConvId)}
               onLinkDocument={(docId) => handleLinkDocument(activeConvId, docId)}
-              onUnlinkDocument={!activeConvId ? ((docId) => setDraftLinkedDocIds(prev => prev.filter(id => id !== docId))) : undefined}
+              onUnlinkDocument={(docId) => handleUnlinkDocument(activeConvId, docId)}
+              onRetryMessage={handleRetryMessage}
               selectedModel={params.selectedModel}
               sessionTitle={activeConvId === "" ? "New Chat" : (activeConversation?.title || "New Chat")}
             />
@@ -679,6 +785,65 @@ export default function App() {
           <SettingsView params={params} onParamChange={setParams} />
         )}
       </main>
+
+      {/* Onboarding Dialog Modal */}
+      {showOnboarding && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-lg animate-in fade-in duration-300">
+          <div className="w-full max-w-lg p-10 rounded-3xl bg-[#0d1527]/75 border border-white/10 shadow-[0_0_80px_-15px_rgba(59,130,246,0.25)] backdrop-blur-2xl animate-in zoom-in-95 duration-300 relative overflow-hidden">
+            {/* Ambient decorative glow inside modal */}
+            <div className="absolute -top-24 -left-24 w-48 h-48 rounded-full bg-blue-500/10 blur-[80px] pointer-events-none" />
+            <div className="absolute -bottom-24 -right-24 w-48 h-48 rounded-full bg-indigo-500/10 blur-[80px] pointer-events-none" />
+
+            <div className="flex flex-col items-center text-center space-y-6 relative z-10">
+              {/* Premium Icon Container */}
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                <Sparkles className="w-8 h-8 text-white animate-pulse" />
+              </div>
+              
+              <div className="space-y-2">
+                <h2 className="text-3xl font-extrabold tracking-tight text-white">Welcome to DocuMind</h2>
+                <p className="text-sm font-medium text-zinc-400 max-w-xs mx-auto leading-relaxed">
+                  Before we begin your workspace experience, what would you like us to call you?
+                </p>
+              </div>
+
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const formData = new FormData(e.currentTarget);
+                  const newName = formData.get("nickname") as string;
+                  if (newName && newName.trim()) {
+                    updateProfileMutation.mutate({ name: newName.trim() }, {
+                      onSuccess: () => setShowOnboarding(false)
+                    });
+                  }
+                }}
+                className="w-full space-y-4 pt-3"
+              >
+                <div className="space-y-1.5 text-left">
+                  <label className="text-[10px] font-bold tracking-wider text-zinc-500 uppercase px-1">Display Name</label>
+                  <input
+                    type="text"
+                    name="nickname"
+                    required
+                    autoFocus
+                    placeholder="Enter your name or nickname"
+                    className="w-full h-12 px-4 rounded-xl bg-black/40 border border-white/10 text-base text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-center font-medium transition-all duration-250"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={updateProfileMutation.isPending}
+                  className="w-full h-12 bg-white hover:bg-neutral-200 text-black font-bold text-base rounded-xl transition-all duration-300 shadow-[0_4px_20px_-5px_rgba(255,255,255,0.3)] hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-70 disabled:hover:translate-y-0 disabled:cursor-not-allowed"
+                >
+                  {updateProfileMutation.isPending ? "Saving Profile..." : "Let's get started"}
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

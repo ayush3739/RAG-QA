@@ -1,14 +1,13 @@
 from typing import Annotated
+from contextlib import asynccontextmanager
+import logging
+from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from contextlib import asynccontextmanager
-import logging
-from pathlib import Path
-
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 
@@ -16,25 +15,24 @@ from backend.core.config import settings
 from backend.db.base import engine, get_db
 
 # Import routers
-from backend.api.routes import chat, documents, research, feedback,auth,user,sessions
+from backend.api.routes import chat, documents, research, feedback, user, sessions
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
+
 ROOT_DIR = Path(__file__).resolve().parents[1]
 FRONTEND_DIR = ROOT_DIR / "frontend"
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-
     logger.info("🚀 Starting DocuMind API...")
     try:
         async with engine.begin() as conn:
             await conn.execute(text("SELECT 1"))
-
             await conn.execute(
                 text("CREATE EXTENSION IF NOT EXISTS vector")
             )
@@ -43,7 +41,6 @@ async def lifespan(_app: FastAPI):
     except Exception as e:
         logger.exception(f"❌ Startup failed: {e}")
         raise
-     
     finally:
         await engine.dispose()
         logger.info("🛑 Shutting down DocuMind API...")
@@ -107,13 +104,14 @@ app.include_router(documents.router, prefix="/api/v1", tags=["Documents"])
 app.include_router(chat.router, prefix="/api/v1", tags=["Chat_sse"])
 app.include_router(research.router, prefix="/api/v1", tags=["Research"])
 app.include_router(feedback.router, prefix="/api/v1", tags=["Feedback"])
-app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"])
 app.include_router(user.router, prefix="/api/v1/user", tags=["User"])
 app.include_router(sessions.router, prefix="/api/v1/sessions", tags=["Sessions"])
+
 
 @app.get("/", tags=["Health"])
 async def root():
     return {"status": "ok", "message": "DocuMind API server is running"}
+
 
 @app.get("/health")
 async def health_check(db: Annotated[AsyncSession, Depends(get_db)]):
@@ -134,7 +132,7 @@ async def health_check(db: Annotated[AsyncSession, Depends(get_db)]):
         "status": "ok",
         "service": "DocuMind API v2.0",
         "database": {"healthy": True, "error": None},
-        "vector_db": {"healthy":True , "error": None},
+        "vector_db": {"healthy": True, "error": None},
     }
 
 
@@ -149,7 +147,6 @@ async def db_health_check(db: Annotated[AsyncSession, Depends(get_db)]):
             detail={"database": {"healthy": False, "error": str(exc)}},
         ) from exc
     return {"database": {"healthy": True, "error": None}}
-
 
 
 if __name__ == "__main__":

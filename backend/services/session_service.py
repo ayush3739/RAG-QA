@@ -180,6 +180,19 @@ class SessionService:
         db.add(session_doc)
         await db.commit()
         
+    async def unlink_document_from_session(self, session_id: UUID, document_id: int, db: AsyncSession) -> None:
+        """Unlink an uploaded document from a session."""
+        result = await db.execute(
+            select(SessionDocument).where(
+                SessionDocument.session_id == session_id,
+                SessionDocument.document_id == document_id
+            )
+        )
+        session_doc = result.scalars().first()
+        if session_doc:
+            await db.delete(session_doc)
+            await db.commit()
+        
     async def delete_session(self, session_id: UUID, db: AsyncSession) -> SessionDeleteResponse:
         """Delete a session."""
         result = await db.execute(select(Session).where(Session.id == session_id))

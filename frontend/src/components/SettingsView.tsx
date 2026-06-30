@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Settings, Cpu, Sliders, User, Shield, RefreshCw, Moon, Sun, LogOut, Trash2, Save, Check
 } from "lucide-react";
@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useStore } from "../store/useStore";
 import { api } from "../lib/api";
 import ConfirmDialog from "./ConfirmDialog";
+import { useClerk } from "@clerk/react";
 
 interface SettingsViewProps {
   params: ModelParams;
@@ -28,7 +29,21 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
   
   const user = useStore(s => s.user);
   const logout = useStore(s => s.logout);
+  const { signOut } = useClerk();
+  
+  const handleLogout = async () => {
+    logout();
+    await signOut();
+  };
+  
   const [displayName, setDisplayName] = useState(user?.name || "");
+  
+  useEffect(() => {
+    if (user?.name) {
+      setDisplayName(user.name);
+    }
+  }, [user]);
+
   const [nameSaved, setNameSaved] = useState(false);
   const [isSavingName, setIsSavingName] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
@@ -71,7 +86,7 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
     if (!displayName.trim() || isSavingName) return;
     setIsSavingName(true);
     try {
-      await api.updateMe(displayName.trim());
+      await api.updateMe({ name: displayName.trim() });
       setNameSaved(true);
       setTimeout(() => setNameSaved(false), 2000);
     } catch (e) {
@@ -88,6 +103,7 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
       // 204 means success
     } finally {
       logout();
+      await signOut();
     }
   };
 
@@ -295,7 +311,7 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
               {/* Logout + Delete Account */}
               <div className="pt-2 space-y-2">
                 <button
-                  onClick={logout}
+                  onClick={handleLogout}
                   className="w-full flex items-center justify-center space-x-2 bg-surface hover:bg-surface-container border border-border text-foreground font-semibold text-sm py-2.5 rounded-lg transition-all"
                 >
                   <LogOut className="w-4 h-4" />

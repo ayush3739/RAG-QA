@@ -1,4 +1,4 @@
-from pydantic import SecretStr
+from pydantic import SecretStr, Field, AliasChoices
 from pathlib import Path
 from pydantic_settings import BaseSettings,SettingsConfigDict
 from typing import Optional
@@ -21,6 +21,16 @@ class Settings(BaseSettings):
     secret_key: str = "change-me-in-production"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 60 * 24 * 7  # 1 week
+
+    # Clerk Auth
+    clerk_publishable_key: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("clerk_publishable_key", "CLERK_PUBLISHABLE_KEY", "VITE_CLERK_PUBLISHABLE_KEY")
+    )
+    clerk_secret_key: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("clerk_secret_key", "CLERK_SECRET_KEY")
+    )
 
 
     # Ollama

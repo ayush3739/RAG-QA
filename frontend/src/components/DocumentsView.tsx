@@ -8,6 +8,7 @@ import { cn } from "../lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../lib/api";
+import { toast } from "sonner";
 import ConfirmDialog from "./ConfirmDialog";
 
 // Module-scope pure function: no local state used
@@ -36,6 +37,20 @@ export function DocumentsView({
   const [docToDelete, setDocToDelete] = useState<string | null>(null);
 
   const handleUpload = (file: File) => {
+    if (file.size === 0) {
+      toast.error(`Upload failed: File ${file.name} is empty.`);
+      return;
+    }
+    if (file.size > 30 * 1024 * 1024) {
+      toast.error(`Upload failed: File size for ${file.name} exceeds the 30 MB limit.`);
+      return;
+    }
+    const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    const allowed = ['.pdf', '.txt', '.md', '.docx'];
+    if (file.name.includes('.') && !allowed.includes(ext)) {
+      toast.error(`Upload failed: Unsupported file extension '${ext}'. Allowed extensions: ${allowed.join(', ')}`);
+      return;
+    }
     onAddDocument(file);
   };
 
@@ -87,6 +102,7 @@ export function DocumentsView({
         className="hidden" 
         ref={fileInputRef} 
         onChange={onFileSelect}
+        accept=".pdf,.txt,.md,.docx"
       />
       
       <AnimatePresence>
@@ -132,7 +148,7 @@ export function DocumentsView({
             <UploadCloud className="w-6 h-6" />
           </div>
           <h3 className="text-sm font-semibold text-foreground tracking-tight mb-1">Click or drag documents to ingest</h3>
-          <p className="text-xs text-muted-foreground">Supports PDF, Markdown, TXT, CSV, and XLSX files</p>
+          <p className="text-xs text-muted-foreground">Supports PDF, DOCX, TXT, and Markdown files (Max 30 MB)</p>
         </button>
 
         {/* Existing Documents Grid */}

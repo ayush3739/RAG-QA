@@ -110,6 +110,30 @@ async def link_document_to_session(
     return {"status": "linked", "session_id": str(session_id), "document_public_id": document_public_id}
 
 
+@router.delete("/{session_id}/documents/{document_public_id}", status_code=status.HTTP_200_OK)
+async def unlink_document_from_session(
+    session_id: UUID,
+    document_public_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Explicitly unlink an existing document from a session using its public ID."""
+    session = await _session_service.get_session(session_id=session_id, db=db)
+    if not session or session.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
+        
+    result = await db.execute(
+        select(Document).where(Document.public_id == document_public_id, Document.user_id == current_user.id)
+    )
+    doc = result.scalars().first()
+    if not doc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+
+    # Unlink the document
+    await _session_service.unlink_document_from_session(session_id=session_id, document_id=doc.id, db=db)
+    return {"status": "unlinked", "session_id": str(session_id), "document_public_id": document_public_id}
+
+
 @router.post("/{session_id}/rename", status_code=status.HTTP_200_OK)
 async def rename_session(
     session_id: UUID,
