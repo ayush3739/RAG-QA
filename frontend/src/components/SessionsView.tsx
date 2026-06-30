@@ -7,6 +7,18 @@ import { Conversation, SourceDocument, Message } from "../types";
 import { cn } from "../lib/utils";
 import ConfirmDialog from "./ConfirmDialog";
 
+// Module-scope pure function: no local state used
+function formatRelativeTime(isoString: string) {
+  const date = new Date(isoString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  if (diffMins < 60) return `${Math.max(1, diffMins)}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  return date.toLocaleDateString();
+}
+
 interface SessionsViewProps {
   conversations: Conversation[];
   documents: SourceDocument[];
@@ -48,17 +60,6 @@ export default function SessionsView({
     setEditingConvId(null);
   };
 
-  // Helper to format relative dates
-  const formatRelativeTime = (isoString: string) => {
-    const date = new Date(isoString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    if (diffMins < 60) return `${Math.max(1, diffMins)}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    return date.toLocaleDateString();
-  };
 
   const handleExportMarkdown = (conv: Conversation) => {
     const md = `

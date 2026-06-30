@@ -18,6 +18,10 @@ export interface Citation {
   name: string;
   fitScore: number;
   snippet: string;
+  type?: string;
+  title?: string;
+  page?: number;
+  url?: string;
 }
 
 export interface Message {
@@ -27,6 +31,7 @@ export interface Message {
   text: string;
   timestamp: string;
   citations?: Citation[];
+  chunks?: unknown;
   isProcessing?: boolean;
 }
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { X, Star } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../lib/utils";
@@ -20,17 +20,16 @@ export default function FeedbackDialog({
   const [comment, setComment] = useState("");
   const [hoverRating, setHoverRating] = useState<number | null>(null);
 
-  // Sync default rating when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      setRating(defaultRating);
-      setComment("");
-    }
-  }, [isOpen, defaultRating]);
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(rating, comment);
+    setComment("");
+    onClose();
+  };
+
+  const handleClose = () => {
+    setRating(defaultRating);
+    setComment("");
     onClose();
   };
 
@@ -43,7 +42,7 @@ export default function FeedbackDialog({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
+            onClick={handleClose}
             className="absolute inset-0 bg-background/60 backdrop-blur-sm"
           />
 
@@ -59,7 +58,7 @@ export default function FeedbackDialog({
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-bold text-foreground tracking-tight">Submit Answer Feedback</h3>
               <button
-                onClick={onClose}
+                onClick={handleClose}
                 className="p-1 text-muted-foreground hover:text-foreground hover:bg-surface-container rounded-lg transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
@@ -116,7 +115,7 @@ export default function FeedbackDialog({
               <div className="flex items-center justify-end space-x-3 pt-2">
                 <button
                   type="button"
-                  onClick={onClose}
+                  onClick={handleClose}
                   className="px-4 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-surface-container rounded-xl transition-all cursor-pointer"
                 >
                   Cancel

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Sidebar from "./components/Sidebar";
 import ChatWorkspace from "./components/ChatWorkspace";
@@ -8,7 +8,7 @@ import SettingsView from "./components/SettingsView";
 import AuthView from "./components/AuthView";
 import { DocumentsView } from "./components/DocumentsView";
 import DocumentDetailsView from "./components/DocumentDetailsView";
-import { Message, Conversation, DocType, SourceDocument } from "./types";
+import { Message, Conversation, DocType, SourceDocument, Citation } from "./types";
 import { Menu, Database, Sparkles } from "lucide-react";
 import { useStore } from "./store/useStore";
 import { api } from "./lib/api";
@@ -212,21 +212,21 @@ export default function App() {
     refetchOnWindowFocus: false,
   });
 
-  const [lastLoadedConvId, setLastLoadedConvId] = useState<string | null>(null);
+  const lastLoadedConvIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (activeConvId !== lastLoadedConvId) {
+    if (activeConvId !== lastLoadedConvIdRef.current) {
       if (historyMessages) {
         setActiveMessages(historyMessages);
-        setLastLoadedConvId(activeConvId);
+        lastLoadedConvIdRef.current = activeConvId ?? null;
       } else if (activeConvId === "") {
         setActiveMessages([]);
-        setLastLoadedConvId("");
+        lastLoadedConvIdRef.current = "";
       }
     } else if (historyMessages && activeMessages.length === 0 && historyMessages.length > 0) {
       setActiveMessages(historyMessages);
     }
-  }, [activeConvId, historyMessages, lastLoadedConvId, activeMessages.length]);
+  }, [activeConvId, historyMessages, activeMessages.length]);
 
   useQuery({
     queryKey: ['sessions'],
@@ -600,7 +600,14 @@ export default function App() {
       </div>
 
       {isMobileSidebarOpen && (
-        <div className="md:hidden fixed inset-0 bg-background/50 backdrop-blur-sm z-40" onClick={() => setIsMobileSidebarOpen(false)} />
+        <div
+          className="md:hidden fixed inset-0 bg-background/50 backdrop-blur-sm z-40"
+          role="button"
+          tabIndex={0}
+          aria-label="Close sidebar"
+          onClick={() => setIsMobileSidebarOpen(false)}
+          onKeyDown={(e) => e.key === "Enter" || e.key === " " ? setIsMobileSidebarOpen(false) : undefined}
+        />
       )}
 
       {/* Sidebar */}

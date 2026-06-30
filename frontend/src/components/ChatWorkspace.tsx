@@ -13,6 +13,9 @@ import FeedbackDialog from "./FeedbackDialog";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
+const EMPTY_DOCS: SourceDocument[] = [];
+const RESEARCH_STEPS = ["Planning", "Searching Documents", "Searching Web", "Analyzing Evidence", "Writing", "Reviewing"];
+
 interface ChatWorkspaceProps {
   messages: Message[];
   isProcessing: boolean;
@@ -32,7 +35,7 @@ export default function ChatWorkspace({
   isProcessing,
   onSendMessage,
   documents,
-  allDocuments = [],
+  allDocuments = EMPTY_DOCS,
   activeConvId,
   onAddDocument,
   onLinkDocument,
@@ -54,9 +57,8 @@ export default function ChatWorkspace({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Fake research execution steps
+  // Research execution step tracker
   const [executionStep, setExecutionStep] = useState(0);
-  const researchSteps = ["Planning", "Searching Documents", "Searching Web", "Analyzing Evidence", "Writing", "Reviewing"];
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -66,7 +68,7 @@ export default function ChatWorkspace({
     if (isProcessing) {
       setExecutionStep(0);
       const interval = setInterval(() => {
-        setExecutionStep(prev => (prev < researchSteps.length - 1 ? prev + 1 : prev));
+        setExecutionStep(prev => (prev < RESEARCH_STEPS.length - 1 ? prev + 1 : prev));
       }, 1200);
       return () => clearInterval(interval);
     }
@@ -363,7 +365,7 @@ export default function ChatWorkspace({
                    </div>
                    
                    <div className="pl-9 space-y-3">
-                     {researchSteps.map((step, idx) => {
+                     {RESEARCH_STEPS.map((step, idx) => {
                        const isPast = idx < executionStep;
                        const isActive = idx === executionStep;
                        
@@ -504,9 +506,12 @@ export default function ChatWorkspace({
                         defaultValue=""
                       >
                         <option value="" disabled>Link...</option>
-                        {allDocuments.filter(d => !documents.find(sd => sd.id === d.id)).map(d => (
-                          <option key={d.id} value={d.id}>{d.name}</option>
-                        ))}
+                        {allDocuments.reduce<React.ReactNode[]>((acc, d) => {
+                          if (!documents.find(sd => sd.id === d.id)) {
+                            acc.push(<option key={d.id} value={d.id}>{d.name}</option>);
+                          }
+                          return acc;
+                        }, [])}
                       </select>
                     )}
                     <button

@@ -56,6 +56,7 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
 
       {/* Primary CTA Button: New Research */}
       <button
+        type="button"
         id="btn-new-research"
         onClick={onNewResearch}
         className="w-full py-2 px-3 bg-surface border border-border hover:bg-surface-container text-on-surface rounded-lg font-medium text-sm flex items-center justify-between cursor-pointer shadow-premium hover:shadow-premium-hover transition-all duration-200"
@@ -74,6 +75,7 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
           return (
             <button
               key={item.id}
+              type="button"
               onClick={() => setCurrentTab(item.id)}
               className={cn(
                 "relative w-full flex items-center px-3 py-2 text-sm tracking-tight transition-colors rounded-md cursor-pointer group",
@@ -121,9 +123,12 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
         )}
 
         <div className="flex items-center justify-between px-2 py-2">
-          <div 
+          <button
+            type="button"
             onClick={() => setShowUserMenu(!showUserMenu)}
-            className="flex items-center space-x-3 rounded-lg hover:bg-surface-container-low transition-colors cursor-pointer border border-transparent hover:border-border/50 flex-1 px-1 py-1 min-w-0"
+            aria-expanded={showUserMenu}
+            aria-label="User menu"
+            className="flex items-center space-x-3 rounded-lg hover:bg-surface-container-low transition-colors cursor-pointer border border-transparent hover:border-border/50 flex-1 px-1 py-1 min-w-0 text-left"
           >
             <div className="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs ring-1 ring-border flex-shrink-0">
               {user?.name?.charAt(0)?.toUpperCase() || 'U'}
@@ -132,7 +137,7 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
               <p className="text-sm font-semibold text-on-surface truncate leading-tight tracking-tight">{user?.name || "User"}</p>
               <span className="text-[10px] text-muted-foreground truncate block">{user?.email || "No email"}</span>
             </div>
-          </div>
+          </button>
           <button 
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             className="p-1.5 text-muted-foreground hover:bg-surface-container hover:text-foreground rounded-md transition-colors cursor-pointer ml-1 flex-shrink-0"

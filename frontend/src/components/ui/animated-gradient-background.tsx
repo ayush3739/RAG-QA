@@ -1,6 +1,10 @@
 import { motion } from "framer-motion";
 import React, { useEffect, useRef } from "react";
 
+const DEFAULT_GRADIENT_COLORS = ["#0A0A0A", "#2979FF", "#FF80AB", "#FF6D00", "#FFD600", "#00E676", "#3D5AFE"];
+const DEFAULT_GRADIENT_STOPS = [35, 50, 60, 70, 80, 90, 100];
+const EMPTY_CONTAINER_STYLE: React.CSSProperties = {};
+
 interface AnimatedGradientBackgroundProps {
    /** 
     * Initial size of the radial gradient, defining the starting width. 
@@ -75,19 +79,11 @@ interface AnimatedGradientBackgroundProps {
 const AnimatedGradientBackground: React.FC<AnimatedGradientBackgroundProps> = ({
    startingGap = 125,
    Breathing = false,
-   gradientColors = [
-      "#0A0A0A",
-      "#2979FF",
-      "#FF80AB",
-      "#FF6D00",
-      "#FFD600",
-      "#00E676",
-      "#3D5AFE"
-   ],
-   gradientStops = [35, 50, 60, 70, 80, 90, 100],
+   gradientColors = DEFAULT_GRADIENT_COLORS,
+   gradientStops = DEFAULT_GRADIENT_STOPS,
    animationSpeed = 0.02,
    breathingRange = 5,
-   containerStyle = {},
+   containerStyle = EMPTY_CONTAINER_STYLE,
    topOffset = 0,
    containerClassName = "",
 }) => {

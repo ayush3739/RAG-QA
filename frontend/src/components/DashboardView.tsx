@@ -32,7 +32,7 @@ const itemVariants = {
   visible: { 
     opacity: 1, 
     y: 0,
-    transition: { type: "spring", stiffness: 300, damping: 24 }
+    transition: { type: "spring" as const, stiffness: 300, damping: 24 }
   }
 };
 
@@ -182,10 +182,11 @@ export default function DashboardView({
 
             <div className="space-y-2 flex-1">
               {conversations.slice(0, 4).map((conv) => (
-                <div
+                <button
                   key={conv.id}
+                  type="button"
                   onClick={() => onSelectSession(conv.id)}
-                  className="px-4 py-3 bg-background border border-transparent hover:border-border rounded-xl transition-all duration-200 cursor-pointer flex items-center justify-between group"
+                  className="w-full px-4 py-3 bg-background border border-transparent hover:border-border rounded-xl transition-all duration-200 cursor-pointer flex items-center justify-between group text-left"
                 >
                   <div className="min-w-0 flex-1 pr-4">
                     <h5 className="text-sm font-medium text-foreground truncate">{conv.title}</h5>
@@ -199,7 +200,7 @@ export default function DashboardView({
                     </span>
                     <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
-                </div>
+                </button>
               ))}
               {conversations.length === 0 && (
                 <div className="h-full flex items-center justify-center p-4">

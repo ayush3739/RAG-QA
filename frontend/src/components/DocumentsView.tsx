@@ -10,6 +10,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../lib/api";
 import ConfirmDialog from "./ConfirmDialog";
 
+// Module-scope pure function: no local state used
+function handleDragOver(e: React.DragEvent) {
+  e.preventDefault();
+}
+
 interface DocumentsViewProps {
   documents: SourceDocument[];
   onToggleActive: (id: string) => void;
@@ -26,7 +31,7 @@ export function DocumentsView({
   onSelectDocument,
 }: DocumentsViewProps) {
   const [isDragging, setIsDragging] = useState(false);
-  const [dragCounter, setDragCounter] = useState(0);
+  const dragCounterRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [docToDelete, setDocToDelete] = useState<string | null>(null);
 
@@ -45,26 +50,23 @@ export function DocumentsView({
 
   const handleDragEnter = (e: React.DragEvent) => {
     e.preventDefault();
-    setDragCounter(prev => prev + 1);
+    dragCounterRef.current += 1;
     setIsDragging(true);
   };
 
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
-    setDragCounter(prev => prev - 1);
-    if (dragCounter - 1 === 0) {
+    dragCounterRef.current -= 1;
+    if (dragCounterRef.current === 0) {
       setIsDragging(false);
     }
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-  };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    setDragCounter(0);
+    dragCounterRef.current = 0;
     
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       Array.from(e.dataTransfer.files).forEach(handleUpload);
@@ -96,7 +98,12 @@ export function DocumentsView({
             className="absolute inset-0 bg-primary/10 backdrop-blur-[2px] z-40 border-4 border-primary border-dashed m-6 rounded-2xl flex items-center justify-center pointer-events-none"
           >
             <div className="flex flex-col items-center space-y-4 bg-background p-8 rounded-2xl shadow-2xl">
-              <UploadCloud className="w-16 h-16 text-primary animate-bounce" />
+              <motion.div
+                animate={{ y: [0, -8, 0] }}
+                transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1], repeat: Infinity, repeatDelay: 0.6 }}
+              >
+                <UploadCloud className="w-16 h-16 text-primary" />
+              </motion.div>
               <h2 className="text-2xl font-bold text-foreground">Drop files to ingest</h2>
             </div>
           </motion.div>
@@ -116,16 +123,17 @@ export function DocumentsView({
         </div>
 
         {/* Upload Zone */}
-        <div 
+        <button
+          type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="border-2 border-dashed border-border hover:border-primary/50 transition-colors rounded-2xl bg-surface-container-lowest p-8 flex flex-col items-center justify-center cursor-pointer group"
+          className="w-full border-2 border-dashed border-border hover:border-primary/50 transition-colors rounded-2xl bg-surface-container-lowest p-8 flex flex-col items-center justify-center cursor-pointer group text-center"
         >
           <div className="w-12 h-12 rounded-xl bg-surface-container border border-border flex items-center justify-center text-muted-foreground group-hover:text-primary group-hover:bg-primary/10 transition-colors mb-4">
             <UploadCloud className="w-6 h-6" />
           </div>
           <h3 className="text-sm font-semibold text-foreground tracking-tight mb-1">Click or drag documents to ingest</h3>
           <p className="text-xs text-muted-foreground">Supports PDF, Markdown, TXT, CSV, and XLSX files</p>
-        </div>
+        </button>
 
         {/* Existing Documents Grid */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
@@ -137,7 +145,10 @@ export function DocumentsView({
             return (
               <div
                 key={doc.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => onSelectDocument(doc.id)}
+                onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onSelectDocument(doc.id)}
                 className={cn(
                   "p-5 premium-card relative cursor-pointer glow-hover group overflow-hidden",
                   doc.active && isIndexed

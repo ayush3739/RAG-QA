@@ -118,10 +118,11 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
             </h3>
 
             <div className="space-y-3">
-              <div 
+              <button
+                type="button"
                 onClick={() => handleToggleOllama(true)}
                 className={cn(
-                  "p-4 rounded-xl border cursor-pointer transition-all",
+                  "w-full p-4 rounded-xl border cursor-pointer transition-all text-left",
                   useOllama 
                     ? "bg-primary/5 border-primary text-foreground" 
                     : "bg-surface border-border text-muted-foreground hover:bg-surface-container-low/50"
@@ -134,12 +135,13 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
                 <p className="text-xs mt-1.5 leading-relaxed text-muted-foreground">
                   Queries stay stored within your isolated container environment. Excellent for offline high-privacy requirements.
                 </p>
-              </div>
+              </button>
 
-              <div 
+              <button
+                type="button"
                 onClick={() => handleToggleOllama(false)}
                 className={cn(
-                  "p-4 rounded-xl border cursor-pointer transition-all",
+                  "w-full p-4 rounded-xl border cursor-pointer transition-all text-left",
                   !useOllama 
                     ? "bg-primary/5 border-primary text-foreground" 
                     : "bg-surface border-border text-muted-foreground hover:bg-surface-container-low/50"
@@ -152,7 +154,7 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
                 <p className="text-xs mt-1.5 leading-relaxed text-muted-foreground">
                   Leverages powerful cloud models to execute deep reasoning operations with cited grounding context.
                 </p>
-              </div>
+              </button>
             </div>
           </div>
 
@@ -201,8 +203,10 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
               Appearance
             </h3>
             <div className="grid grid-cols-2 gap-3">
-              <div 
+              <button
+                type="button"
                 onClick={() => setTheme("light")}
+                aria-pressed={theme === "light"}
                 className={cn(
                   "p-3 flex items-center justify-center space-x-2 rounded-xl border cursor-pointer transition-all font-semibold text-sm shadow-sm",
                   theme === "light" 
@@ -212,9 +216,11 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
               >
                 <Sun className="w-4 h-4" />
                 <span>Light</span>
-              </div>
-              <div 
+              </button>
+              <button
+                type="button"
                 onClick={() => setTheme("dark")}
+                aria-pressed={theme === "dark"}
                 className={cn(
                   "p-3 flex items-center justify-center space-x-2 rounded-xl border cursor-pointer transition-all font-semibold text-sm shadow-sm",
                   theme === "dark" 
@@ -224,7 +230,7 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
               >
                 <Moon className="w-4 h-4" />
                 <span>Dark</span>
-              </div>
+              </button>
             </div>
           </div>
 
