@@ -35,6 +35,8 @@ export function DocumentsView({
   const dragCounterRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [docToDelete, setDocToDelete] = useState<string | null>(null);
+  
+  const [showSkeleton, setShowSkeleton] = useState(false);
 
   const handleUpload = (file: File) => {
     if (file.size === 0) {
@@ -108,19 +110,19 @@ export function DocumentsView({
       <AnimatePresence>
         {isDragging && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-primary/10 backdrop-blur-[2px] z-40 border-4 border-primary border-dashed m-6 rounded-2xl flex items-center justify-center pointer-events-none"
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.98 }}
+            className="absolute inset-0 bg-primary/15 backdrop-blur-[4px] z-40 border border-primary m-6 rounded-3xl flex items-center justify-center pointer-events-none shadow-[0_0_50px_rgba(123,108,246,0.3)] transition-all duration-300"
           >
-            <div className="flex flex-col items-center space-y-4 bg-background p-8 rounded-2xl shadow-2xl">
+            <div className="flex flex-col items-center space-y-4 bg-[#0d0d0f]/90 border border-white/10 p-10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
               <motion.div
-                animate={{ y: [0, -8, 0] }}
-                transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1], repeat: Infinity, repeatDelay: 0.6 }}
+                animate={{ y: [0, -14, 0] }}
+                transition={{ duration: 1.2, ease: "easeInOut", repeat: Infinity }}
               >
-                <UploadCloud className="w-16 h-16 text-primary" />
+                <UploadCloud className="w-16 h-16 text-primary drop-shadow-[0_0_15px_rgba(123,108,246,0.5)]" />
               </motion.div>
-              <h2 className="text-2xl font-bold text-foreground">Drop files to ingest</h2>
+              <h2 className="text-2xl font-bold text-foreground tracking-tight">Drop files to ingest</h2>
             </div>
           </motion.div>
         )}
@@ -153,7 +155,24 @@ export function DocumentsView({
 
         {/* Existing Documents Grid */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-          {documents.map((doc) => {
+          {showSkeleton ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="p-5 premium-card animate-pulse relative overflow-hidden flex items-start justify-between min-h-[120px]">
+                <div className="flex items-center space-x-3 w-full">
+                  <div className="p-2.5 rounded-lg bg-surface-container-high w-10 h-10 shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-surface-container rounded w-3/4 skeleton-shimmer-bar" />
+                    <div className="h-3 bg-surface-container rounded w-1/4 skeleton-shimmer-bar" />
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : documents.length === 0 ? (
+            <div className="col-span-2 text-center p-8 bg-surface-container-lowest/40 rounded-2xl border border-border">
+              <p className="text-sm text-muted-foreground italic">No source materials loaded in library.</p>
+            </div>
+          ) : (
+            documents.map((doc) => {
             const isProcessing = doc.status === "queued" || doc.status === "indexing";
             const isFailed = doc.status === "failed";
             const isIndexed = doc.status === "indexed" || !doc.status;
@@ -256,7 +275,7 @@ export function DocumentsView({
                 )}
               </div>
             );
-          })}
+          }))}
         </div>
       </div>
 

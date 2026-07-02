@@ -16,7 +16,6 @@ class User(Base):
     name: Mapped[str] = mapped_column(String(50), nullable=False)
     email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
     password_hash: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
-    clerk_id: Mapped[Optional[str]] = mapped_column(String(100), unique=True, index=True, nullable=True)
     sessions: Mapped[list["Session"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     reset_tokens : Mapped[list["PasswordResetToken"]] = relationship(back_populates="user",cascade="all , delete-orphan")
     documents: Mapped[list["Document"]] = relationship(back_populates="user", cascade="all, delete-orphan")

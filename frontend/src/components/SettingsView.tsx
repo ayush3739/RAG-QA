@@ -8,7 +8,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useStore } from "../store/useStore";
 import { api } from "../lib/api";
 import ConfirmDialog from "./ConfirmDialog";
-import { useClerk } from "@clerk/react";
 
 interface SettingsViewProps {
   params: ModelParams;
@@ -29,11 +28,8 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
   
   const user = useStore(s => s.user);
   const logout = useStore(s => s.logout);
-  const { signOut } = useClerk();
-  
-  const handleLogout = async () => {
+  const handleLogout = () => {
     logout();
-    await signOut();
   };
   
   const [displayName, setDisplayName] = useState(user?.name || "");
@@ -103,7 +99,6 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
       // 204 means success
     } finally {
       logout();
-      await signOut();
     }
   };
 

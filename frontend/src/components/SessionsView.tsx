@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   List, Search, Trash2, Edit2, Download, Maximize2, X, Calendar, 
   MessageSquare, FileText, ChevronRight, CheckCircle, Database 
@@ -39,6 +39,8 @@ export default function SessionsView({
   const [editingConvId, setEditingConvId] = useState<string | null>(null);
   const [tempName, setTempName] = useState("");
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
+
+  const [showSkeleton, setShowSkeleton] = useState(false);
 
   // Filter conversations
   const filteredConvs = conversations.filter(c => {
@@ -144,103 +146,127 @@ ${msg.citations.map(cit => `- **${cit.name}** (${cit.fitScore}% Match): "${cit.s
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {filteredConvs.map((conv) => (
-                <tr 
-                  key={conv.id}
-                  onClick={() => onSelectSession(conv.id)}
-                  className="hover:bg-surface/50 cursor-pointer transition-colors bg-background"
-                >
-                  {/* Name column */}
-                  <td className="p-3 pl-5">
-                    {editingConvId === conv.id ? (
-                      <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
-                        <input
-                          type="text"
-                          value={tempName}
-                          onChange={(e) => setTempName(e.target.value)}
-                          onKeyDown={(e) => e.key === "Enter" && handleSaveRename(conv.id)}
-                          className="bg-background border border-border px-2 py-1 rounded-md text-xs text-foreground font-medium focus:outline-none"
-                        />
-                        <button 
-                          onClick={() => handleSaveRename(conv.id)}
-                          className="p-1 text-primary hover:bg-primary/10 rounded-md transition-colors"
-                        >
-                          <CheckCircle className="w-4 h-4" />
-                        </button>
+              {showSkeleton ? (
+                Array.from({ length: 3 }).map((_, i) => (
+                  <tr key={i} className="animate-pulse bg-background">
+                    <td className="p-4 pl-5">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 bg-surface-container rounded" />
+                        <div className="h-4 bg-surface-container rounded w-48 skeleton-shimmer-bar" />
                       </div>
-                    ) : (
-                      <div 
-                        onDoubleClick={() => handleStartRename(conv.id, conv.title)}
-                        className="text-sm font-semibold text-foreground hover:text-primary transition-colors flex items-center space-x-2"
-                      >
-                        <MessageSquare className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                        <span>{conv.title}</span>
-                        <span className="text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full uppercase tracking-wider">
-                          Auto
-                        </span>
-                      </div>
-                    )}
-                  </td>
-
-                  {/* Created Date */}
-                  <td className="p-3 text-xs font-mono text-muted-foreground">
-                    {new Date(conv.timestamp).toLocaleDateString()}
-                  </td>
-
-                  {/* Document Badge Count */}
-                  <td className="p-3">
-                    <span className="text-[10px] bg-background border border-border text-foreground font-medium px-2 py-0.5 rounded-md inline-flex items-center">
-                      <Database className="w-3 h-3 mr-1 text-muted-foreground" />
-                      {(conv as any).attachedDocIds?.length || conv.documentCount || 0} attached
-                    </span>
-                  </td>
-
-                  {/* Last Active relative time */}
-                  <td className="p-3 text-xs font-mono text-muted-foreground">
-                    {formatRelativeTime(conv.timestamp)}
-                  </td>
-
-                  {/* Actions buttons */}
-                  <td className="p-3 pr-5 text-right" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex items-center justify-end space-x-1">
-                      <button
-                        onClick={() => handleExportMarkdown(conv)}
-                        title="Download Markdown Log"
-                        className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-surface rounded-md cursor-pointer transition-colors"
-                      >
-                        <Download className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleStartRename(conv.id, conv.title)}
-                        title="Rename Session"
-                        className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-surface rounded-md cursor-pointer transition-colors"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => onSelectSession(conv.id)}
-                        title="Open Conversation Window"
-                        className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-surface rounded-md cursor-pointer transition-colors"
-                      >
-                        <Maximize2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => setSessionToDelete(conv.id)}
-                        title="Delete Session"
-                        className="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-md cursor-pointer transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {filteredConvs.length === 0 && (
+                    </td>
+                    <td className="p-4">
+                      <div className="h-3 bg-surface-container rounded w-16 skeleton-shimmer-bar" />
+                    </td>
+                    <td className="p-4">
+                      <div className="h-4 bg-surface-container rounded w-20 skeleton-shimmer-bar" />
+                    </td>
+                    <td className="p-4">
+                      <div className="h-3 bg-surface-container rounded w-16 skeleton-shimmer-bar" />
+                    </td>
+                    <td className="p-4 pr-5 text-right">
+                      <div className="h-6 bg-surface-container rounded w-24 ml-auto skeleton-shimmer-bar" />
+                    </td>
+                  </tr>
+                ))
+              ) : filteredConvs.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="p-8 text-center text-xs text-muted-foreground italic bg-background">
                     No matching sessions found.
                   </td>
                 </tr>
+              ) : (
+                filteredConvs.map((conv) => (
+                  <tr 
+                    key={conv.id}
+                    onClick={() => onSelectSession(conv.id)}
+                    className="hover:bg-surface/50 cursor-pointer transition-colors bg-background"
+                  >
+                    {/* Name column */}
+                    <td className="p-3 pl-5">
+                      {editingConvId === conv.id ? (
+                        <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="text"
+                            value={tempName}
+                            onChange={(e) => setTempName(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && handleSaveRename(conv.id)}
+                            className="bg-background border border-border px-2 py-1 rounded-md text-xs text-foreground font-medium focus:outline-none"
+                          />
+                          <button 
+                            onClick={() => handleSaveRename(conv.id)}
+                            className="p-1 text-primary hover:bg-primary/10 rounded-md transition-colors"
+                          >
+                            <CheckCircle className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div 
+                          onDoubleClick={() => handleStartRename(conv.id, conv.title)}
+                          className="text-sm font-semibold text-foreground hover:text-primary transition-colors flex items-center space-x-2"
+                        >
+                          <MessageSquare className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                          <span>{conv.title}</span>
+                          <span className="text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+                            Auto
+                          </span>
+                        </div>
+                      )}
+                    </td>
+
+                    {/* Created Date */}
+                    <td className="p-3 text-xs font-mono text-muted-foreground">
+                      {new Date(conv.timestamp).toLocaleDateString()}
+                    </td>
+
+                    {/* Document Badge Count */}
+                    <td className="p-3">
+                      <span className="text-[10px] bg-background border border-border text-foreground font-medium px-2 py-0.5 rounded-md inline-flex items-center">
+                        <Database className="w-3 h-3 mr-1 text-muted-foreground" />
+                        {(conv as any).attachedDocIds?.length || conv.documentCount || 0} attached
+                      </span>
+                    </td>
+
+                    {/* Last Active relative time */}
+                    <td className="p-3 text-xs font-mono text-muted-foreground">
+                      {formatRelativeTime(conv.timestamp)}
+                    </td>
+
+                    {/* Actions buttons */}
+                    <td className="p-3 pr-5 text-right" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-end space-x-1">
+                        <button
+                          onClick={() => handleExportMarkdown(conv)}
+                          title="Download Markdown Log"
+                          className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-surface rounded-md cursor-pointer transition-colors"
+                        >
+                          <Download className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleStartRename(conv.id, conv.title)}
+                          title="Rename Session"
+                          className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-surface rounded-md cursor-pointer transition-colors"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => onSelectSession(conv.id)}
+                          title="Open Conversation Window"
+                          className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-surface rounded-md cursor-pointer transition-colors"
+                        >
+                          <Maximize2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setSessionToDelete(conv.id)}
+                          title="Delete Session"
+                          className="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-md cursor-pointer transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>

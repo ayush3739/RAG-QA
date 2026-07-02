@@ -13,7 +13,7 @@ import { Menu, Database, Sparkles } from "lucide-react";
 import { useStore } from "./store/useStore";
 import { api } from "./lib/api";
 import { Toaster, toast } from 'sonner';
-import { useAuth, useUser } from '@clerk/react';
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function App() {
   const queryClient = useQueryClient();
@@ -23,9 +23,7 @@ export default function App() {
   const isMobileSidebarOpen = useStore(s => s.isMobileSidebarOpen);
   const setIsMobileSidebarOpen = useStore(s => s.setIsMobileSidebarOpen);
   const theme = useStore(s => s.theme);
-  const { isLoaded, isSignedIn } = useAuth();
-  const { user: clerkUser } = useUser();
-  const isAuthenticated = !!isSignedIn;
+  const isAuthenticated = useStore(s => s.isAuthenticated);
   const user = useStore(s => s.user);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
@@ -66,43 +64,6 @@ export default function App() {
     }
   });
 
-  useEffect(() => {
-    if (isSignedIn && isLoaded && clerkUser && user) {
-      const hasPlaceholderName = user.name === "Clerk User";
-      const hasPlaceholderEmail = user.email?.endsWith("@clerk.local");
-      
-      const clerkEmail = clerkUser.primaryEmailAddress?.emailAddress;
-      const clerkName = clerkUser.fullName;
-      
-      const updateBody: { name?: string; email?: string } = {};
-      
-      // 1. Sync email if it's a fallback placeholder
-      if (hasPlaceholderEmail && clerkEmail) {
-        updateBody.email = clerkEmail;
-      }
-      
-      // 2. Sync name if it's a fallback placeholder
-      if (hasPlaceholderName) {
-        if (clerkName) {
-          updateBody.name = clerkName;
-        } else {
-          // If Clerk doesn't have a name, show the onboarding prompt
-          setShowOnboarding(true);
-        }
-      }
-      
-      if (Object.keys(updateBody).length > 0) {
-        updateProfileMutation.mutate(updateBody);
-      }
-    }
-  }, [isSignedIn, isLoaded, clerkUser, user]);
-
-  // Automatically clear hash and redirect to dashboard when verification succeeds
-  useEffect(() => {
-    if (isSignedIn && isLoaded && window.location.hash.includes("verify")) {
-      window.location.hash = "";
-    }
-  }, [isSignedIn, isLoaded]);
 
   // Queries to sync data from backend
   useQuery({
@@ -674,21 +635,20 @@ export default function App() {
 
   const activeConversation = activeConvId === "" ? null : conversations.find((c) => c.id === activeConvId) || conversations[0];
 
-  if (!isLoaded) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-black">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  if (!isSignedIn) {
+  if (!isAuthenticated) {
     return <AuthView />;
   }
 
   return (
-    <div className="bg-background text-foreground flex h-screen overflow-hidden font-sans selection:bg-primary/20 selection:text-primary">
+    <div className="bg-background text-foreground flex h-screen overflow-hidden font-sans selection:bg-primary/20 selection:text-primary relative">
       <Toaster position="top-right" richColors />
+      
+      {/* Background Ambient Moving Orbs */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none hidden dark:block">
+        <div className="ambient-orb orb-1 bg-primary/5 w-[500px] h-[500px] -top-[200px] -left-[200px]" />
+        <div className="ambient-orb orb-2 bg-secondary/5 w-[600px] h-[600px] -bottom-[300px] -right-[100px]" />
+        <div className="ambient-orb orb-3 bg-violet-600/5 w-[450px] h-[450px] top-[30%] left-[55%]" />
+      </div>
       {/* Mobile Top Navigation rail bar */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-background/80 backdrop-blur-md border-b border-border flex items-center justify-between px-6 z-40 select-none">
         <div className="flex items-center space-x-2">
@@ -725,65 +685,76 @@ export default function App() {
         />
       </div>
 
-      <main className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden pt-14 md:pt-0">
-        {currentTab === "dashboard" && (
-          <DashboardView
-            documents={documents}
-            conversations={conversations}
-            setCurrentTab={setCurrentTab}
-            onNewResearch={handleNewResearch}
-            onSelectSession={handleSelectSession}
-            onTriggerUploadModal={() => setCurrentTab("documents")}
-          />
-        )}
-        {currentTab === "conversations" && (
-          <div className="flex-1 flex overflow-hidden">
-            <ChatWorkspace
-              messages={activeMessages}
-              isProcessing={isProcessing}
-              onSendMessage={handleSendMessage}
-              documents={activeConvId ? sessionDocuments : documents.filter(d => draftLinkedDocIds.includes(d.id))}
-              allDocuments={documents}
-              activeConvId={activeConvId}
-              onAddDocument={(file) => handleAddDocument(file, activeConvId)}
-              onLinkDocument={(docId) => handleLinkDocument(activeConvId, docId)}
-              onUnlinkDocument={(docId) => handleUnlinkDocument(activeConvId, docId)}
-              onRetryMessage={handleRetryMessage}
-              selectedModel={params.selectedModel}
-              sessionTitle={activeConvId === "" ? "New Chat" : (activeConversation?.title || "New Chat")}
-            />
-          </div>
-        )}
-        {currentTab === "documents" && (
-          <DocumentsView
-            documents={documents}
-            onToggleActive={toggleDocumentActive}
-            onDeleteDocument={handleDeleteDocument}
-            onAddDocument={handleAddDocument}
-            onSelectDocument={(id) => {
-              useStore.getState().setActiveDocumentId(id);
-              setCurrentTab("document_details");
-            }}
-          />
-        )}
-        {currentTab === "document_details" && (
-          <DocumentDetailsView
-            document={documents.find((d) => d.id === useStore.getState().activeDocumentId)}
-            onClose={() => setCurrentTab("documents")}
-          />
-        )}
-        {currentTab === "chats" && (
-          <SessionsView
-            conversations={conversations}
-            documents={documents}
-            onSelectSession={handleSelectSession}
-            onDeleteSession={handleDeleteSession}
-            onRenameSession={handleRenameSession}
-          />
-        )}
-        {currentTab === "settings" && (
-          <SettingsView params={params} onParamChange={setParams} />
-        )}
+      <main className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden pt-14 md:pt-0 relative z-10">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentTab}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden"
+          >
+            {currentTab === "dashboard" && (
+              <DashboardView
+                documents={documents}
+                conversations={conversations}
+                setCurrentTab={setCurrentTab}
+                onNewResearch={handleNewResearch}
+                onSelectSession={handleSelectSession}
+                onTriggerUploadModal={() => setCurrentTab("documents")}
+              />
+            )}
+            {currentTab === "conversations" && (
+              <div className="flex-1 flex overflow-hidden">
+                <ChatWorkspace
+                  messages={activeMessages}
+                  isProcessing={isProcessing}
+                  onSendMessage={handleSendMessage}
+                  documents={activeConvId ? sessionDocuments : documents.filter(d => draftLinkedDocIds.includes(d.id))}
+                  allDocuments={documents}
+                  activeConvId={activeConvId}
+                  onAddDocument={(file) => handleAddDocument(file, activeConvId)}
+                  onLinkDocument={(docId) => handleLinkDocument(activeConvId, docId)}
+                  onUnlinkDocument={(docId) => handleUnlinkDocument(activeConvId, docId)}
+                  onRetryMessage={handleRetryMessage}
+                  selectedModel={params.selectedModel}
+                  sessionTitle={activeConvId === "" ? "New Chat" : (activeConversation?.title || "New Chat")}
+                />
+              </div>
+            )}
+            {currentTab === "documents" && (
+              <DocumentsView
+                documents={documents}
+                onToggleActive={toggleDocumentActive}
+                onDeleteDocument={handleDeleteDocument}
+                onAddDocument={handleAddDocument}
+                onSelectDocument={(id) => {
+                  useStore.getState().setActiveDocumentId(id);
+                  setCurrentTab("document_details");
+                }}
+              />
+            )}
+            {currentTab === "document_details" && (
+              <DocumentDetailsView
+                document={documents.find((d) => d.id === useStore.getState().activeDocumentId)}
+                onClose={() => setCurrentTab("documents")}
+              />
+            )}
+            {currentTab === "chats" && (
+              <SessionsView
+                conversations={conversations}
+                documents={documents}
+                onSelectSession={handleSelectSession}
+                onDeleteSession={handleDeleteSession}
+                onRenameSession={handleRenameSession}
+              />
+            )}
+            {currentTab === "settings" && (
+              <SettingsView params={params} onParamChange={setParams} />
+            )}
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       {/* Onboarding Dialog Modal */}

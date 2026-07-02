@@ -1,3 +1,4 @@
+import React, { useState, useRef, useEffect } from "react";
 import { 
   Database, Plus, FolderOpen, MessageSquare, 
   LayoutDashboard, Search, List, Settings, LogOut, Sun, Moon
@@ -5,7 +6,6 @@ import {
 import { motion } from "framer-motion";
 import { cn } from "../lib/utils";
 import { useStore } from "../store/useStore";
-import { UserButton } from "@clerk/react";
 interface SidebarProps {
   currentTab: string;
   setCurrentTab: (tab: string) => void;
@@ -17,6 +17,19 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
   const theme = useStore(s => s.theme);
   const setTheme = useStore(s => s.setTheme);
   const user = useStore(s => s.user);
+  const logout = useStore(s => s.logout);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
   const tabs = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "chats", label: "Chats", icon: MessageSquare, count: conversationsCount },
@@ -65,8 +78,8 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
               type="button"
               onClick={() => setCurrentTab(item.id)}
               className={cn(
-                "relative w-full flex items-center px-3 py-2 text-sm tracking-tight transition-colors rounded-md cursor-pointer group",
-                isActive ? "text-foreground font-semibold" : "text-muted-foreground hover:text-foreground hover:bg-surface-container/50 font-medium"
+                "relative w-full flex items-center px-3 py-2 text-sm tracking-tight transition-all duration-200 ease-out rounded-md cursor-pointer group",
+                isActive ? "text-foreground font-semibold" : "text-muted-foreground hover:text-foreground hover:translate-x-1 font-medium"
               )}
             >
               {isActive && (
@@ -92,45 +105,46 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
       </nav>
 
       {/* Footer Profile & Logout */}
-      <div className="pt-4 space-y-3.5 relative">
-        {/* Segmented Theme Switcher */}
-        <div className="p-1 flex rounded-xl border border-border bg-surface-container-lowest/80 backdrop-blur-md">
-          <button
-            type="button"
-            onClick={() => setTheme("light")}
-            className={cn(
-              "flex-1 py-1.5 flex items-center justify-center space-x-1.5 text-xs font-semibold rounded-lg transition-all duration-200 cursor-pointer btn-press",
-              theme === "light"
-                ? "bg-surface text-foreground shadow-sm border border-border/40"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <Sun className="w-3.5 h-3.5" />
-            <span>Light</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setTheme("dark")}
-            className={cn(
-              "flex-1 py-1.5 flex items-center justify-center space-x-1.5 text-xs font-semibold rounded-lg transition-all duration-200 cursor-pointer btn-press",
-              theme === "dark"
-                ? "bg-surface text-foreground shadow-sm border border-border/40"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <Moon className="w-3.5 h-3.5" />
-            <span>Dark</span>
-          </button>
-        </div>
+      <div className="pt-4 space-y-1 relative" ref={menuRef}>
+        
+        {/* Dropdown Menu */}
+        {showUserMenu && (
+          <div className="absolute bottom-full left-2 right-2 mb-2 bg-surface border border-border rounded-xl shadow-xl overflow-hidden z-50">
+            <div className="p-2">
+              <button 
+                onClick={logout}
+                className="w-full flex items-center px-3 py-2 text-sm text-red-500 font-medium hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Log Out
+              </button>
+            </div>
+          </div>
+        )}
 
-        <div className="flex items-center justify-between px-2 py-1.5 border border-border/40 rounded-xl bg-surface-container-low/40">
-          <div className="flex items-center space-x-3 min-w-0 flex-1">
-            <UserButton />
+        <div className="flex items-center justify-between px-2 py-2">
+          <button
+            type="button"
+            onClick={() => setShowUserMenu(!showUserMenu)}
+            aria-expanded={showUserMenu}
+            aria-label="User menu"
+            className="flex items-center space-x-3 rounded-lg hover:bg-surface-container-low transition-colors cursor-pointer border border-transparent hover:border-border/50 flex-1 px-1 py-1 min-w-0 text-left"
+          >
+            <div className="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs ring-1 ring-border flex-shrink-0">
+              {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+            </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-on-surface truncate leading-tight tracking-tight">{user?.name || "User"}</p>
               <span className="text-[10px] text-muted-foreground truncate block">{user?.email || "No email"}</span>
             </div>
-          </div>
+          </button>
+          <button 
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className="p-1.5 text-muted-foreground hover:bg-surface-container hover:text-foreground rounded-md transition-colors cursor-pointer ml-1 flex-shrink-0"
+            title="Toggle Theme"
+          >
+            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
         </div>
       </div>
     </aside>

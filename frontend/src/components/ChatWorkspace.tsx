@@ -296,67 +296,80 @@ export default function ChatWorkspace({
                       color: "text-pink-500 bg-pink-500/10 border-pink-500/20"
                     }
                   ].map((item, idx) => (
-                    <button
+                    <motion.button
                       key={idx}
+                      whileHover={{ y: -3, scale: 1.01 }}
                       onClick={() => setInputText(item.prompt)}
                       className="flex items-start p-4 rounded-2xl border border-border bg-surface-container-lowest hover:border-primary/45 hover:bg-surface/50 transition-all text-left group cursor-pointer btn-press"
                     >
-                      <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mr-4 group-hover:scale-110 transition-transform", item.color)}>
+                      <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mr-4 group-hover:scale-105 group-hover:rotate-6 transition-all duration-300", item.color)}>
                         <item.icon className="w-5 h-5" />
                       </div>
                       <div className="flex-1 min-w-0 pr-2">
                         <h4 className="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">{item.title}</h4>
                         <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{item.desc}</p>
                       </div>
-                      <div className="w-5 h-5 rounded-full border border-border flex items-center justify-center text-muted-foreground group-hover:bg-primary group-hover:border-primary group-hover:text-primary-foreground transition-all flex-shrink-0 self-center">
+                      <div className="w-5 h-5 rounded-full border border-border flex items-center justify-center text-muted-foreground group-hover:scale-110 group-hover:bg-primary group-hover:border-primary group-hover:text-primary-foreground transition-all duration-300 flex-shrink-0 self-center">
                         <Plus className="w-3.5 h-3.5" />
                       </div>
-                    </button>
+                    </motion.button>
                   ))}
                 </div>
               </motion.div>
             )}
 
             <div className="space-y-10">
-              {messages.map((msg) => (
-                <motion.div
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  key={msg.id}
-                  className={cn("flex w-full", msg.sender === "user" ? "justify-end" : "justify-start")}
-                >
-                  {msg.sender === "user" ? (
-                    <div className="max-w-[80%] flex flex-col items-end space-y-1 group">
-                      <div className="bg-surface-container-high text-foreground px-5 py-3.5 rounded-2xl rounded-tr-sm shadow-sm border border-border">
-                        <div className="text-[15px] leading-relaxed whitespace-pre-wrap font-normal">
-                          {msg.text}
+              {messages.map((msg, index) => {
+                const isLastMessage = index === messages.length - 1;
+                const isStreaming = isProcessing && isLastMessage && msg.sender === "assistant";
+
+                return (
+                  <motion.div
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    key={msg.id}
+                    className={cn("flex w-full", msg.sender === "user" ? "justify-end" : "justify-start")}
+                  >
+                    {msg.sender === "user" ? (
+                      <div className="max-w-[80%] flex flex-col items-end space-y-1 group">
+                        <div className="bg-surface-container-high text-foreground px-5 py-3.5 rounded-2xl rounded-tr-sm shadow-sm border border-border">
+                          <div className="text-[15px] leading-relaxed whitespace-pre-wrap font-normal">
+                            {msg.text}
+                          </div>
+                        </div>
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center pr-1 h-7">
+                          <button
+                            onClick={() => handleCopy(msg.id, msg.text)}
+                            className="p-1 text-muted-foreground hover:text-foreground hover:bg-surface rounded-md transition-colors"
+                            title="Copy message"
+                          >
+                            {copiedId === msg.id ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                          </button>
                         </div>
                       </div>
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center pr-1 h-7">
-                        <button
-                          onClick={() => handleCopy(msg.id, msg.text)}
-                          className="p-1 text-muted-foreground hover:text-foreground hover:bg-surface rounded-md transition-colors"
-                          title="Copy message"
-                        >
-                          {copiedId === msg.id ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-start space-x-4 max-w-[85%]">
-                      <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center text-white flex-shrink-0 mt-0.5 shadow-sm">
-                        <Sparkles className="w-4 h-4" />
-                      </div>
-                      <div className="flex-1 flex flex-col space-y-2">
-                        <div className="prose prose-sm dark:prose-invert prose-p:text-[15px] prose-p:leading-relaxed prose-p:font-normal prose-li:text-[15px] prose-li:leading-relaxed prose-li:font-normal prose-pre:bg-surface prose-pre:border prose-pre:border-border text-foreground">
-                          {msg.text ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown> : (
-                            <div className="flex items-center space-x-1 mt-1 dot-wave text-muted-foreground">
-                              <span className="bg-current"></span>
-                              <span className="bg-current"></span>
-                              <span className="bg-current"></span>
-                            </div>
-                          )}
+                    ) : (
+                      <div className="flex items-start space-x-4 max-w-[85%] w-full">
+                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center text-white flex-shrink-0 mt-0.5 shadow-sm">
+                          <Sparkles className="w-4 h-4" />
                         </div>
+                        <div className={cn(
+                          "flex-1 flex flex-col space-y-2 p-3 rounded-2xl border border-transparent transition-all duration-300",
+                          isStreaming && "bg-primary/[0.02] border-primary/10 shadow-[0_0_20px_rgba(123,108,246,0.06)]"
+                        )}>
+                          <div className="prose prose-sm dark:prose-invert prose-p:text-[15px] prose-p:leading-relaxed prose-p:font-normal prose-li:text-[15px] prose-li:leading-relaxed prose-li:font-normal prose-pre:bg-surface prose-pre:border prose-pre:border-border text-foreground">
+                            {msg.text ? (
+                              <>
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
+                                {isStreaming && <span className="streaming-cursor">▋</span>}
+                              </>
+                            ) : (
+                              <div className="flex items-center space-x-1 mt-1 dot-wave text-muted-foreground">
+                                <span className="bg-current"></span>
+                                <span className="bg-current"></span>
+                                <span className="bg-current"></span>
+                              </div>
+                            )}
+                          </div>
                         
                         {/* Citations */}
                         {msg.citations && msg.citations.length > 0 && (
@@ -439,7 +452,7 @@ export default function ChatWorkspace({
                     </div>
                   )}
                 </motion.div>
-              ))}
+              )})}
 
               {/* Research Execution UI */}
               {isProcessing && (
@@ -562,7 +575,7 @@ export default function ChatWorkspace({
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: 400, opacity: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="absolute right-0 top-0 bottom-0 w-80 md:w-96 border-l border-border bg-surface-container-lowest z-40 flex flex-col shadow-2xl"
+            className="absolute right-0 top-0 bottom-0 w-80 md:w-96 border-l border-border bg-[#0d0d0f]/80 backdrop-blur-2xl z-40 flex flex-col shadow-2xl"
           >
             <div className="h-16 border-b border-border flex items-center px-4 pt-1 bg-background/50 backdrop-blur-md shrink-0">
               <h3 className="font-semibold text-sm text-foreground flex items-center leading-none">
