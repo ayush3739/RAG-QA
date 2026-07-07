@@ -14,8 +14,14 @@ class Settings(BaseSettings):
     # --- LLM API Keys ---
     github_token: Optional[str] = None
     groq_api_key: Optional[str] = None
+    groq_api_secondary: Optional[str] = None
     gemini_api_key: Optional[str] = None
     open_router_key: Optional[str] = None
+    nvidia_nim: Optional[str] = None
+    aws_access_key_id: Optional[str] = None
+    aws_secret_access_key: Optional[str] = None
+    aws_session_token: Optional[str] = None
+    aws_region_name: Optional[str] = "us-east-1"
 
     # Active provider/model (overridden at the bottom of this file)
     llm_provider: str = "groq"
@@ -63,7 +69,7 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-# Active provider — Gemini first since Groq has hit its free daily limit.
-# Fallback chain: Gemini → Groq → OpenRouter → GitHub AI → Ollama
-settings.llm_provider = "gemini"
-settings.llm_model = "gemini-2.0-flash"
+# Active provider — Groq first.
+# Fallback chain: Groq → Groq Secondary
+settings.llm_provider = "groq"
+settings.llm_model = "llama-3.3-70b-versatile"

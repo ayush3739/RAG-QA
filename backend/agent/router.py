@@ -322,8 +322,11 @@ def _synthesis_system_prompt(
 retrieved from a PDF document.{doc_names_str}
 
 Rules:
-- Answer ONLY using the provided context chunks. Do not use prior knowledge.
+- UNDER NO CIRCUMSTANCES should you use outside knowledge or training data to answer the query.
+- You MUST answer strictly and exclusively based on the provided context chunks.
 - Exception: if the user's question also contains a clearly separate general-knowledge part that is not asking about the document, answer that part from your own knowledge and do not cite it as document-supported.
+- If the exact answer is not explicitly and physically written in the text provided, you MUST reply: "I could not find this information in the provided document." Failure to do so will result in a system failure.
+- Do not infer, guess, or extrapolate beyond what is explicitly stated in the chunks. If you know the answer but the document does not mention it, YOU MUST NOT ANSWER IT.
 - If the answer spans multiple chunks, synthesize them into one clear response.
 - Always cite the relevant page number(s) at the end, e.g., (Page 4, 12).
 - You may tell the user where to read more, e.g., "You can read more on Page 4", only when that page number appears in the context metadata.
