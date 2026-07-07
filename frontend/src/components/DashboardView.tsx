@@ -64,14 +64,14 @@ function AnimatedCounter({ value, duration = 1.2 }: { value: number; duration?: 
   return <span>{count}</span>;
 }
 
-interface GlowCardProps extends React.HTMLAttributes<HTMLDivElement> {
+interface GlowCardProps {
   children: React.ReactNode;
   className?: string;
   onClick?: () => void;
   variants?: any;
 }
 
-function GlowCard({ children, className, onClick, variants, ...props }: GlowCardProps) {
+function GlowCard({ children, className, onClick, variants }: GlowCardProps) {
   const [coords, setCoords] = useState({ x: 0, y: 0 });
   const [isHovered, setIsHovered] = useState(false);
 
@@ -92,10 +92,9 @@ function GlowCard({ children, className, onClick, variants, ...props }: GlowCard
       onMouseLeave={() => setIsHovered(false)}
       onClick={onClick}
       className={cn(
-        "group relative p-6 premium-card cursor-pointer overflow-hidden transition-all duration-300 hover:border-primary/45 hover:shadow-[0_20px_50px_rgba(0,0,0,0.4)]",
+        "group relative p-6 premium-card cursor-pointer overflow-hidden transition-all duration-300 hover:border-primary/45 hover:shadow-premium-hover",
         className
       )}
-      {...props}
     >
       {/* Vercel Mouse-Follow Glow */}
       <div
@@ -131,7 +130,7 @@ function StatCard({ title, value, icon: Icon, colorClass, variants }: { title: s
       onMouseMove={handleMouseMove}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="relative p-5 premium-card overflow-hidden transition-all duration-300 hover:border-primary/30 shadow-[0_4px_12px_rgba(0,0,0,0.2)]"
+      className="relative p-5 premium-card overflow-hidden transition-all duration-300 hover:border-primary/30 shadow-premium"
     >
       {/* Mouse Follow Glow */}
       <div
@@ -260,7 +259,7 @@ export default function DashboardView({
             <div className="w-10 h-10 rounded-xl bg-surface-container border border-border flex items-center justify-center text-foreground mb-4 group-hover:scale-105 group-hover:text-primary group-hover:border-primary/30 transition-all duration-300">
               <MessageSquare className="w-5 h-5" />
             </div>
-            <h3 className="font-semibold text-foreground tracking-tight mb-1.5 group-hover:text-primary transition-colors">New Chat Thread</h3>
+            <h3 className="font-semibold text-foreground tracking-tight mb-1.5 group-hover:text-primary transition-colors">New Chat</h3>
             <p className="text-xs text-muted-foreground leading-relaxed">
               Launch a streaming conversation, attach specific materials, and ask questions with citations.
             </p>
@@ -283,12 +282,12 @@ export default function DashboardView({
         {/* Row 2: Recent Sessions & Recent Documents (Bento Grid) */}
         <div className="grid grid-cols-12 gap-6">
           
-          {/* Recent Sessions */}
+          {/* Recent Chats */}
           <motion.div variants={itemVariants} className="col-span-12 md:col-span-8 flex flex-col p-6 premium-card">
             <div className="flex items-center justify-between mb-5">
               <h4 className="font-semibold text-sm text-foreground flex items-center tracking-tight">
                 <Clock className="w-4 h-4 mr-2 text-muted-foreground" />
-                Recent Threads
+                Recent Chats
               </h4>
               <button 
                 onClick={() => setCurrentTab("chats")}
@@ -304,7 +303,7 @@ export default function DashboardView({
                   key={conv.id}
                   type="button"
                   onClick={() => onSelectSession(conv.id)}
-                  className="w-full px-4 py-3 bg-surface-container-high/30 dark:bg-black/40 border border-black/5 dark:border-white/5 hover:border-border rounded-xl transition-all duration-200 cursor-pointer flex items-center justify-between group text-left"
+                  className="w-full px-4 py-3 bg-surface-container-lowest border border-border hover:bg-surface hover:border-primary/25 rounded-xl transition-all duration-200 cursor-pointer flex items-center justify-between group text-left"
                 >
                   <div className="min-w-0 flex-1 pr-4">
                     <h5 className="text-sm font-medium text-foreground truncate">{conv.title}</h5>
@@ -312,10 +311,7 @@ export default function DashboardView({
                       {conv.messages[conv.messages.length - 1]?.text || "No queries executed yet."}
                     </p>
                   </div>
-                  <div className="flex items-center space-x-3 flex-shrink-0">
-                    <span className="text-[10px] font-mono text-muted-foreground">
-                      {conv.messages.length} msgs
-                    </span>
+                  <div className="flex items-center flex-shrink-0">
                     <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                 </button>
@@ -347,7 +343,7 @@ export default function DashboardView({
               {documents.slice(0, 4).map((doc) => (
                 <div
                   key={doc.id}
-                  className="px-4 py-3 bg-surface-container-high/30 dark:bg-black/40 border border-black/5 dark:border-white/5 hover:border-border rounded-xl flex items-center justify-between transition-colors"
+                  className="px-4 py-3 bg-surface-container-lowest border border-border hover:bg-surface hover:border-primary/25 rounded-xl flex items-center justify-between transition-colors"
                 >
                   <div className="flex items-center space-x-3 min-w-0">
                     <div className={cn(

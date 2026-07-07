@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { 
   List, Search, Trash2, Edit2, Download, Maximize2, X, Calendar, 
-  MessageSquare, FileText, ChevronRight, CheckCircle, Database 
+  MessageSquare, FileText, ChevronRight, CheckCircle
 } from "lucide-react";
 import { Conversation, SourceDocument, Message } from "../types";
 import { cn } from "../lib/utils";
@@ -35,7 +35,6 @@ export default function SessionsView({
   onRenameSession,
 }: SessionsViewProps) {
   const [search, setSearch] = useState("");
-  const [selectedDocFilter, setSelectedDocFilter] = useState("all");
   const [editingConvId, setEditingConvId] = useState<string | null>(null);
   const [tempName, setTempName] = useState("");
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
@@ -44,10 +43,7 @@ export default function SessionsView({
 
   // Filter conversations
   const filteredConvs = conversations.filter(c => {
-    const matchesSearch = c.title.toLowerCase().includes(search.toLowerCase());
-    // Filter by attached document if necessary
-    const matchesDoc = selectedDocFilter === "all" || (c as any).attachedDocIds?.includes(selectedDocFilter);
-    return matchesSearch && matchesDoc;
+    return c.title.toLowerCase().includes(search.toLowerCase());
   });
 
   const handleStartRename = (id: string, currentTitle: string) => {
@@ -74,7 +70,7 @@ ${msg.text}
 
 ${msg.citations && msg.citations.length > 0 ? `
 **Cited Source Proofs:**
-${msg.citations.map(cit => `- **${cit.name}** (${cit.fitScore}% Match): "${cit.snippet}"`).join("\n")}
+${msg.citations.map(cit => `- **${cit.name}**${cit.fitScore != null ? ` (${cit.fitScore}% match)` : ""}: "${cit.snippet}"`).join("\n")}
 ` : ""}
 ---
 `).join("\n")}
@@ -101,11 +97,11 @@ ${msg.citations.map(cit => `- **${cit.name}** (${cit.fitScore}% Match): "${cit.s
             Sessions
           </h2>
           <p className="text-sm text-muted-foreground mt-1.5 font-medium">
-            Browse active chat histories, rename research threads, filter by linked documents, and export conversation backups as Markdown logs.
+            Browse active chat histories, rename research threads, and export conversation backups as Markdown logs.
           </p>
         </div>
 
-        {/* Search & Filter Toolbar */}
+        {/* Search Toolbar */}
         <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
           <div className="relative w-full md:w-72">
             <Search className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
@@ -117,20 +113,6 @@ ${msg.citations.map(cit => `- **${cit.name}** (${cit.fitScore}% Match): "${cit.s
               className="w-full text-sm font-medium bg-background border border-border rounded-lg pl-9 pr-4 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 shadow-sm"
             />
           </div>
-
-          <div className="flex items-center space-x-3 w-full md:w-auto">
-            <span className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Attached Document:</span>
-            <select
-              value={selectedDocFilter}
-              onChange={(e) => setSelectedDocFilter(e.target.value)}
-              className="text-xs font-medium bg-background border border-border px-2.5 py-1.5 rounded-lg text-foreground focus:outline-none shadow-sm cursor-pointer"
-            >
-              <option value="all">All Documents</option>
-              {documents.map(d => (
-                <option key={d.id} value={d.id}>{d.name}</option>
-              ))}
-            </select>
-          </div>
         </div>
 
         {/* Table layout */}
@@ -140,7 +122,6 @@ ${msg.citations.map(cit => `- **${cit.name}** (${cit.fitScore}% Match): "${cit.s
               <tr className="border-b border-border bg-surface text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">
                 <th className="p-3 pl-5">Research Title</th>
                 <th className="p-3">Created</th>
-                <th className="p-3">Linked Docs</th>
                 <th className="p-3">Last Active</th>
                 <th className="p-3 pr-5 text-right">Actions</th>
               </tr>
@@ -159,9 +140,6 @@ ${msg.citations.map(cit => `- **${cit.name}** (${cit.fitScore}% Match): "${cit.s
                       <div className="h-3 bg-surface-container rounded w-16 skeleton-shimmer-bar" />
                     </td>
                     <td className="p-4">
-                      <div className="h-4 bg-surface-container rounded w-20 skeleton-shimmer-bar" />
-                    </td>
-                    <td className="p-4">
                       <div className="h-3 bg-surface-container rounded w-16 skeleton-shimmer-bar" />
                     </td>
                     <td className="p-4 pr-5 text-right">
@@ -171,7 +149,7 @@ ${msg.citations.map(cit => `- **${cit.name}** (${cit.fitScore}% Match): "${cit.s
                 ))
               ) : filteredConvs.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="p-8 text-center text-xs text-muted-foreground italic bg-background">
+                  <td colSpan={4} className="p-8 text-center text-xs text-muted-foreground italic bg-background">
                     No matching sessions found.
                   </td>
                 </tr>
@@ -217,14 +195,6 @@ ${msg.citations.map(cit => `- **${cit.name}** (${cit.fitScore}% Match): "${cit.s
                     {/* Created Date */}
                     <td className="p-3 text-xs font-mono text-muted-foreground">
                       {new Date(conv.timestamp).toLocaleDateString()}
-                    </td>
-
-                    {/* Document Badge Count */}
-                    <td className="p-3">
-                      <span className="text-[10px] bg-background border border-border text-foreground font-medium px-2 py-0.5 rounded-md inline-flex items-center">
-                        <Database className="w-3 h-3 mr-1 text-muted-foreground" />
-                        {(conv as any).attachedDocIds?.length || conv.documentCount || 0} attached
-                      </span>
                     </td>
 
                     {/* Last Active relative time */}

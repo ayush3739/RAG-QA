@@ -16,7 +16,7 @@ export interface SourceDocument {
 
 export interface Citation {
   name: string;
-  fitScore: number;
+  fitScore: number | null;
   snippet: string;
   type?: string;
   title?: string;

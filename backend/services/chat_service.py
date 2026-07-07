@@ -5,7 +5,7 @@ import json
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.services.session_service import SessionService
-from backend.agent.router import answer_query
+from backend.agent.graph_agent import stream_answer_query_with_graph
 
 
 class ChatService:
@@ -73,17 +73,29 @@ class ChatService:
         # 5. Route through the agent layer
 
         try:
-            result = await answer_query(
+            result = None
+            async for event_type, data in stream_answer_query_with_graph(
                 query=question,
                 document_ids=document_ids,
                 db=db,
                 history=[
-                    {"role": msg.role, "content": msg.content}
+                    {
+                        "role": msg.role,
+                        "content": msg.content,
+                        "citations": msg.citations,
+                    }
                     for msg in history.messages[:-1]
                 ],
                 include_web=True,
                 document_names=document_names,
-            )
+            ):
+                if event_type == "agent_result":
+                    result = data
+                    continue
+                yield (event_type, data)
+
+            if result is None:
+                raise RuntimeError("Graph agent did not return a result")
         except Exception as exc:
             error_message = (
                 "Sorry, I couldn't complete this response because the agent "
@@ -104,10 +116,7 @@ class ChatService:
 
         full_response = result["answer"]
 
-        # The agent currently returns a full synthesized answer. Keep the SSE
-        # contract stable by emitting it as token events.
-        for token in full_response.split():
-            yield ("token", token + " ")
+        yield ("answer", json.dumps(full_response))
 
         # 9. Save assistant message
 

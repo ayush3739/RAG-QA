@@ -139,16 +139,6 @@ OPENAI_TOOL_SCHEMAS = [
 ]
 
 
-async def retrieve_from_document_impl(query: str,document_ids: list[int],db: AsyncSession):
-    """Tool: Search document via RAG."""
-    retriever = Retriever(
-        document_ids=document_ids,
-        db=db
-    )
-
-    result = await retriever.similarity_search(query)
-    return result
-
 
 async def _load_document_chunks(
     document_ids: list[int],
@@ -266,9 +256,55 @@ async def web_search_impl(query: str):
                 "type": "web",
                 "title": item.get("title"),
                 "url": item.get("url"),
+                "content": item.get("content"),
+                "excerpt": (item.get("content") or "")[:500],
             }
             for item in data.get("results", [])
         ],
+        "confidence": 0.7,
+    }
+
+
+def _history_messages(history: list[dict] | None) -> list[dict]:
+    messages = []
+    for item in (history or [])[-6:]:
+        role = item.get("role")
+        content = item.get("content")
+        if role in {"user", "assistant"} and content:
+            messages.append({"role": role, "content": content})
+    return messages
+
+
+async def direct_answer_impl(query: str, history: list[dict] | None = None, document_names: list[str] | None = None):
+    """Tool: Answer directly via LLM (no retrieval)."""
+    llm = LLMProvider()
+    doc_names_str = ""
+    if document_names:
+        doc_names_str = (
+            "\n\nThe following document(s) are linked to this session: "
+            + ", ".join(f'"{n}"' for n in document_names)
+            + ". If the user asks about the document name or title, you MUST state it directly from this list."
+        )
+    answer = await llm.invoke(
+        [
+            {
+                "role": "system",
+                "content": (
+                    "You are DocuMind, a document research and RAG assistant. "
+                    "Answer direct/general questions briefly in that product "
+                    "context. For greetings, introduce yourself as DocuMind and "
+                    "offer help with documents, research, summaries, citations, "
+                    "or general questions. Do not invent document citations."
+                    + doc_names_str
+                ),
+            },
+            *_history_messages(history),
+            {"role": "user", "content": query},
+        ]
+    )
+
+    return {
+        "answer": answer,
         "confidence": 0.7,
     }
 
@@ -318,7 +354,6 @@ async def direct_answer_impl(query: str, history: list[dict] | None = None, docu
     }
     
 
-
 async def summarize_document_impl(query: str, document_ids: list[int], db: AsyncSession):
     """Tool: Generate document summary."""
     chunks = await _load_document_chunks(document_ids=document_ids, db=db, limit=30)
@@ -326,6 +361,7 @@ async def summarize_document_impl(query: str, document_ids: list[int], db: Async
         return {
             "answer": "No indexed document chunks were found to summarize.",
             "sources": [],
+            "chunks": [],
             "confidence": 0.0,
         }
 
@@ -347,6 +383,7 @@ async def summarize_document_impl(query: str, document_ids: list[int], db: Async
     return {
         "answer": answer,
         "sources": _sources_from_chunks(chunks[:5]),
+        "chunks": chunks,
         "confidence": None,
     }
 
@@ -397,3 +434,15 @@ async def generate_quiz_impl(
         "sources": _sources_from_chunks(chunks[:5]),
         "confidence": None,
     }
+
+
+#Retriever
+async def retrieve_from_document_impl(query: str, document_ids: list[int], db: AsyncSession):
+    """Tool: Search document via RAG."""
+    retriever = Retriever(
+        document_ids=document_ids,
+        db=db
+    )
+
+    result = await retriever.similarity_search(query)
+    return result

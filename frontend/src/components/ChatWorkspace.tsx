@@ -3,7 +3,7 @@ import { Message, SourceDocument, Citation, DocType } from "../types";
 import { 
   Sparkles, Send, Paperclip, Mic, FileText, FileSpreadsheet, 
   PanelRightClose, PanelRightOpen, BrainCircuit, LayoutList, Layers, Settings2, 
-  CheckCircle2, Search, ArrowRight, Plus, Loader2, AlertTriangle, X,
+  CheckCircle2, Search, ArrowRight, ArrowDown, Plus, Loader2, AlertTriangle, X,
   Copy, ThumbsUp, ThumbsDown, Check, RotateCcw
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -15,7 +15,77 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 const EMPTY_DOCS: SourceDocument[] = [];
-const RESEARCH_STEPS = ["Planning", "Searching Documents", "Searching Web", "Analyzing Evidence", "Writing", "Reviewing"];
+const STARTING_GRAPH_STATUS = [{ node: "main_router", label: "Deciding route", status: "running" }];
+
+function CodeBlock({ code, language }: { code: string; language?: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard?.writeText(code).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1200);
+    });
+  };
+
+  return (
+    <div className="my-5 w-full max-w-full overflow-hidden rounded-2xl border border-border bg-surface-container-lowest shadow-sm dark:border-[#2a2f3a] dark:bg-[#11141a] dark:shadow-[0_18px_48px_rgba(0,0,0,0.35)]">
+      <div className="flex items-center justify-between border-b border-border px-4 py-2 dark:border-[#2a2f3a] dark:bg-[#171b23]">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          {language || "code"}
+        </span>
+        <button
+          type="button"
+          onClick={handleCopy}
+          className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-surface hover:text-foreground dark:hover:bg-white/8"
+          title="Copy code"
+        >
+          {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+          {copied ? "Copied" : "Copy"}
+        </button>
+      </div>
+      <pre className="overflow-x-auto px-4 py-4 text-[14px] leading-6 text-foreground dark:bg-[#0c0f14] dark:text-[#e7eaf0]">
+        <code>{code}</code>
+      </pre>
+    </div>
+  );
+}
+
+const formatAssistantMarkdown = (text: string) => {
+  let inFence = false;
+  let sectionIndex = 0;
+  return text
+    .split("\n")
+    .map((line) => {
+      const trimmed = line.trim();
+      if (trimmed.startsWith("```")) {
+        inFence = !inFence;
+        return line;
+      }
+      if (inFence || !trimmed) return line;
+
+      const boldLeadIn = trimmed.match(/^\*\*([^*:]{3,90}):\*\*\s*(.*)$/);
+      if (boldLeadIn) {
+        sectionIndex += 1;
+        return boldLeadIn[2]
+          ? `\n### ${sectionIndex}. ${boldLeadIn[1]}\n\n${boldLeadIn[2]}`
+          : `\n### ${sectionIndex}. ${boldLeadIn[1]}`;
+      }
+
+      const labelLine = trimmed.match(/^([A-Z][A-Za-z0-9/() ,.&'"-]{2,90}):\s*(.*)$/);
+      if (labelLine && labelLine[1].includes(" ")) {
+        sectionIndex += 1;
+        return labelLine[2]
+          ? `\n### ${sectionIndex}. ${labelLine[1]}\n\n${labelLine[2]}`
+          : `\n### ${sectionIndex}. ${labelLine[1]}`;
+      }
+
+      if (/^(conclusion|summary|overview)$/i.test(trimmed)) {
+        return `\n### ${trimmed}`;
+      }
+      return line;
+    })
+    .join("\n");
+};
 
 interface ChatWorkspaceProps {
   messages: Message[];
@@ -30,6 +100,7 @@ interface ChatWorkspaceProps {
   onRetryMessage?: (messageId: string) => void;
   selectedModel: string;
   sessionTitle?: string;
+  graphStatuses?: any[];
 }
 
 export default function ChatWorkspace({
@@ -45,6 +116,7 @@ export default function ChatWorkspace({
   onRetryMessage,
   selectedModel,
   sessionTitle = "New Chat",
+  graphStatuses = [],
 }: ChatWorkspaceProps) {
   const [inputText, setInputText] = useState("");
   const [isMicActive, setIsMicActive] = useState(false);
@@ -57,26 +129,47 @@ export default function ChatWorkspace({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [feedbacks, setFeedbacks] = useState<Record<string, 'up' | 'down'>>({});
   const [activeFeedbackMsg, setActiveFeedbackMsg] = useState<{ id: string; dbId: number; rating: number; type: 'up' | 'down' } | null>(null);
+  const [showJumpToLatest, setShowJumpToLatest] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const shouldStickToBottomRef = useRef(true);
 
-  // Research execution step tracker
-  const [executionStep, setExecutionStep] = useState(0);
+  const visibleGraphStatuses = graphStatuses.length > 0
+    ? graphStatuses.reduce((items: any[], status: any) => {
+        const key = status.node || status.label || status.message;
+        const existingIdx = items.findIndex((item) => (item.node || item.label || item.message) === key);
+        if (existingIdx === -1) return [...items, status];
+        return items.map((item, idx) => idx === existingIdx ? { ...item, ...status } : item);
+      }, [])
+    : STARTING_GRAPH_STATUS;
+
+  const handleChatScroll = () => {
+    const scroller = chatScrollRef.current;
+    if (!scroller) return;
+    const distanceFromBottom = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight;
+    const isNearBottom = distanceFromBottom < 140;
+    shouldStickToBottomRef.current = isNearBottom;
+    setShowJumpToLatest(!isNearBottom);
+  };
+
+  const scrollToLatest = () => {
+    shouldStickToBottomRef.current = true;
+    setShowJumpToLatest(false);
+    scrollRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  };
 
   useEffect(() => {
-    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isProcessing, executionStep]);
-
-  useEffect(() => {
-    if (isProcessing) {
-      setExecutionStep(0);
-      const interval = setInterval(() => {
-        setExecutionStep(prev => (prev < RESEARCH_STEPS.length - 1 ? prev + 1 : prev));
-      }, 1200);
-      return () => clearInterval(interval);
+    if (shouldStickToBottomRef.current) {
+      requestAnimationFrame(() => {
+        scrollRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+      });
+      setShowJumpToLatest(false);
+    } else {
+      setShowJumpToLatest(true);
     }
-  }, [isProcessing]);
+  }, [messages, isProcessing, graphStatuses]);
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -224,7 +317,12 @@ export default function ChatWorkspace({
     <div className="flex-1 flex w-full h-full overflow-hidden relative bg-background">
       
       {/* Main Chat Area */}
-      <div className={cn("flex-1 flex flex-col min-w-0 transition-all duration-300 relative", isInspectorOpen ? "mr-80 md:mr-96" : "")}>
+      <div
+        className={cn(
+          "flex flex-col min-w-0 min-h-0 transition-all duration-300 relative",
+          isInspectorOpen ? "w-[calc(100%-20rem)] md:w-[calc(100%-24rem)] shrink-0" : "flex-1"
+        )}
+      >
         {/* Header */}
         <header className="h-16 shrink-0 flex justify-between items-center px-6 pt-1 bg-background/80 backdrop-blur-md border-b border-border z-20">
           <div className="flex items-center space-x-3">
@@ -249,8 +347,12 @@ export default function ChatWorkspace({
         </header>
 
         {/* Chat Feed */}
-        <div className="flex-1 overflow-y-auto px-6 md:px-12 pt-6 pb-36 flex flex-col items-center">
-          <div className="w-full max-w-3xl space-y-12">
+        <div
+          ref={chatScrollRef}
+          onScroll={handleChatScroll}
+          className="flex-1 overflow-y-auto overflow-x-hidden px-6 md:px-12 pt-6 pb-4 flex flex-col items-center min-h-0"
+        >
+          <div className={cn("w-full min-w-0 space-y-12", isInspectorOpen ? "max-w-4xl" : "max-w-5xl")}>
             
             {messages.length === 0 && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-16 select-none mt-10 text-center flex flex-col items-center w-full">
@@ -348,18 +450,78 @@ export default function ChatWorkspace({
                         </div>
                       </div>
                     ) : (
-                      <div className="flex items-start space-x-4 max-w-[85%] w-full">
+                      <div className="flex items-start space-x-4 w-full min-w-0">
                         <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center text-white flex-shrink-0 mt-0.5 shadow-sm">
                           <Sparkles className="w-4 h-4" />
                         </div>
                         <div className={cn(
-                          "flex-1 flex flex-col space-y-2 p-3 rounded-2xl border border-transparent transition-all duration-300",
+                          "min-w-0 flex-1 flex flex-col space-y-2 p-3 rounded-2xl border border-transparent transition-all duration-300",
                           isStreaming && "bg-primary/[0.02] border-primary/10 shadow-[0_0_20px_rgba(123,108,246,0.06)]"
                         )}>
-                          <div className="prose prose-sm dark:prose-invert prose-p:text-[15px] prose-p:leading-relaxed prose-p:font-normal prose-li:text-[15px] prose-li:leading-relaxed prose-li:font-normal prose-pre:bg-surface prose-pre:border prose-pre:border-border text-foreground">
+                          <div className="max-w-none min-w-0 text-foreground">
                             {msg.text ? (
                               <>
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
+                                <ReactMarkdown
+                                  remarkPlugins={[remarkGfm]}
+                                  components={{
+                                    a: ({ href, children }) => (
+                                      <a href={href} target="_blank" rel="noreferrer" className="text-sky-500 underline underline-offset-2 break-words">
+                                        {children}
+                                      </a>
+                                    ),
+                                    p: ({ children }) => (
+                                      <p className="my-5 break-words text-[16px] leading-8 font-normal text-foreground">
+                                        {children}
+                                      </p>
+                                    ),
+                                    h2: ({ children }) => (
+                                      <h2 className="mt-10 mb-5 text-[22px] font-semibold tracking-tight text-foreground">
+                                        {children}
+                                      </h2>
+                                    ),
+                                    h3: ({ children }) => (
+                                      <h3 className="mt-8 mb-4 text-[17px] font-semibold tracking-tight text-foreground">
+                                        {children}
+                                      </h3>
+                                    ),
+                                    ul: ({ children }) => (
+                                      <ul className="my-5 list-disc space-y-2 pl-7">
+                                        {children}
+                                      </ul>
+                                    ),
+                                    ol: ({ children }) => (
+                                      <ol className="my-5 list-decimal space-y-2 pl-7">
+                                        {children}
+                                      </ol>
+                                    ),
+                                    li: ({ children }) => (
+                                      <li className="break-words pl-1 text-[16px] leading-8 text-foreground">
+                                        {children}
+                                      </li>
+                                    ),
+                                    strong: ({ children }) => (
+                                      <strong className="font-semibold text-foreground">
+                                        {children}
+                                      </strong>
+                                    ),
+                                    code: ({ className, children, ...props }: any) => {
+                                      const code = String(children).replace(/\n$/, "");
+                                      const language = /language-(\w+)/.exec(className || "")?.[1];
+                                      const isBlock = Boolean(className) || code.includes("\n");
+                                      if (isBlock) {
+                                        return <CodeBlock code={code} language={language} />;
+                                      }
+                                      return (
+                                        <code className="rounded-md bg-surface px-1.5 py-0.5 text-[14px] font-semibold text-foreground" {...props}>
+                                          {children}
+                                        </code>
+                                      );
+                                    },
+                                    pre: ({ children }) => <>{children}</>,
+                                  }}
+                                >
+                                  {formatAssistantMarkdown(msg.text)}
+                                </ReactMarkdown>
                                 {isStreaming && <span className="streaming-cursor">▋</span>}
                               </>
                             ) : (
@@ -378,7 +540,7 @@ export default function ChatWorkspace({
                               {msg.citations.map((cite: any, cIdx) => {
                                 const isWeb = cite.type === "web";
                                 const name = cite.name || cite.title || "Source";
-                                const badge = isWeb ? "Web" : cite.page != null ? `P.${cite.page}` : (cite.fitScore ? `${cite.fitScore}%` : "Doc");
+                                const badge = isWeb ? "Web" : cite.page != null ? `P.${cite.page}` : "Doc";
                                 return (
                                   <button
                                     key={cIdx}
@@ -461,16 +623,19 @@ export default function ChatWorkspace({
                      <div className="w-6 h-6 rounded-md bg-surface-container-high border border-border flex items-center justify-center text-muted-foreground shadow-sm">
                        <Search className="w-3.5 h-3.5 animate-pulse text-primary" />
                      </div>
-                     <span className="text-sm font-semibold text-foreground tracking-tight">Executing Research...</span>
+                     <span className="text-sm font-semibold text-foreground tracking-tight">
+                       Building Answer...
+                     </span>
                    </div>
                    
                    <div className="pl-9 space-y-3">
-                     {RESEARCH_STEPS.map((step, idx) => {
-                       const isPast = idx < executionStep;
-                       const isActive = idx === executionStep;
+                     {visibleGraphStatuses.map((step: any, idx) => {
+                       const isPast = step.status === "completed";
+                       const isActive = step.status === "running";
+                       const label = step.label || step.message || step.node || String(step);
                        
                        return (
-                         <div key={step} className={cn("flex items-center space-x-3 transition-opacity duration-300", 
+                         <div key={`${label}-${idx}`} className={cn("flex items-center space-x-3 transition-opacity duration-300", 
                            isPast ? "opacity-100" : isActive ? "opacity-100" : "opacity-30"
                          )}>
                            {isPast ? (
@@ -486,7 +651,7 @@ export default function ChatWorkspace({
                              "text-xs font-medium",
                              isPast ? "text-muted-foreground" : isActive ? "text-primary" : "text-muted-foreground"
                            )}>
-                             {step}
+                             {label}
                            </span>
                          </div>
                        )
@@ -500,18 +665,39 @@ export default function ChatWorkspace({
           </div>
         </div>
 
+        <AnimatePresence>
+          {showJumpToLatest && (
+            <motion.button
+              type="button"
+              onClick={scrollToLatest}
+              initial={{ opacity: 0, y: 10, scale: 0.94 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.94 }}
+              transition={{ duration: 0.16, ease: "easeOut" }}
+              className="absolute bottom-[160px] left-1/2 z-40 -translate-x-1/2 rounded-full border border-border bg-surface-container-lowest p-2.5 text-foreground shadow-premium-panel transition-colors hover:bg-surface-container-high dark:border-white/15"
+              title="Jump to latest"
+              aria-label="Jump to latest message"
+            >
+              <ArrowDown className="h-4 w-4" />
+            </motion.button>
+          )}
+        </AnimatePresence>
+
         {/* Input Bar */}
-        <div className="absolute bottom-6 left-0 right-0 px-6 md:px-12 flex justify-center z-30">
-          <div className="absolute inset-0 bg-primary/20 blur-[100px] ambient-glow max-w-2xl mx-auto rounded-full h-24 bottom-0 top-auto translate-y-10" />
+        <div className="shrink-0 px-6 md:px-12 pb-6 pt-2 flex justify-center relative z-30">
+          <div className="absolute inset-0 bg-primary/20 blur-[100px] ambient-glow max-w-2xl mx-auto rounded-full h-24 bottom-0 top-auto translate-y-6 pointer-events-none" />
           <form 
             onSubmit={handleSubmit} 
-            className="w-full max-w-3xl bg-surface-container-lowest backdrop-blur-xl rounded-2xl p-2 flex flex-col relative z-10 input-glow-ring"
+            className={cn(
+              "w-full bg-surface-container-lowest backdrop-blur-xl rounded-2xl p-2 flex flex-col relative z-10 input-glow-ring",
+              isInspectorOpen ? "max-w-4xl" : "max-w-5xl"
+            )}
           >
             <textarea
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="w-full bg-transparent border-none focus:outline-none focus:ring-0 resize-none min-h-[56px] px-4 pt-3 text-foreground placeholder:text-muted-foreground text-[15px] font-medium outline-none"
+              className="w-full max-h-32 min-h-[56px] resize-none overflow-y-auto overflow-x-hidden bg-transparent border-none px-4 pt-3 text-[15px] font-medium text-foreground placeholder:text-muted-foreground outline-none focus:outline-none focus:ring-0"
               placeholder="Ask anything..."
               rows={1}
             />
@@ -575,7 +761,7 @@ export default function ChatWorkspace({
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: 400, opacity: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="absolute right-0 top-0 bottom-0 w-80 md:w-96 border-l border-border bg-[#0d0d0f]/80 backdrop-blur-2xl z-40 flex flex-col shadow-2xl"
+            className="absolute right-0 top-0 bottom-0 w-80 md:w-96 border-l border-border bg-background z-40 flex flex-col shadow-2xl"
           >
             <div className="h-16 border-b border-border flex items-center px-4 pt-1 bg-background/50 backdrop-blur-md shrink-0">
               <h3 className="font-semibold text-sm text-foreground flex items-center leading-none">

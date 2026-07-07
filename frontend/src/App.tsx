@@ -14,9 +14,73 @@ import { useStore } from "./store/useStore";
 import { api } from "./lib/api";
 import { Toaster, toast } from 'sonner';
 import { motion, AnimatePresence } from "framer-motion";
+import LandingPage from "./landing/page";
+
+const normalizeSourceScore = (score: any): number | null => {
+  if (score == null) return null;
+  const numeric = Number(score);
+  if (!Number.isFinite(numeric)) return null;
+  const normalized = numeric >= 0 && numeric <= 1
+    ? numeric
+    : 1 / (1 + Math.exp(-numeric));
+  return Math.round(Math.max(0, Math.min(1, normalized)) * 100);
+};
+
+const formatFileSizeFromKb = (sizeKb: any): string => {
+  const numericKb = Number(sizeKb);
+  if (!Number.isFinite(numericKb) || numericKb <= 0) return "0 KB";
+
+  if (numericKb < 1024) {
+    return `${Math.round(numericKb)} KB`;
+  }
+
+  const sizeMb = numericKb / 1024;
+  return `${sizeMb.toFixed(2).replace(/\.?0+$/, "")} MB`;
+};
+
+const mapSourcesToCitations = (sources: any): Citation[] => {
+  const sourceList = Array.isArray(sources)
+    ? sources
+    : Array.isArray(sources?.sources)
+      ? sources.sources
+      : [];
+
+  return sourceList.map((s: any) => {
+    if (s.type === 'web') {
+      return {
+        type: 'web',
+        name: s.title || s.url || 'Web',
+        title: s.title,
+        url: s.url,
+        snippet: s.content || s.excerpt || '',
+        fitScore: null,
+      };
+    }
+
+    const rawSource: string = s.source || '';
+    const fileName = rawSource.split('/').pop()?.split('_').slice(1).join('_') || rawSource.split('/').pop() || s.name || 'Source';
+    return {
+      type: 'document',
+      name: fileName,
+      snippet: s.excerpt || s.text || '',
+      fitScore: null,
+      page: s.page,
+      chunk_id: s.chunk_id,
+    };
+  });
+};
 
 export default function App() {
   const queryClient = useQueryClient();
+  const [hash, setHash] = useState(window.location.hash);
+
+  useEffect(() => {
+    const handleHash = () => {
+      setHash(window.location.hash);
+    };
+    window.addEventListener("hashchange", handleHash);
+    return () => window.removeEventListener("hashchange", handleHash);
+  }, []);
   
   const currentTab = useStore(s => s.currentTab);
   const setCurrentTab = useStore(s => s.setCurrentTab);
@@ -86,7 +150,7 @@ export default function App() {
         id: d.public_id,
         name: d.name,
         type: d.mime_type?.includes("pdf") ? "pdf" : d.mime_type?.includes("spreadsheet") || d.mime_type?.includes("csv") ? "spreadsheet" : "doc",
-        size: Math.round(d.file_size_kb / 1024) + " MB",
+        size: formatFileSizeFromKb(d.file_size_kb),
         sizeKb: d.file_size_kb,
         addedAt: "Just now",
         summary: d.status === "indexed" ? "Indexed successfully" : d.status === "failed" ? "Indexing failed" : "Processing...",
@@ -112,7 +176,7 @@ export default function App() {
         id: d.public_id,
         name: d.name,
         type: d.mime_type?.includes("pdf") ? "pdf" : d.mime_type?.includes("spreadsheet") || d.mime_type?.includes("csv") ? "spreadsheet" : "doc",
-        size: Math.round(d.file_size_kb / 1024) + " MB",
+        size: formatFileSizeFromKb(d.file_size_kb),
         sizeKb: d.file_size_kb,
         addedAt: "Just now",
         summary: d.status === "indexed" ? "Indexed successfully" : d.status === "failed" ? "Indexing failed" : "Processing...",
@@ -130,6 +194,7 @@ export default function App() {
 
   const [activeMessages, setActiveMessages] = useState<Message[]>([]);
   const [draftLinkedDocIds, setDraftLinkedDocIds] = useState<string[]>([]);
+  const [graphStatuses, setGraphStatuses] = useState<any[]>([]);
 
   // Sync URL hash to state and vice versa
   useEffect(() => {
@@ -219,7 +284,7 @@ export default function App() {
         sender: m.role,
         text: m.content,
         timestamp: m.created_at,
-        citations: m.citations || [],
+        citations: mapSourcesToCitations(m.citations),
         chunks: m.chunks || undefined
       }));
     },
@@ -297,8 +362,16 @@ export default function App() {
         // Save the first query title immediately in the database
         await api.renameSession(targetConvId, title);
         
-        for (const docId of draftLinkedDocIds) {
+        const linkedDraftDocIds = [...draftLinkedDocIds];
+        for (const docId of linkedDraftDocIds) {
           await api.linkDocumentToSession(targetConvId, docId);
+        }
+        if (linkedDraftDocIds.length > 0) {
+          queryClient.setQueryData(
+            ['sessionDocuments', targetConvId],
+            documents.filter((doc) => linkedDraftDocIds.includes(doc.id))
+          );
+          queryClient.invalidateQueries({ queryKey: ['sessionDocuments', targetConvId] });
         }
         setDraftLinkedDocIds([]);
       } catch (err) {
@@ -326,6 +399,7 @@ export default function App() {
       return conv;
     }));
     setActiveMessages(prev => [...prev, userMsg]);
+    setGraphStatuses([{ node: "main_router", label: "Deciding route", status: "running" }]);
     setIsProcessing(true);
 
     const botMsgId = `msg-${Date.now() + 1}`;
@@ -378,33 +452,26 @@ export default function App() {
               const tokenText = dataStr === '' ? '\n' : dataStr;
               currentText += tokenText;
               setActiveMessages((prev) => prev.map(m => m.id === botMsgId ? { ...m, text: currentText } : m));
+            } else if (currentEvent === 'answer') {
+              try {
+                currentText = JSON.parse(dataStr);
+              } catch {
+                currentText = dataStr;
+              }
+              setActiveMessages((prev) => prev.map(m => m.id === botMsgId ? { ...m, text: currentText } : m));
+            } else if (currentEvent === 'graph_status') {
+              try {
+                const status = JSON.parse(dataStr);
+                setGraphStatuses((prev) => {
+                  const existingIdx = prev.findIndex((item: any) => item.node === status.node);
+                  if (existingIdx === -1) return [...prev, status];
+                  return prev.map((item: any, idx) => idx === existingIdx ? { ...item, ...status } : item);
+                });
+              } catch (e) {}
             } else if (currentEvent === 'metadata') {
               try {
                 const data = JSON.parse(dataStr);
-                // Map backend source fields to frontend Citation shape
-                const mappedSources = (data.sources || []).map((s: any) => {
-                  if (s.type === 'web') {
-                    return {
-                      type: 'web',
-                      name: s.title || s.url || 'Web',
-                      title: s.title,
-                      url: s.url,
-                      snippet: s.content || s.excerpt || '',
-                      fitScore: null,
-                    };
-                  }
-                  // Document source
-                  const rawSource: string = s.source || '';
-                  const fileName = rawSource.split('/').pop()?.split('_').slice(1).join('_') || rawSource.split('/').pop() || 'Source';
-                  return {
-                    type: 'document',
-                    name: fileName,
-                    snippet: s.excerpt || s.text || '',
-                    fitScore: s.reranker_score != null ? Math.round(s.reranker_score * 100) : null,
-                    page: s.page,
-                    chunk_id: s.chunk_id,
-                  };
-                });
+                const mappedSources = mapSourcesToCitations(data.sources);
                 finalCitations = mappedSources;
                 finalChunks = data.chunks || undefined;
                 finalMessageId = data.message_id || undefined;
@@ -448,6 +515,7 @@ export default function App() {
       });
 
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
+      setGraphStatuses([]);
     }
   };
 
@@ -553,6 +621,17 @@ export default function App() {
     }
     const alreadyLinked = sessionDocuments.some((d: any) => d.id === documentId || d.public_id === documentId);
     if (alreadyLinked) return;
+
+    const docToLink = documents.find((doc) => doc.id === documentId);
+    if (docToLink) {
+      queryClient.setQueryData(['sessionDocuments', sessionId], (old: any) => {
+        const currentDocs = Array.isArray(old) ? old : [];
+        if (currentDocs.some((doc: any) => doc.id === documentId || doc.public_id === documentId)) {
+          return currentDocs;
+        }
+        return [...currentDocs, docToLink];
+      });
+    }
     linkDocMutation.mutate({ sessionId, documentId });
   };
 
@@ -634,6 +713,12 @@ export default function App() {
   };
 
   const activeConversation = activeConvId === "" ? null : conversations.find((c) => c.id === activeConvId) || conversations[0];
+
+  const isLanding = !hash || hash === "#" || hash === "#/";
+
+  if (isLanding) {
+    return <LandingPage />;
+  }
 
   if (!isAuthenticated) {
     return <AuthView />;
@@ -720,6 +805,7 @@ export default function App() {
                   onRetryMessage={handleRetryMessage}
                   selectedModel={params.selectedModel}
                   sessionTitle={activeConvId === "" ? "New Chat" : (activeConversation?.title || "New Chat")}
+                  graphStatuses={graphStatuses}
                 />
               </div>
             )}

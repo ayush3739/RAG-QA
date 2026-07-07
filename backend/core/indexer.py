@@ -121,7 +121,7 @@ class Indexer:
                 doc.status = "indexed"
                 
             await self.db.commit()
-            print(f"✓ {len(rows)} chunks committed to DB for document_id={self.document_id}")
+            print(f"[OK] {len(rows)} chunks committed to DB for document_id={self.document_id}")
 
         except Exception as e:
             await self.db.rollback()

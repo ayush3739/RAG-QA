@@ -171,7 +171,7 @@ class Retriever():
                         models.Chunk.document_id.in_(self.document_ids)
                     )
                     .order_by("distance")
-                    .limit(max(k, 15))
+                    .limit(max(k, 20))
                 )
 
                 rows = results.all()
@@ -204,7 +204,7 @@ class Retriever():
                     q_tokens = simple_tokenize(query)
                     scores = self.bm25.get_scores(q_tokens)
                     # get top indices
-                    ranked_idx = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:15]
+                    ranked_idx = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:20]
                     class _DocLike:
                         def __init__(self, page_content, metadata):
                             self.page_content = page_content
@@ -232,7 +232,7 @@ class Retriever():
             
             t3 = time.perf_counter()
             # Rerank top merged results using CrossEncoder, fall back gracefully
-            top_for_rerank = merged_results[:15]
+            top_for_rerank = merged_results[:25]
             try:
                 ranked_chunks, max_score = self.rerank_(query, top_for_rerank, top_n=10)
                 chunks_for_context = ranked_chunks
@@ -296,7 +296,7 @@ class Retriever():
         context = "\n\n".join(
             [
                 f"[chunk_id={c.get('chunk_id')} | page={c.get('page_label')} | source={c.get('source')}] {c.get('text', '')}"
-                for c in chunks[:6]
+                for c in chunks[:8]
             ]
         )
 
