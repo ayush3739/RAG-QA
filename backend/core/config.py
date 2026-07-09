@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     github_token: Optional[str] = None
     groq_api_key: Optional[str] = None
     groq_api_secondary: Optional[str] = None
+    groq_api_third: Optional[str] = None
     gemini_api_key: Optional[str] = None
     open_router_key: Optional[str] = None
     nvidia_nim: Optional[str] = None
@@ -42,8 +43,9 @@ class Settings(BaseSettings):
     enable_web_search: bool = True
 
     # RAG Configuration
-    top_k: int = 15
-    rerank_top_n: int = 5
+    reranker_input_chunks: int = 25  # Chunks to send to the reranker
+    vector_output_chunks: int = 20  # Number of chunks to retrieve from vector DB
+    llm_context_chunks: int = 10    # Chunks to give to the LLM
     confidence_threshold: float = 0.3
     chunk_size: int = 600
     chunk_overlap: int = 150

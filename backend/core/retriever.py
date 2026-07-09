@@ -229,7 +229,7 @@ class Retriever():
                         models.Chunk.document_id.in_(self.document_ids)
                     )
                     .order_by("distance")
-                    .limit(max(k, 20))
+                    .limit(max(k, settings.vector_output_chunks))
                 )
 
                 rows = results.all()
@@ -262,7 +262,7 @@ class Retriever():
                     q_tokens = simple_tokenize(keyword_query)
                     scores = self.bm25.get_scores(q_tokens)
                     # get top indices
-                    ranked_idx = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:20]
+                    ranked_idx = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:settings.vector_output_chunks]
                     class _DocLike:
                         def __init__(self, page_content, metadata):
                             self.page_content = page_content
@@ -290,9 +290,9 @@ class Retriever():
             
             t3 = time.perf_counter()
             # Rerank top merged results using CrossEncoder, fall back gracefully
-            top_for_rerank = merged_results[:25]
+            top_for_rerank = merged_results[:settings.reranker_input_chunks]
             try:
-                ranked_chunks, max_score = self.rerank_(query, top_for_rerank, top_n=15)
+                ranked_chunks, max_score = self.rerank_(query, top_for_rerank, top_n=settings.llm_context_chunks)
                 chunks_for_context = ranked_chunks
             except Exception as e:
                 print(f"Reranker failed: {e}")

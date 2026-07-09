@@ -7,6 +7,7 @@ eval/
 # C extensions
 *.so
 files/
+scratch/
 # Distribution / packaging
 .Python
 build/

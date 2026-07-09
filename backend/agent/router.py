@@ -252,7 +252,7 @@ def _format_doc_chunks(chunks: list[dict]) -> str:
             f"source={chunk.get('source')}]\n"
             f"{chunk.get('text', '')}"
         )
-        for chunk in chunks[:8]
+        for chunk in chunks
         if chunk.get("text")
     )
 
@@ -289,7 +289,7 @@ def _doc_sources(chunks: list[dict]) -> list[dict]:
             "vector_score": chunk.get("vector_score"),
             "bm25_score": chunk.get("bm25_score"),
         }
-        for chunk in chunks[:8]
+        for chunk in chunks
     ]
 
 
@@ -305,7 +305,7 @@ def _metadata_chunks(chunks: list[dict]) -> list[dict]:
             "vector_score": chunk.get("vector_score"),
             "bm25_score": chunk.get("bm25_score"),
         }
-        for chunk in chunks[:8]
+        for chunk in chunks
     ]
 
 
