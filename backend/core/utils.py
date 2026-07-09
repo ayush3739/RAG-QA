@@ -21,7 +21,6 @@ logger.info("Loading reranker...")
 try:
     RERANKER = CrossEncoder(
         "cross-encoder/ms-marco-MiniLM-L-6-v2",
-        local_files_only=True,
     )
     logger.info("Reranker loaded")
 

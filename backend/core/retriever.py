@@ -1,8 +1,9 @@
 from langchain_openai import OpenAIEmbeddings
 from langchain_ollama import OllamaLLM
 from rank_bm25 import BM25Okapi
-from sentence_transformers import CrossEncoder
 from openai import OpenAI
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import SystemMessage, HumanMessage
 import pickle
 from pathlib import Path
 from backend.core.utils import simple_tokenize,RERANKER
@@ -47,6 +48,17 @@ class Retriever():
             self.base_dir = BASE_DIR
 
             self.reranker = RERANKER
+            
+            # Setup Groq clients for round-robin query rewriting
+            self.groq_clients = []
+            if settings.groq_api_key:
+                self.groq_clients.append(ChatOpenAI(api_key=settings.groq_api_key, base_url="https://api.groq.com/openai/v1", model="llama-3.1-8b-instant", temperature=0.3, max_tokens=100))
+            if settings.groq_api_secondary:
+                self.groq_clients.append(ChatOpenAI(api_key=settings.groq_api_secondary, base_url="https://api.groq.com/openai/v1", model="llama-3.1-8b-instant", temperature=0.3, max_tokens=100))
+            if settings.groq_api_third:
+                self.groq_clients.append(ChatOpenAI(api_key=settings.groq_api_third, base_url="https://api.groq.com/openai/v1", model="llama-3.1-8b-instant", temperature=0.3, max_tokens=100))
+            self._groq_index = 0
+            
         except Exception as e:
             raise RuntimeError(f"Retriever initialization failed: {str(e)}")
 
@@ -142,13 +154,59 @@ class Retriever():
         except Exception as e:
             print(f"Failed to load BM25 from DB paths: {e}")
 
+    async def rewrite_query(self, query: str) -> dict:
+        if not self.groq_clients:
+            return {"semantic_query": query, "keyword_query": query}
+        
+        client = self.groq_clients[self._groq_index]
+        self._groq_index = (self._groq_index + 1) % len(self.groq_clients)
+        
+        system_prompt = (
+            "Rewrite the user's question into an optimized retrieval query.\n"
+            "Requirements:\n"
+            "- Preserve the original meaning exactly.\n"
+            "- Use the terminology likely to appear in technical documentation.\n"
+            "- Include important entities, API names, configuration fields, CLI commands, or keywords if relevant.\n"
+            "- Keep it under 12 words.\n"
+            "- Do not answer the question.\n"
+            "Output ONLY JSON with this format:\n"
+            "{\n"
+            '  "semantic_query": "What are the lifecycle states of a Kubernetes Job?",\n'
+            '  "keyword_query": "Kubernetes Job Active Completed Failed status lifecycle"\n'
+            "}"
+        )
+        try:
+            response = await client.ainvoke([
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=query)
+            ])
+            text = response.content.strip()
+            if "{" in text:
+                text = text[text.find("{"):text.rfind("}")+1]
+            import json
+            queries = json.loads(text)
+            
+            semantic_query = queries.get("semantic_query", query)
+            keyword_query = queries.get("keyword_query", query)
+            
+            print(f"Original Query: {query}")
+            print(f"Semantic Query: {semantic_query}")
+            print(f"Keyword Query: {keyword_query}")
+            return {"semantic_query": semantic_query, "keyword_query": keyword_query}
+        except Exception as e:
+            print(f"Query rewrite failed: {e}")
+            return {"semantic_query": query, "keyword_query": query}
+
     async def similarity_search(self, query: str, k: int = 10):
         await self._load_bm25_from_db()
         try:
             query = self.sanitize_query(query)
+            queries = await self.rewrite_query(query)
+            semantic_query = queries.get("semantic_query", query)
+            keyword_query = queries.get("keyword_query", query)
 
             t0 = time.perf_counter()
-            query_embedding = self.embedding_model.embed_query(query)
+            query_embedding = self.embedding_model.embed_query(semantic_query)
             print("Embedding:", time.perf_counter() - t0)
 
             t1 = time.perf_counter()
@@ -201,7 +259,7 @@ class Retriever():
             bm25_results = []
             try:
                 if self.bm25 and len(self.bm25_texts) > 0:
-                    q_tokens = simple_tokenize(query)
+                    q_tokens = simple_tokenize(keyword_query)
                     scores = self.bm25.get_scores(q_tokens)
                     # get top indices
                     ranked_idx = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:20]
@@ -234,9 +292,10 @@ class Retriever():
             # Rerank top merged results using CrossEncoder, fall back gracefully
             top_for_rerank = merged_results[:25]
             try:
-                ranked_chunks, max_score = self.rerank_(query, top_for_rerank, top_n=10)
+                ranked_chunks, max_score = self.rerank_(query, top_for_rerank, top_n=15)
                 chunks_for_context = ranked_chunks
-            except Exception:
+            except Exception as e:
+                print(f"Reranker failed: {e}")
                 chunks_for_context = top_for_rerank[:10]
             print("Rerank:", time.perf_counter() - t3)
 
@@ -257,10 +316,17 @@ class Retriever():
                     }
                 )
 
+            debug_info = {
+                "vector_results": [{"chunk_id": getattr(c, "metadata", {}).get("chunk_id"), "score": getattr(c, "metadata", {}).get("vector_score"), "text": getattr(c, "page_content", "")} for c in vector_results],
+                "bm25_results": [{"chunk_id": getattr(c, "metadata", {}).get("chunk_id"), "score": getattr(c, "metadata", {}).get("bm25_score"), "text": getattr(c, "page_content", "")} for c in bm25_results],
+                "merged_results": [{"chunk_id": getattr(c, "metadata", {}).get("chunk_id"), "vector_score": getattr(c, "metadata", {}).get("vector_score"), "bm25_score": getattr(c, "metadata", {}).get("bm25_score"), "text": getattr(c, "page_content", "")} for c in merged_results],
+                "top_for_rerank": [{"chunk_id": getattr(c, "metadata", {}).get("chunk_id"), "vector_score": getattr(c, "metadata", {}).get("vector_score"), "bm25_score": getattr(c, "metadata", {}).get("bm25_score"), "text": getattr(c, "page_content", "")} for c in top_for_rerank]
+            }
+
             result_payload = {
                 "chunks": structured_chunks,
                 "used_vector_db":len(vector_results) > 0,
-                "debug": {},
+                "debug": debug_info,
                 "confidence": float(max_score) if 'max_score' in locals() else None,
             }
             print("Total:", time.perf_counter() - t0)
