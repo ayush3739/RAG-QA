@@ -11,7 +11,7 @@ GET  /auth/me         → return current user profile
 from fastapi import APIRouter, Depends, Form, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from typing import Annotated
 from backend.api.deps import get_current_user, get_db
 from backend.models.auth_schemas import (
     TokenResponse,
@@ -41,7 +41,7 @@ async def register(
     name: str = Form(...),
     email: str = Form(...),
     password: str = Form(...),
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     try:
         user = await _auth_service.register_user(

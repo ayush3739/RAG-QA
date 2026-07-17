@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { 
   Upload, MessageSquare, Search, Database, Clock, 
   FileText, ChevronRight, Activity, FileSpreadsheet, Globe,
-  CheckCircle2, Layers
+  CheckCircle2
 } from "lucide-react";
 import { SourceDocument, Conversation } from "../types";
 import { motion, animate } from "framer-motion";
@@ -10,7 +10,7 @@ import { cn } from "../lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { 
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
 } from "recharts";
 
 interface DashboardViewProps {
@@ -40,13 +40,13 @@ const itemVariants = {
 };
 
 const mockActivityData = [
-  { name: 'Mon', queries: 12 },
-  { name: 'Tue', queries: 19 },
-  { name: 'Wed', queries: 15 },
-  { name: 'Thu', queries: 28 },
-  { name: 'Fri', queries: 22 },
-  { name: 'Sat', queries: 9 },
-  { name: 'Sun', queries: 35 },
+  { name: '08:00', queries: 12 },
+  { name: '10:00', queries: 25 },
+  { name: '12:00', queries: 15 },
+  { name: '14:00', queries: 32 },
+  { name: '16:00', queries: 18 },
+  { name: '18:00', queries: 45 },
+  { name: '20:00', queries: 22 },
 ];
 
 function AnimatedCounter({ value, duration = 1.2 }: { value: number; duration?: number }) {
@@ -86,7 +86,7 @@ function GlowCard({ children, className, onClick, variants }: GlowCardProps) {
   return (
     <motion.div
       variants={variants}
-      whileHover={{ y: -6, scale: 1.015 }}
+      whileHover={{ y: -4, scale: 1.01 }}
       onMouseMove={handleMouseMove}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -101,55 +101,11 @@ function GlowCard({ children, className, onClick, variants }: GlowCardProps) {
         className="absolute inset-0 pointer-events-none transition-opacity duration-300 z-0"
         style={{
           opacity: isHovered ? 1 : 0,
-          background: `radial-gradient(circle 150px at ${coords.x}px ${coords.y}px, rgba(123, 108, 246, 0.15), transparent 80%)`,
+          background: `radial-gradient(circle 200px at ${coords.x}px ${coords.y}px, rgba(123, 108, 246, 0.12), transparent 80%)`,
         }}
       />
       <div className="relative z-10 w-full h-full flex flex-col">
         {children}
-      </div>
-    </motion.div>
-  );
-}
-
-function StatCard({ title, value, icon: Icon, colorClass, variants }: { title: string; value: number; icon: React.ComponentType<any>; colorClass: string; variants?: any }) {
-  const [coords, setCoords] = useState({ x: 0, y: 0 });
-  const [isHovered, setIsHovered] = useState(false);
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setCoords({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    });
-  };
-
-  return (
-    <motion.div
-      variants={variants}
-      whileHover={{ y: -3, scale: 1.01 }}
-      onMouseMove={handleMouseMove}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      className="relative p-5 premium-card overflow-hidden transition-all duration-300 hover:border-primary/30 shadow-premium"
-    >
-      {/* Mouse Follow Glow */}
-      <div
-        className="absolute inset-0 pointer-events-none transition-opacity duration-300 z-0"
-        style={{
-          opacity: isHovered ? 1 : 0,
-          background: `radial-gradient(circle 120px at ${coords.x}px ${coords.y}px, rgba(123, 108, 246, 0.1), transparent 80%)`,
-        }}
-      />
-      <div className="relative z-10 flex items-center justify-between">
-        <div className="space-y-1">
-          <p className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-widest">{title}</p>
-          <p className="text-3xl font-extrabold text-foreground tracking-tight">
-            <AnimatedCounter value={value} />
-          </p>
-        </div>
-        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center border border-border bg-surface-container/50", colorClass)}>
-          <Icon className="w-5 h-5" />
-        </div>
       </div>
     </motion.div>
   );
@@ -165,14 +121,11 @@ export default function DashboardView({
 }: DashboardViewProps) {
   const { data: healthData, isError } = useQuery({
     queryKey: ['health'],
-    queryFn: async () => {
-      return api.getHealth();
-    },
+    queryFn: async () => api.getHealth(),
     staleTime: Infinity,
     gcTime: Infinity,
     retry: false,
     refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
     refetchOnMount: false,
   });
 
@@ -183,19 +136,20 @@ export default function DashboardView({
   const activeDocsCount = documents.filter(d => d.active).length;
 
   return (
-    <div className="flex-1 overflow-y-auto px-6 md:px-12 py-10 space-y-10 bg-transparent selection:bg-white/20 selection:text-white">
+    <div className="flex-1 overflow-y-auto px-6 md:px-10 py-8 bg-transparent selection:bg-white/20 selection:text-white">
       
       {/* Title */}
       <motion.div 
         initial={{ opacity: 0, y: -10 }} 
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
+        className="mb-8"
       >
-        <h2 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
+        <h2 className="text-2xl font-bold text-foreground tracking-tight">
           DocuMind Workspace
         </h2>
-        <p className="text-sm text-muted-foreground mt-1.5 max-w-2xl font-medium">
-          Access your RAG document indexing pipeline and analyze curated files with the agentic tool-routing layer.
+        <p className="text-sm text-muted-foreground mt-1 font-medium">
+          High-density analytics and active agentic tool-routing environment.
         </p>
       </motion.div>
 
@@ -203,228 +157,215 @@ export default function DashboardView({
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="space-y-8"
+        className="grid grid-cols-1 md:grid-cols-12 gap-5 auto-rows-[160px]"
       >
-        {/* Stats Grid Row (Four Columns) */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            title="Total Documents"
-            value={documents.length}
-            icon={FileText}
-            colorClass="text-amber-500 border-amber-500/10"
-            variants={itemVariants}
-          />
-          <StatCard
-            title="Indexed Chunks"
-            value={totalChunks}
-            icon={Database}
-            colorClass="text-blue-500 border-blue-500/10"
-            variants={itemVariants}
-          />
-          <StatCard
-            title="Active Sessions"
-            value={conversations.length}
-            icon={MessageSquare}
-            colorClass="text-purple-500 border-purple-500/10"
-            variants={itemVariants}
-          />
-          <StatCard
-            title="Knowledge Coverage"
-            value={activeDocsCount}
-            icon={CheckCircle2}
-            colorClass="text-emerald-500 border-emerald-500/10"
-            variants={itemVariants}
-          />
-        </div>
-
-        {/* Row 1: Quick Action Cards (Three Columns) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <GlowCard
-            variants={itemVariants}
-            onClick={onTriggerUploadModal}
-          >
-            <div className="w-10 h-10 rounded-xl bg-surface-container border border-border flex items-center justify-center text-foreground mb-4 group-hover:scale-105 group-hover:text-primary group-hover:border-primary/30 transition-all duration-300">
-              <Upload className="w-5 h-5" />
-            </div>
-            <h3 className="font-semibold text-foreground tracking-tight mb-1.5 group-hover:text-primary transition-colors">Upload Documents</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Ingest PDFs, spreadsheets, or raw markdown text files to expand your active vector database.
-            </p>
-          </GlowCard>
-
-          <GlowCard
-            variants={itemVariants}
-            onClick={onNewResearch}
-          >
-            <div className="w-10 h-10 rounded-xl bg-surface-container border border-border flex items-center justify-center text-foreground mb-4 group-hover:scale-105 group-hover:text-primary group-hover:border-primary/30 transition-all duration-300">
-              <MessageSquare className="w-5 h-5" />
-            </div>
-            <h3 className="font-semibold text-foreground tracking-tight mb-1.5 group-hover:text-primary transition-colors">New Chat</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Launch a streaming conversation, attach specific materials, and ask questions with citations.
-            </p>
-          </GlowCard>
-
-          <GlowCard
-            variants={itemVariants}
-            onClick={onNewResearch}
-          >
-            <div className="w-10 h-10 rounded-xl bg-surface-container border border-border flex items-center justify-center text-foreground mb-4 group-hover:scale-105 group-hover:text-primary group-hover:border-primary/30 transition-all duration-300">
-              <Search className="w-5 h-5" />
-            </div>
-            <h3 className="font-semibold text-foreground tracking-tight mb-1.5 group-hover:text-primary transition-colors">Structured Research</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Execute professional one-shot report generation with multi-source validation and web-search backups.
-            </p>
-          </GlowCard>
-        </div>
-
-        {/* Row 2: Recent Sessions & Recent Documents (Bento Grid) */}
-        <div className="grid grid-cols-12 gap-6">
+        
+        {/* ROW 1: Tall Activity Chart (Spans 8 cols, 2 rows) */}
+        <motion.div 
+          variants={itemVariants}
+          className="col-span-1 md:col-span-8 row-span-2 relative p-6 premium-card overflow-hidden flex flex-col"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="font-semibold text-sm text-foreground flex items-center tracking-tight">
+              <Activity className="w-4 h-4 mr-2 text-primary animate-pulse" />
+              Real-time Query Ticker
+            </h4>
+            <span className="text-[10px] font-mono font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-sm">LIVE</span>
+          </div>
           
-          {/* Recent Chats */}
-          <motion.div variants={itemVariants} className="col-span-12 md:col-span-8 flex flex-col p-6 premium-card">
-            <div className="flex items-center justify-between mb-5">
-              <h4 className="font-semibold text-sm text-foreground flex items-center tracking-tight">
-                <Clock className="w-4 h-4 mr-2 text-muted-foreground" />
-                Recent Chats
-              </h4>
-              <button 
-                onClick={() => setCurrentTab("chats")}
-                className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                View all
-              </button>
-            </div>
+          <div className="flex-1 w-full min-h-0 relative z-10">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={mockActivityData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--primary)" stopOpacity={1} />
+                    <stop offset="100%" stopColor="var(--primary)" stopOpacity={0.4} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" strokeOpacity={0.5} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--muted-foreground)', fontFamily: 'JetBrains Mono' }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--muted-foreground)', fontFamily: 'JetBrains Mono' }} />
+                <Tooltip 
+                  cursor={{ fill: 'var(--surface-container-high)', opacity: 0.4 }}
+                  contentStyle={{ backgroundColor: 'var(--surface-container-lowest)', borderColor: 'var(--border)', borderRadius: '6px', fontSize: '12px', fontFamily: 'JetBrains Mono', color: 'var(--foreground)' }}
+                  itemStyle={{ color: 'var(--primary)', fontWeight: 600 }}
+                />
+                <Bar 
+                  dataKey="queries" 
+                  fill="url(#barGradient)" 
+                  radius={[4, 4, 0, 0]}
+                  barSize={24}
+                  animationDuration={1500}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </motion.div>
 
-            <div className="space-y-2 flex-1">
-              {conversations.slice(0, 4).map((conv) => (
+        {/* Quick Action: New Chat (Spans 4 cols, 1 row) */}
+        <GlowCard variants={itemVariants} onClick={onNewResearch} className="col-span-1 md:col-span-4 row-span-1 flex flex-row items-center p-5">
+          <div className="w-12 h-12 rounded-lg bg-surface-container border border-border flex items-center justify-center text-foreground mr-4 group-hover:bg-primary/20 group-hover:text-primary transition-all">
+            <MessageSquare className="w-6 h-6" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-sm text-foreground tracking-tight group-hover:text-primary transition-colors">Start Research <span className="font-mono text-[9px] ml-2 text-muted-foreground border border-border px-1 py-0.5 rounded">⌘K</span></h3>
+            <p className="text-[11px] text-muted-foreground leading-snug mt-1 line-clamp-2">Initialize a streaming conversational session with RAG tools.</p>
+          </div>
+        </GlowCard>
+
+        {/* Quick Action: Upload (Spans 4 cols, 1 row) */}
+        <GlowCard variants={itemVariants} onClick={onTriggerUploadModal} className="col-span-1 md:col-span-4 row-span-1 flex flex-row items-center p-5">
+          <div className="w-12 h-12 rounded-lg bg-surface-container border border-border flex items-center justify-center text-foreground mr-4 group-hover:bg-secondary/20 group-hover:text-secondary transition-all">
+            <Upload className="w-6 h-6" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-sm text-foreground tracking-tight group-hover:text-secondary transition-colors">Upload Knowledge <span className="font-mono text-[9px] ml-2 text-muted-foreground border border-border px-1 py-0.5 rounded">U</span></h3>
+            <p className="text-[11px] text-muted-foreground leading-snug mt-1 line-clamp-2">Ingest new PDFs and datasets into the dense vector database.</p>
+          </div>
+        </GlowCard>
+
+        {/* Metric Block 1 (Spans 3 cols, 1 row) */}
+        <motion.div variants={itemVariants} className="col-span-1 md:col-span-3 row-span-1 premium-card p-5 flex flex-col justify-between">
+          <div className="flex items-start justify-between">
+            <FileText className="w-4 h-4 text-amber-500/80" />
+            <span className="text-[10px] font-mono text-muted-foreground">DOCS</span>
+          </div>
+          <div>
+            <p className="text-3xl font-extrabold text-foreground tracking-tight font-mono"><AnimatedCounter value={documents.length} /></p>
+            <p className="text-[11px] text-muted-foreground mt-0.5 font-medium">Total Indexed Files</p>
+          </div>
+        </motion.div>
+
+        {/* Metric Block 2 (Spans 3 cols, 1 row) */}
+        <motion.div variants={itemVariants} className="col-span-1 md:col-span-3 row-span-1 premium-card p-5 flex flex-col justify-between">
+          <div className="flex items-start justify-between">
+            <Database className="w-4 h-4 text-blue-500/80" />
+            <span className="text-[10px] font-mono text-muted-foreground">CHUNKS</span>
+          </div>
+          <div>
+            <p className="text-3xl font-extrabold text-foreground tracking-tight font-mono"><AnimatedCounter value={totalChunks} /></p>
+            <p className="text-[11px] text-muted-foreground mt-0.5 font-medium">Vector Embeddings</p>
+          </div>
+        </motion.div>
+
+        {/* Metric Block 3 (Spans 3 cols, 1 row) */}
+        <motion.div variants={itemVariants} className="col-span-1 md:col-span-3 row-span-1 premium-card p-5 flex flex-col justify-between">
+          <div className="flex items-start justify-between">
+            <MessageSquare className="w-4 h-4 text-purple-500/80" />
+            <span className="text-[10px] font-mono text-muted-foreground">SESSIONS</span>
+          </div>
+          <div>
+            <p className="text-3xl font-extrabold text-foreground tracking-tight font-mono"><AnimatedCounter value={conversations.length} /></p>
+            <p className="text-[11px] text-muted-foreground mt-0.5 font-medium">Active Chats</p>
+          </div>
+        </motion.div>
+
+        {/* Metric Block 4 (Spans 3 cols, 1 row) */}
+        <motion.div variants={itemVariants} className="col-span-1 md:col-span-3 row-span-1 premium-card p-5 flex flex-col justify-between">
+          <div className="flex items-start justify-between">
+            <CheckCircle2 className="w-4 h-4 text-emerald-500/80" />
+            <span className="text-[10px] font-mono text-muted-foreground">COVERAGE</span>
+          </div>
+          <div>
+            <p className="text-3xl font-extrabold text-foreground tracking-tight font-mono"><AnimatedCounter value={activeDocsCount} /></p>
+            <p className="text-[11px] text-muted-foreground mt-0.5 font-medium">Active in Context</p>
+          </div>
+        </motion.div>
+
+        {/* Recent Chats (Spans 6 cols, 2 rows) */}
+        <motion.div variants={itemVariants} className="col-span-1 md:col-span-6 row-span-2 premium-card flex flex-col overflow-hidden">
+          <div className="p-4 border-b border-border/50 flex items-center justify-between">
+             <h4 className="font-semibold text-[11px] text-foreground flex items-center tracking-widest uppercase font-mono">
+                <Clock className="w-3.5 h-3.5 mr-2 text-primary" />
+                Session Log
+              </h4>
+              <button onClick={() => setCurrentTab("chats")} className="text-[10px] font-mono text-muted-foreground hover:text-foreground">VIEW ALL</button>
+          </div>
+          <div className="flex-1 overflow-y-auto no-scrollbar p-2 space-y-1">
+             {conversations.slice(0, 5).map((conv) => (
                 <button
                   key={conv.id}
-                  type="button"
                   onClick={() => onSelectSession(conv.id)}
-                  className="w-full px-4 py-3 bg-surface-container-lowest border border-border hover:bg-surface hover:border-primary/25 rounded-xl transition-all duration-200 cursor-pointer flex items-center justify-between group text-left"
+                  className="w-full px-3 py-2.5 bg-transparent hover:bg-surface-container-lowest rounded-lg transition-colors cursor-pointer flex items-center group text-left"
                 >
                   <div className="min-w-0 flex-1 pr-4">
-                    <h5 className="text-sm font-medium text-foreground truncate">{conv.title}</h5>
-                    <p className="text-[12px] text-muted-foreground truncate mt-0.5">
-                      {conv.messages[conv.messages.length - 1]?.text || "No queries executed yet."}
+                    <h5 className="text-[13px] font-medium text-foreground truncate">{conv.title || "Untitled Research"}</h5>
+                    <p className="text-[11px] text-muted-foreground truncate mt-0.5 font-mono">
+                      {conv.messages[conv.messages.length - 1]?.text || "No queries executed."}
                     </p>
                   </div>
-                  <div className="flex items-center flex-shrink-0">
-                    <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
                 </button>
               ))}
               {conversations.length === 0 && (
                 <div className="h-full flex items-center justify-center p-4">
-                  <p className="text-sm text-muted-foreground italic">No active sessions found.</p>
+                  <p className="text-[11px] text-muted-foreground font-mono">No active sessions.</p>
                 </div>
               )}
-            </div>
-          </motion.div>
+          </div>
+        </motion.div>
 
-          {/* Recent Documents */}
-          <motion.div variants={itemVariants} className="col-span-12 md:col-span-4 flex flex-col p-6 premium-card">
-            <div className="flex items-center justify-between mb-5">
-              <h4 className="font-semibold text-sm text-foreground flex items-center tracking-tight">
-                <Database className="w-4 h-4 mr-2 text-muted-foreground" />
-                Library
+        {/* Recent Documents (Spans 6 cols, 2 rows) */}
+        <motion.div variants={itemVariants} className="col-span-1 md:col-span-6 row-span-2 premium-card flex flex-col overflow-hidden">
+          <div className="p-4 border-b border-border/50 flex items-center justify-between">
+             <h4 className="font-semibold text-[11px] text-foreground flex items-center tracking-widest uppercase font-mono">
+                <Database className="w-3.5 h-3.5 mr-2 text-secondary" />
+                Knowledge Base Index
               </h4>
-              <button 
-                onClick={() => setCurrentTab("documents")}
-                className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Manage
-              </button>
-            </div>
-
-            <div className="space-y-2 flex-1">
-              {documents.slice(0, 4).map((doc) => (
-                <div
+              <button onClick={() => setCurrentTab("documents")} className="text-[10px] font-mono text-muted-foreground hover:text-foreground">MANAGE</button>
+          </div>
+          <div className="flex-1 overflow-y-auto no-scrollbar p-2 space-y-1">
+             {documents.slice(0, 5).map((doc) => (
+                <button
                   key={doc.id}
-                  className="px-4 py-3 bg-surface-container-lowest border border-border hover:bg-surface hover:border-primary/25 rounded-xl flex items-center justify-between transition-colors"
+                  onClick={() => setCurrentTab("documents")}
+                  className="w-full px-3 py-2.5 bg-transparent hover:bg-surface-container-lowest rounded-lg transition-colors cursor-pointer flex items-center group text-left"
                 >
-                  <div className="flex items-center space-x-3 min-w-0">
+                  <div className="min-w-0 flex-1 flex items-center">
                     <div className={cn(
-                      "p-1.5 rounded-md border",
-                      doc.type === "spreadsheet" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" :
-                      doc.type === "link" ? "bg-sky-500/10 border-sky-500/20 text-sky-500" :
-                      doc.type === "pdf" ? "bg-rose-500/10 border-rose-500/20 text-rose-500" :
-                      "bg-amber-500/10 border-amber-500/20 text-amber-500"
+                      "p-1 rounded bg-surface border mr-3 flex-shrink-0",
+                      doc.type === "spreadsheet" ? "border-emerald-500/20 text-emerald-500" :
+                      doc.type === "link" ? "border-sky-500/20 text-sky-500" :
+                      doc.type === "pdf" ? "border-rose-500/20 text-rose-500" :
+                      "border-amber-500/20 text-amber-500"
                     )}>
                       {doc.type === "spreadsheet" && <FileSpreadsheet className="w-3.5 h-3.5" />}
                       {doc.type === "link" && <Globe className="w-3.5 h-3.5" />}
                       {(doc.type === "pdf" || doc.type === "doc") && <FileText className="w-3.5 h-3.5" />}
                     </div>
-                    <p className="text-sm font-medium text-foreground truncate">{doc.name}</p>
+                    <div className="min-w-0">
+                      <h6 className="text-[13px] font-medium text-foreground truncate">{doc.name}</h6>
+                      <p className="text-[10px] text-muted-foreground font-mono mt-0.5">
+                        {doc.size} • {doc.chunkCount || 0} chunks
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-3 flex-shrink-0">
-                    <span className="text-[10px] text-muted-foreground font-mono">{doc.size}</span>
-                    <span className={cn("w-2 h-2 rounded-full shadow-sm", doc.active ? "bg-emerald-500 shadow-emerald-500/50" : "bg-border")} />
-                  </div>
-                </div>
+                  <span className={cn("w-1.5 h-1.5 rounded-full shadow-sm ml-4 flex-shrink-0", doc.active ? "bg-emerald-500 shadow-emerald-500/50" : "bg-border")} />
+                </button>
               ))}
               {documents.length === 0 && (
                 <div className="h-full flex items-center justify-center p-4">
-                  <p className="text-sm text-muted-foreground italic">No materials imported.</p>
+                  <p className="text-[11px] text-muted-foreground font-mono">No documents indexed.</p>
                 </div>
               )}
-            </div>
-          </motion.div>
+          </div>
+        </motion.div>
 
-        </div>
-
-        {/* Row 3: Activity Chart */}
-        <div className="grid grid-cols-1 gap-4">
-          <motion.div 
-            variants={itemVariants} 
-            whileHover={{ y: -4, scale: 1.005 }}
-            className="flex flex-col p-6 premium-card h-[320px] overflow-hidden hover:border-primary/30 hover:shadow-[0_0_30px_rgba(123,108,246,0.08)] transition-all duration-300"
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h4 className="font-semibold text-sm text-foreground flex items-center tracking-tight">
-                <Activity className="w-4 h-4 mr-2 text-muted-foreground animate-pulse" />
-                Workspace Activity (Queries)
-              </h4>
-            </div>
-            <div className="flex-1 w-full min-h-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={mockActivityData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorQueries" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#7B6CF6" stopOpacity={0.25}/>
-                      <stop offset="100%" stopColor="#7B6CF6" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--color-muted-foreground)' }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--color-muted-foreground)' }} />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', borderRadius: '8px', fontSize: '12px' }}
-                    itemStyle={{ color: 'var(--color-foreground)', fontWeight: 600 }}
-                  />
-                  <Area type="monotone" dataKey="queries" stroke="var(--color-primary)" strokeWidth={2.5} fillOpacity={1} fill="url(#colorQueries)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </motion.div>
-        </div>
       </motion.div>
 
       {/* Bottom Health Strip */}
       <motion.div 
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
-        className="pt-6 flex items-center justify-between text-xs text-muted-foreground"
+        className="mt-8 flex items-center justify-between text-[11px] text-muted-foreground font-mono"
       >
         <div className="flex items-center space-x-2">
           <Activity className="w-3.5 h-3.5" />
-          <span>Core RAG Node: <strong className="font-medium">monolith-v4.2.0</strong></span>
+          <span>Core RAG Node: <strong className="font-medium text-foreground">monolith-v4.2.0</strong></span>
         </div>
-        <div className="flex items-center space-x-2 bg-surface-container px-3 py-1.5 rounded-md border border-border">
+        <div className="flex items-center space-x-2 bg-surface-container px-2 py-1 rounded border border-border">
           <span className={cn("w-1.5 h-1.5 rounded-full pulse-online", healthStatus === "online" ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" : "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]")} />
           <span className="font-medium">
-            {healthStatus === "online" ? <>Online (Verified <span className="font-mono text-[10px] ml-1">{healthTime}</span>)</> : "Disconnected"}
+            {healthStatus === "online" ? `Online (${healthTime})` : "Disconnected"}
           </span>
         </div>
       </motion.div>

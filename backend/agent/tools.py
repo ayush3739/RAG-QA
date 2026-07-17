@@ -1,6 +1,6 @@
 """Agent Tools — Phase 3."""
 
-from backend.core.retriever import Retriever
+from backend.core.retriever import Retriever, RetrievalQuery
 from backend.core.config import settings
 from backend.db.base import AsyncSession
 from backend.models import models
@@ -441,7 +441,7 @@ async def generate_quiz_impl(
 
 
 #Retriever
-async def retrieve_from_document_impl(query: str, document_ids: list[int], db: AsyncSession):
+async def retrieve_from_document_impl(query: str | RetrievalQuery, document_ids: list[int], db: AsyncSession):
     """Tool: Search document via RAG."""
     retriever = Retriever(
         document_ids=document_ids,

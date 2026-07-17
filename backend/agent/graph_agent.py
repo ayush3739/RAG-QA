@@ -96,6 +96,7 @@ def _format_graph_result(result: dict) -> dict:
         "chunks": doc_chunks,
         "retrieved_chunks": _metadata_chunks(doc_chunks),
         "routing_reason": result.get("routing_reason", ""),
+        "retriever_debug": result.get("retriever_debug", {}),
     }
 
 

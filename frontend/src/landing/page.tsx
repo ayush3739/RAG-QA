@@ -17,7 +17,7 @@ import Footer from './components/Footer'
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen flex flex-col bg-[#050505] text-[#EDEDED] font-sans selection:bg-[#7C5CFF]/25 selection:text-white antialiased">
+    <div className="dark min-h-screen flex flex-col bg-background text-foreground font-sans antialiased">
       <Navbar />
       <main className="flex-1">
         <Hero />

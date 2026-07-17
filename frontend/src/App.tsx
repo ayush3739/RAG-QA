@@ -11,6 +11,7 @@ import DocumentDetailsView from "./components/DocumentDetailsView";
 import { Message, Conversation, DocType, SourceDocument, Citation } from "./types";
 import { Menu, Database, Sparkles } from "lucide-react";
 import { useStore } from "./store/useStore";
+import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { api } from "./lib/api";
 import { Toaster, toast } from 'sonner';
 import { motion, AnimatePresence } from "framer-motion";
@@ -544,6 +545,17 @@ export default function App() {
     setActiveConvId("");
     setDraftLinkedDocIds([]);
   };
+
+  useKeyboardShortcuts({
+    'u': () => setCurrentTab("documents"),
+    'c': () => handleNewResearch(),
+    'r': () => handleNewResearch(),
+    'd': () => setCurrentTab("dashboard"),
+    't': () => setCurrentTab("chats"),
+    'l': () => setCurrentTab("documents"),
+    's': () => setCurrentTab("settings"),
+    'cmd+k': () => handleNewResearch(),
+  });
 
   const handleTakeToChat = (topic: string, selectedDocIds: string[]) => {
     setCurrentTab("conversations");

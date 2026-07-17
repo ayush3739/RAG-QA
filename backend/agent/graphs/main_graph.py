@@ -312,6 +312,7 @@ async def document_qa(state: MainState) -> dict:
         "confidence": result.get("confidence"),
         "used_vector_db": bool(result.get("used_vector_db", False)),
         "tool_trace": ["document_retrieval"],
+        "retriever_debug": result.get("retriever_debug", {}),
     }
 
 

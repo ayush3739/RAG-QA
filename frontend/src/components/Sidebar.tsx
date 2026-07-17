@@ -163,10 +163,30 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
       </nav>
 
       {/* Footer Profile & Logout */}
-      <div className="pt-4 space-y-1 relative" ref={menuRef}>
+      <div className={cn("relative", isCollapsed ? "mt-auto pt-2 space-y-1" : "pt-4 space-y-1")} ref={menuRef}>
         
-        {/* Dropdown Menu */}
-        {showUserMenu && (
+        {/* Collapsed mode: theme + logout icons above avatar */}
+        {isCollapsed && (
+          <>
+            <button
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground hover:bg-surface-container hover:text-foreground transition-colors cursor-pointer"
+              title="Toggle Theme"
+            >
+              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+            <button
+              onClick={logout}
+              className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground hover:bg-red-500/10 hover:text-red-500 transition-colors cursor-pointer"
+              title="Log Out"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </>
+        )}
+
+        {/* Dropdown Menu (expanded mode) */}
+        {showUserMenu && !isCollapsed && (
           <div className="absolute bottom-full left-2 right-2 mb-2 bg-surface border border-border rounded-xl shadow-xl overflow-hidden z-50">
             <div className="p-2">
               <button 

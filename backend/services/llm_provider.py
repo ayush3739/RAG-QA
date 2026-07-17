@@ -180,7 +180,7 @@ async def _try_groq(messages: list[dict]) -> str:
         raise RuntimeError("No Groq API key configured.")
     client = _openai_client(api_key=key, base_url="https://api.groq.com/openai/v1")
     resp = await client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model=settings.llm_model,
         messages=messages,
         stream=False,
     )
@@ -193,7 +193,20 @@ async def _try_groq_secondary(messages: list[dict]) -> str:
         raise RuntimeError("No Groq Secondary API key configured.")
     client = _openai_client(api_key=key, base_url="https://api.groq.com/openai/v1")
     resp = await client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model=settings.llm_model,
+        messages=messages,
+        stream=False,
+    )
+    return resp.choices[0].message.content or ""
+
+
+async def _try_groq_third(messages: list[dict]) -> str:
+    key = settings.groq_api_third
+    if not key:
+        raise RuntimeError("No Groq Third API key configured.")
+    client = _openai_client(api_key=key, base_url="https://api.groq.com/openai/v1")
+    resp = await client.chat.completions.create(
+        model=settings.llm_model,
         messages=messages,
         stream=False,
     )
@@ -236,8 +249,9 @@ async def _try_ollama(messages: list[dict]) -> str:
 # Ordered fallback chain: label → async callable
 _FALLBACK_CHAIN = [
     # ("Bedrock",        _try_bedrock),
-    ("Groq",           _try_groq),
+    ("Groq Third",     _try_groq_third),
     ("Groq Secondary", _try_groq_secondary),
+    ("Groq",           _try_groq),
 ]
 
 # Map provider name → its position so the primary always starts at index 0
@@ -278,7 +292,7 @@ class LLMProvider:
             endpoints = {
                 "gemini":     ("https://generativelanguage.googleapis.com/v1beta/openai/", settings.gemini_api_key),
                 "nvidia":     ("https://integrate.api.nvidia.com/v1",                      settings.nvidia_nim),
-                "groq":       ("https://api.groq.com/openai/v1",                          settings.groq_api_key),
+                "groq":       ("https://api.groq.com/openai/v1",                          settings.groq_api_third),
                 "openrouter": ("https://openrouter.ai/api/v1",                            settings.open_router_key),
                 "github":     ("https://models.github.ai/inference",                      settings.github_token),
             }

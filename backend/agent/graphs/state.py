@@ -1,6 +1,7 @@
 from operator import add
 from typing import Annotated, Any
 from typing_extensions import TypedDict
+from backend.core.retriever import RetrievalQuery
 
 
 class MainState(TypedDict, total=False):
@@ -25,6 +26,7 @@ class MainState(TypedDict, total=False):
     confidence: float | None
     tool_trace: Annotated[list[str], add]
     used_vector_db: bool
+    retriever_debug: dict[str, Any]
 
 
 class ResearchState(TypedDict, total=False):
@@ -49,25 +51,18 @@ class ResearchState(TypedDict, total=False):
 
 
 class RetrieverState(TypedDict, total=False):
-    query: str
+    query: str | RetrievalQuery
     document_ids: list[int]
     db: Any
 
     needs_decomposition: bool
-    subqueries: list[str]
-
-    parallel_chunks: list[list[dict[str, Any]]]
-    merged_chunks: list[dict[str, Any]]
-    deduplicated_chunks: list[dict[str, Any]]
-
-    hybrid_chunks: list[dict[str, Any]]
+    queries: list[RetrievalQuery]
 
     reranked_chunks: list[dict[str, Any]]
     confidence: float
-    enough_evidence: bool
     used_vector_db: bool
-
-    retry_count: int
+    retriever_debug: dict[str, Any]
+    
     max_retries: int
 
 

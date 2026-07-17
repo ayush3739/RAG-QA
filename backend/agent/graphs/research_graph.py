@@ -1,3 +1,31 @@
+"""
+research_graph.py
+
+Matches diagram 2 exactly:
+
+    Research Query
+          │
+    Research Planner
+          │
+    Execution Plan ──────────────► Need Web?
+          │                           │ Yes
+          │                           ▼
+    Retriever Subagent ◄──── Web Search
+          │
+    Evidence Fusion
+          │
+      Generator
+          │
+        Critic
+          │
+    Issues Found?
+     │ No      │ Yes
+     ▼         ▼
+Final Response  Query Refiner
+                    │
+               (loops back to subagent)
+"""
+
 from __future__ import annotations
 
 import json

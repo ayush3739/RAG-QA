@@ -6,12 +6,18 @@ from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 import pickle
 from pathlib import Path
-from backend.core.utils import simple_tokenize,RERANKER
+from backend.core.utils import simple_tokenize
 from backend.core.config import settings
 from backend.models import models
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from pydantic import BaseModel
 import time
+
+class RetrievalQuery(BaseModel):
+    original_query: str
+    semantic_query: str
+    keyword_query: str
 
 t0 = time.perf_counter()
 class Retriever():
@@ -46,8 +52,6 @@ class Retriever():
             self.bm25_meta = []
             self.bm25_loaded = False
             self.base_dir = BASE_DIR
-
-            self.reranker = RERANKER
             
             # Setup Groq clients for round-robin query rewriting
             self.groq_clients = []
@@ -154,56 +158,20 @@ class Retriever():
         except Exception as e:
             print(f"Failed to load BM25 from DB paths: {e}")
 
-    async def rewrite_query(self, query: str) -> dict:
-        if not self.groq_clients:
-            return {"semantic_query": query, "keyword_query": query}
-        
-        client = self.groq_clients[self._groq_index]
-        self._groq_index = (self._groq_index + 1) % len(self.groq_clients)
-        
-        system_prompt = (
-            "Rewrite the user's question into an optimized retrieval query.\n"
-            "Requirements:\n"
-            "- Preserve the original meaning exactly.\n"
-            "- Use the terminology likely to appear in technical documentation.\n"
-            "- Include important entities, API names, configuration fields, CLI commands, or keywords if relevant.\n"
-            "- Keep it under 12 words.\n"
-            "- Do not answer the question.\n"
-            "Output ONLY JSON with this format:\n"
-            "{\n"
-            '  "semantic_query": "What are the lifecycle states of a Kubernetes Job?",\n'
-            '  "keyword_query": "Kubernetes Job Active Completed Failed status lifecycle"\n'
-            "}"
-        )
-        try:
-            response = await client.ainvoke([
-                SystemMessage(content=system_prompt),
-                HumanMessage(content=query)
-            ])
-            text = response.content.strip()
-            if "{" in text:
-                text = text[text.find("{"):text.rfind("}")+1]
-            import json
-            queries = json.loads(text)
-            
-            semantic_query = queries.get("semantic_query", query)
-            keyword_query = queries.get("keyword_query", query)
-            
-            print(f"Original Query: {query}")
-            print(f"Semantic Query: {semantic_query}")
-            print(f"Keyword Query: {keyword_query}")
-            return {"semantic_query": semantic_query, "keyword_query": keyword_query}
-        except Exception as e:
-            print(f"Query rewrite failed: {e}")
-            return {"semantic_query": query, "keyword_query": query}
 
-    async def similarity_search(self, query: str, k: int = 10):
+
+    async def similarity_search(self, query: str | RetrievalQuery, k: int = 10):
         await self._load_bm25_from_db()
         try:
-            query = self.sanitize_query(query)
-            queries = await self.rewrite_query(query)
-            semantic_query = queries.get("semantic_query", query)
-            keyword_query = queries.get("keyword_query", query)
+            if isinstance(query, str):
+                query = self.sanitize_query(query)
+                semantic_query = query
+                keyword_query = query
+                original_query = query
+            else:
+                semantic_query = query.semantic_query
+                keyword_query = query.keyword_query
+                original_query = query.original_query
 
             t0 = time.perf_counter()
             query_embedding = self.embedding_model.embed_query(semantic_query)
@@ -243,9 +211,7 @@ class Retriever():
                                 "page_label": chunk.page_number,
                                 "source": chunk.source,
                                 "vector_score": round(
-                                    1 - float(distance),
-                                    4
-                                ),
+                                    1 - float(distance), 4),
                             }
                         )
                     )
@@ -259,7 +225,8 @@ class Retriever():
             bm25_results = []
             try:
                 if self.bm25 and len(self.bm25_texts) > 0:
-                    q_tokens = simple_tokenize(keyword_query)
+                    combined_bm25_query = f"{original_query} {keyword_query}"
+                    q_tokens = simple_tokenize(combined_bm25_query)
                     scores = self.bm25.get_scores(q_tokens)
                     # get top indices
                     ranked_idx = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:settings.vector_output_chunks]
@@ -292,10 +259,12 @@ class Retriever():
             # Rerank top merged results using CrossEncoder, fall back gracefully
             top_for_rerank = merged_results[:settings.reranker_input_chunks]
             try:
-                ranked_chunks, max_score = self.rerank_(query, top_for_rerank, top_n=settings.llm_context_chunks)
+                ranked_chunks, max_score = await self.rerank_(original_query, top_for_rerank, top_n=settings.llm_context_chunks)
                 chunks_for_context = ranked_chunks
             except Exception as e:
+                import traceback
                 print(f"Reranker failed: {e}")
+                print(traceback.format_exc())
                 chunks_for_context = top_for_rerank[:10]
             print("Rerank:", time.perf_counter() - t3)
 
@@ -320,7 +289,7 @@ class Retriever():
                 "vector_results": [{"chunk_id": getattr(c, "metadata", {}).get("chunk_id"), "score": getattr(c, "metadata", {}).get("vector_score"), "text": getattr(c, "page_content", "")} for c in vector_results],
                 "bm25_results": [{"chunk_id": getattr(c, "metadata", {}).get("chunk_id"), "score": getattr(c, "metadata", {}).get("bm25_score"), "text": getattr(c, "page_content", "")} for c in bm25_results],
                 "merged_results": [{"chunk_id": getattr(c, "metadata", {}).get("chunk_id"), "vector_score": getattr(c, "metadata", {}).get("vector_score"), "bm25_score": getattr(c, "metadata", {}).get("bm25_score"), "text": getattr(c, "page_content", "")} for c in merged_results],
-                "top_for_rerank": [{"chunk_id": getattr(c, "metadata", {}).get("chunk_id"), "vector_score": getattr(c, "metadata", {}).get("vector_score"), "bm25_score": getattr(c, "metadata", {}).get("bm25_score"), "text": getattr(c, "page_content", "")} for c in top_for_rerank]
+                "top_for_rerank": [{"chunk_id": getattr(c, "metadata", {}).get("chunk_id"), "vector_score": getattr(c, "metadata", {}).get("vector_score"), "bm25_score": getattr(c, "metadata", {}).get("bm25_score"), "reranker_score": getattr(c, "metadata", {}).get("reranker_score"), "text": getattr(c, "page_content", "")} for c in top_for_rerank]
             }
 
             result_payload = {
@@ -334,21 +303,58 @@ class Retriever():
         except Exception as e:
             raise RuntimeError(f"Retrieval failed: {str(e)}")
             
-    def rerank_(self, query: str, chunks: list,top_n: int = 5) -> list:
+    async def rerank_(self, query: str, chunks: list,top_n: int = 5) -> list:
         if not chunks:
             return [], 0.0
-        pairs = [(query, c.page_content) for c in chunks]
-        scores = self.reranker.predict(pairs)
-        if len(scores) == 0:
+            
+        passages = [c.page_content for c in chunks]
+        
+        if not settings.JINA_KEY:
+            print("Warning: JINA_KEY not set. Skipping reranker.")
             return chunks[:top_n], 0.0
-        for c, s in zip(chunks, scores):
+
+        import httpx
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(
+                    "https://api.jina.ai/v1/rerank",
+                    headers={
+                        "Authorization": f"Bearer {settings.JINA_KEY}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": "jina-reranker-v3",
+                        "query": query,
+                        "documents": passages,
+                        "top_n": len(passages)
+                    },
+                    timeout=15.0
+                )
+            resp.raise_for_status()
+            data = resp.json()
+            results = data.get("results", [])
+        except Exception as e:
+            print(f"Jina API failed: {e}")
+            return chunks[:top_n], 0.0
+        
+        if not results:
+            return chunks[:top_n], 0.0
+
+        # Sort the results by index to match original 'chunks' array order,
+        # or we can just apply the scores to chunks by mapping index back.
+        # Jina returns them sorted by relevance_score, but gives us the 'index' of the original document.
+        scores_by_index = {item["index"]: item["relevance_score"] for item in results}
+        
+        for i, c in enumerate(chunks):
+            s = scores_by_index.get(i, 0.0)
             try:
                 c.metadata["reranker_score"] = float(s)
             except Exception:
                 c.metadata = getattr(c, "metadata", {}) or {}
                 c.metadata["reranker_score"] = float(s)
+        
         ranked = sorted(chunks, reverse=True, key=lambda x: x.metadata.get("reranker_score", 0.0))
-        return ranked[:top_n], float(max(scores))
+        return ranked[:top_n], float(ranked[0].metadata.get("reranker_score", 0.0))
 
     def generate_response(self, query: str, retrieval_result: dict):
         # defensive sanitization: ensure the query used with the LLM is safe

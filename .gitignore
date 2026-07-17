@@ -234,3 +234,6 @@ plan.md
 learn.md 
 frontend/dev-config.json
 .agents/
+.impeccable/
+.codex/
+evals/
