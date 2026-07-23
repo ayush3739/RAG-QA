@@ -237,3 +237,4 @@ frontend/dev-config.json
 .impeccable/
 .codex/
 evals/
+.vscode/

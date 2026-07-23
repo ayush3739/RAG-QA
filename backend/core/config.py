@@ -32,7 +32,9 @@ class Settings(BaseSettings):
     test_key: Optional[str] = None
     secret_key: str = "change-me-in-production"
     algorithm: str = "HS256"
-    access_token_expire_minutes: int = 60 * 24 * 7  # 1 week
+    access_token_expire_minutes: int = 60 * 24 
+    refresh_token_expire_days: int = 60 * 24 * 7
+    issuer: str = "rag-qa-v1"
 
     # Ollama (local)
     ollama_base_url: str = "http://localhost:11434"
@@ -57,6 +59,7 @@ class Settings(BaseSettings):
     mail_password: SecretStr = SecretStr("")
     mail_from: str = "noreply@example.com"
     mail_use_tls: bool = True
+    resend_api_key: SecretStr = SecretStr("")
 
     # Database
     DATABASE_URL: str

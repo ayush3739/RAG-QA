@@ -5,22 +5,26 @@ Pydantic schemas for authentication and user endpoints.
 These are request/response shapes only — ORM models live in models/models.py.
 """
 
-from pydantic import BaseModel, EmailStr
+
+
+
+from pydantic import BaseModel, EmailStr,Field
 
 
 # ---------------------------------------------------------------------------
 # Register / Login
 # ---------------------------------------------------------------------------
 
-class UserRegister(BaseModel):
-    name: str
+class UserBase(BaseModel):
     email: EmailStr
     password: str
 
+class UserRegister(UserBase):
+    name: str = Field(..., min_length=1, max_length=50)
 
-class UserLogin(BaseModel):
-    email: EmailStr
-    password: str
+
+class UserLogin(UserBase):
+    pass 
 
 
 # ---------------------------------------------------------------------------
@@ -29,6 +33,7 @@ class UserLogin(BaseModel):
 
 class TokenResponse(BaseModel):
     access_token: str
+    refresh_token: str
     token_type: str = "bearer"
 
 

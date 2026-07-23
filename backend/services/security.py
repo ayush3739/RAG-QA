@@ -5,12 +5,14 @@ Password hashing and JWT token utilities.
 No business logic here — pure crypto primitives used by auth_service.
 """
 
+from uuid import uuid4
 from datetime import datetime, timedelta, timezone
 import secrets
 import hashlib
 
 from jose import JWTError, jwt
 from passlib.context import CryptContext
+from sqlalchemy import Enum
 
 from backend.core.config import settings
 
@@ -19,6 +21,11 @@ from backend.core.config import settings
 # ---------------------------------------------------------------------------
 
 _pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+class TokenType(str,Enum):
+    ACCESS = "access"
+    REFRESH = "refresh"
+    
 
 
 def hash_password(plain: str) -> str:
@@ -29,39 +36,74 @@ def verify_password(plain: str, hashed: str) -> bool:
     return _pwd_context.verify(plain, hashed)
 
 
-# ---------------------------------------------------------------------------
-# JWT
-# ---------------------------------------------------------------------------
+#JWT token utilities
 
-def create_access_token(
-    subject: int,                          # user.id
-    expires_delta: timedelta | None = None,
-) -> str:
-    expire = datetime.now(timezone.utc) + (
-        expires_delta
-        or timedelta(minutes=settings.access_token_expire_minutes)
-    )
-    payload = {"sub": str(subject), "exp": expire}
-    return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
+def create_access_token(user_id: str, role: str, expires_delta:timedelta | None = None) -> str:
 
+    
+    now = datetime.now(timezone.utc)
+    
+    if expires_delta:
+        expire = now + expires_delta
+    else:
+        expire = now + timedelta(minutes=settings.access_token_expire_minutes)
+     
+    to_encode = {
+        "sub": user_id,
+        "role": role,
+        "iss": settings.issuer,
+        "exp": expire,
+        "iat": now,
+        "type": TokenType.ACCESS.value,
+    }
 
-def decode_token(token: str) -> int | None:
-    """
-    Returns the user_id encoded in the token, or None if invalid/expired.
-    Callers decide how to handle None (typically raise HTTP 401).
-    """
+    encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
+    
+    return encoded_jwt
+
+def create_refresh_token(user_id: str, expires_delta:timedelta | None = None) -> str:
+
+    now = datetime.now(timezone.utc)
+    if expires_delta:
+        expire = now + expires_delta
+    else:
+        expire = now + timedelta(days=settings.refresh_token_expire_days)
+
+    to_encode = {
+        "sub": user_id,
+        "iss": settings.issuer,
+        "iat": now,
+        "exp": expire,
+        "type": TokenType.REFRESH.value,
+        "jti": str(uuid4()),
+    }
+
+    encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
+    
+    return encoded_jwt
+
+def decode_token(token: str,expected_type: str) -> dict | None:
     try:
         payload = jwt.decode(
             token,
             settings.secret_key,
             algorithms=[settings.algorithm],
         )
-        user_id = payload.get("sub")
-        if user_id is None:
+        if payload is None:
             return None
-        return int(user_id)
+        if payload.get("iss") != settings.issuer:
+            return None
+        
+
+        if payload.get("type") != expected_type:
+            return None
+
+        return payload
+
     except JWTError:
         return None
+    
+
 
 # ---------------------------------------------------------------------------
 # Password Reset Tokens

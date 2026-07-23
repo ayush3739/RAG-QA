@@ -6,8 +6,11 @@ from sqlalchemy.dialects.postgresql import JSONB,UUID
 from pgvector.sqlalchemy import Vector
 from backend.db.base import Base
 from uuid import uuid4
-
-
+from enum import Enum
+class UserRole(str, Enum):
+    USER = "user"
+    PRO = "Pro"
+    ADMIN = "admin"
 
 class User(Base):
     __tablename__ = "users"
@@ -16,9 +19,24 @@ class User(Base):
     name: Mapped[str] = mapped_column(String(50), nullable=False)
     email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
     password_hash: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    role: Mapped[UserRole] = mapped_column(default=UserRole.USER,nullable=False)  # "user" or "admin"
+    is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True  ), nullable=True)
     sessions: Mapped[list["Session"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     reset_tokens : Mapped[list["PasswordResetToken"]] = relationship(back_populates="user",cascade="all , delete-orphan")
     documents: Mapped[list["Document"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    data_usages: Mapped[list["DataUsage"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+
+class DataUsage(Base):
+    __tablename__ = "data_usages"
+
+    id : Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    query_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    user: Mapped["User"] = relationship(back_populates="data_usages")
+
 class PasswordResetToken(Base):
     __tablename__ = "password_reset_tokens"
 
