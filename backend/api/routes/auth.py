@@ -8,8 +8,9 @@ POST /auth/login      → verify credentials, return token
 GET  /auth/me         → return current user profile
 """
 
-from pydeck import settings
-from sqlalchemy import Enum, select
+from datetime import datetime, timedelta, timezone
+
+from sqlalchemy import select
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,31 +18,38 @@ from typing import Annotated
 from backend.api.deps import get_current_user, get_db
 from backend.models.auth_schemas import (
     TokenResponse,
-    UserLogin,
     UserRegister,
     UserResponse,
     ForgotPasswordRequest,
     ResetPasswordRequest,
+    RefreshTokenRequest,
 )
 from backend.models.models import User
 
+from backend.services.auth_service import (
+    persist_refresh_token,
+    revoke_refresh_token,
+    rotate_refresh_token,
+)
 from backend.services.security import (
     hash_password, 
     verify_password, 
     create_access_token,
     generate_reset_token,
     create_refresh_token,
-    hash_reset_token
-)
-from backend.models.models import User, PasswordResetToken
+    hash_reset_token,
 
-from backend.services.security import create_access_token
+)
+from backend.models.models import PasswordResetToken
 from backend.services.email_service import send_reset_email
 
 
 router = APIRouter()
 
 
+@router.get("/me", response_model=UserResponse)
+async def me(current_user: User = Depends(get_current_user)):
+    return current_user
 
 
 
@@ -69,6 +77,7 @@ async def register(user: UserRegister,db: Annotated[AsyncSession, Depends(get_db
 
     access_token = create_access_token(new_user.id, new_user.role.value)
     refresh_token = create_refresh_token(new_user.id)
+    await persist_refresh_token(db, new_user.id, refresh_token)
 
     return TokenResponse(
         access_token=access_token,
@@ -79,7 +88,8 @@ async def register(user: UserRegister,db: Annotated[AsyncSession, Depends(get_db
 
 @router.post("/login", response_model=TokenResponse)
 async def login(form_data: Annotated[OAuth2PasswordRequestForm,Depends()] ,db: Annotated[AsyncSession, Depends(get_db)],):
-    user = db.session.execute(select(User).where(User.email == form_data.username)).scalar_one_or_none()
+    result = await db.execute(select(User).where(User.email == form_data.username))
+    user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,   
@@ -100,14 +110,30 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm,Depends()] ,db: A
     
     access_token = create_access_token(user.id, user.role.value)
     refresh_token = create_refresh_token(user.id)
+
+    # Persist refresh token with single-session semantics.
+    try:
+        await persist_refresh_token(db, user.id, refresh_token)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error storing refresh token",
+        )
+
     return TokenResponse(access_token=access_token,refresh_token=refresh_token,token_type="bearer")
 
-    
 
 
-@router.get("/me", response_model=UserResponse)
-async def me(current_user: User = Depends(get_current_user)):
-    return current_user
+@router.post("/logout")
+async def logout(
+    refresh_request: RefreshTokenRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    await revoke_refresh_token(db, refresh_request.refresh_token)
+
+    return {"message": "Successfully logged out."}
+
+
 
 
 @router.post("/forgot-password")
@@ -115,7 +141,8 @@ async def forgot_password(
     email: ForgotPasswordRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    user = db.session.execute(select(User).where(User.email == email.email)).scalar_one_or_none()
+    result = await db.execute(select(User).where(User.email == email.email))
+    user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -143,7 +170,8 @@ async def reset_password(
     db: AsyncSession = Depends(get_db),
 ):
     hashed_token = hash_reset_token(reset_request.token)
-    reset_entry = db.session.execute(select(PasswordResetToken).where(PasswordResetToken.token_hash == hashed_token)).scalar_one_or_none()
+    result = await db.execute(select(PasswordResetToken).where(PasswordResetToken.token_hash == hashed_token))
+    reset_entry = result.scalar_one_or_none()
     if not reset_entry:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -154,7 +182,8 @@ async def reset_password(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Token has expired",
         )
-    user = db.session.execute(select(User).where(User.id == reset_entry.user_id)).scalar_one_or_none()
+    user_result = await db.execute(select(User).where(User.id == reset_entry.user_id))
+    user = user_result.scalar_one_or_none()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -166,3 +195,18 @@ async def reset_password(
     await db.commit()
     return {"message": "Password successfully reset."}
 
+
+@router.post("/refresh-token", response_model=TokenResponse)
+async def refresh_token(
+    refresh_request: RefreshTokenRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    access_token, new_refresh_token = await rotate_refresh_token(db, refresh_request.refresh_token)
+
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=new_refresh_token,
+        token_type="bearer",
+    )
+
+    

@@ -9,10 +9,10 @@ from uuid import uuid4
 from datetime import datetime, timedelta, timezone
 import secrets
 import hashlib
+from enum import Enum
 
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from sqlalchemy import Enum
 
 from backend.core.config import settings
 

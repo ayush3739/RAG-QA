@@ -27,6 +27,27 @@ class User(Base):
     reset_tokens : Mapped[list["PasswordResetToken"]] = relationship(back_populates="user",cascade="all , delete-orphan")
     documents: Mapped[list["Document"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     data_usages: Mapped[list["DataUsage"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    refresh_tokens: Mapped[list["RefreshToken"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+
+class RefreshToken(Base):
+    __tablename__ = "refresh_tokens"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False,index=True)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    jti: Mapped[str] = mapped_column(String(36), unique=True, nullable=False)
+    revoked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+    )
+    
+
+    user: Mapped[User] = relationship(back_populates="refresh_tokens")
 
 class DataUsage(Base):
     __tablename__ = "data_usages"
