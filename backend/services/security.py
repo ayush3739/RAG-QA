@@ -33,6 +33,8 @@ def hash_password(plain: str) -> str:
 
 
 def verify_password(plain: str, hashed: str) -> bool:
+    if plain is None or hashed is None:
+        return False
     return _pwd_context.verify(plain, hashed)
 
 
@@ -49,7 +51,7 @@ def create_access_token(user_id: str, role: str, expires_delta:timedelta | None 
         expire = now + timedelta(minutes=settings.access_token_expire_minutes)
      
     to_encode = {
-        "sub": user_id,
+        "sub": str(user_id),
         "role": role,
         "iss": settings.issuer,
         "exp": expire,
@@ -70,7 +72,7 @@ def create_refresh_token(user_id: str, expires_delta:timedelta | None = None) ->
         expire = now + timedelta(days=settings.refresh_token_expire_days)
 
     to_encode = {
-        "sub": user_id,
+        "sub": str(user_id),
         "iss": settings.issuer,
         "iat": now,
         "exp": expire,

@@ -10,26 +10,29 @@ GET  /auth/me         → return current user profile
 
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated
 from backend.api.deps import get_current_user, get_db
 from backend.models.auth_schemas import (
+    MessageResponse,
     TokenResponse,
     UserRegister,
     UserResponse,
     ForgotPasswordRequest,
     ResetPasswordRequest,
     RefreshTokenRequest,
+    VerifyEmailRequest,
 )
-from backend.models.models import User
+from backend.models.models import RefreshToken, User, UserToken, UserTokenType
 
 from backend.services.auth_service import (
     persist_refresh_token,
     revoke_refresh_token,
     rotate_refresh_token,
+    verify_email as verify_email_token,
 )
 from backend.services.security import (
     hash_password, 
@@ -40,8 +43,7 @@ from backend.services.security import (
     hash_reset_token,
 
 )
-from backend.models.models import PasswordResetToken
-from backend.services.email_service import send_reset_email
+from backend.services.email_service import send_reset_email,send_verification_email
 
 
 router = APIRouter()
@@ -55,7 +57,7 @@ async def me(current_user: User = Depends(get_current_user)):
 
 @router.post(
     "/register",
-    response_model=TokenResponse,
+    response_model=MessageResponse,
     status_code=status.HTTP_201_CREATED,
 )
 async def register(user: UserRegister,db: Annotated[AsyncSession, Depends(get_db)],):
@@ -68,21 +70,48 @@ async def register(user: UserRegister,db: Annotated[AsyncSession, Depends(get_db
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered",
         )
+    try:
+        password_hash = hash_password(user.password)
+        new_user = User(email=user.email, password_hash=password_hash, name=user.name)
+        db.add(new_user)
+        await db.commit()
+        await db.refresh(new_user)
+    except Exception:
+        await db.rollback()
+        raise
 
-    password_hash = hash_password(user.password)
-    new_user = User(email=user.email, password_hash=password_hash, name=user.name)
-    db.add(new_user)
-    await db.commit()
-    await db.refresh(new_user)
+    try:
+        verification_token = generate_reset_token()
+        hashed_token = hash_reset_token(verification_token)
+        expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)  # Token valid for 15 minutes
+        verification_entry = UserToken(
+            user_id=new_user.id,
+            token_hash=hashed_token,
+            expires_at=expires_at,
+            token_type=UserTokenType.EMAIL_VERIFICATION,
+        )
+        db.add(verification_entry)
+        await db.commit()
+        await send_verification_email(
+            to_email=new_user.email,
+            verification_token=verification_token,
+            username=new_user.name,
+        )
+    except Exception:
+        await db.rollback()
+        await db.execute(delete(UserToken).where(UserToken.token_hash == hashed_token))
+        await db.execute(delete(User).where(User.id == new_user.id))
+        await db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to send verification email",
+        )
+    
 
-    access_token = create_access_token(new_user.id, new_user.role.value)
-    refresh_token = create_refresh_token(new_user.id)
-    await persist_refresh_token(db, new_user.id, refresh_token)
 
-    return TokenResponse(
-        access_token=access_token,
-        refresh_token=refresh_token,
-    )   
+
+
+    return {"message": "User registered successfully. Please verify your email before logging in."} 
     
 
 
@@ -111,9 +140,11 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm,Depends()] ,db: A
     access_token = create_access_token(user.id, user.role.value)
     refresh_token = create_refresh_token(user.id)
 
-    # Persist refresh token with single-session semantics.
+    # Persist this login's refresh token as a separate session entry.
     try:
         await persist_refresh_token(db, user.id, refresh_token)
+    except HTTPException:
+        raise
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -144,19 +175,33 @@ async def forgot_password(
     result = await db.execute(select(User).where(User.email == email.email))
     user = result.scalar_one_or_none()
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found",
-        )
+        return {"message": "If an account with that email exists, a password reset link has been sent."}
 
     reset_token = generate_reset_token()
     hashed_token = hash_reset_token(reset_token)
-    expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
-    reset_entry = PasswordResetToken(user_id=user.id, token_hash=hashed_token, expires_at=expires_at)
-    db.add(reset_entry)
-    await db.commit()
-
-    await send_reset_email(to_email=email.email, reset_token=reset_token)
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)  # Token valid for 15 minutes
+    reset_entry = UserToken(
+        user_id=user.id,
+        token_hash=hashed_token,
+        expires_at=expires_at,
+        token_type=UserTokenType.PASSWORD_RESET,
+    )
+    try:
+        db.add(reset_entry)
+        await db.commit()
+        await send_reset_email(
+            to_email=email.email,
+            reset_token=reset_token,
+            username=user.name,
+        )
+    except Exception:
+        await db.rollback()
+        await db.execute(delete(UserToken).where(UserToken.token_hash == hashed_token))
+        await db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to send password reset email",
+        )
 
     
     return {"message": "If an account with that email exists, a password reset link has been sent."}
@@ -170,7 +215,7 @@ async def reset_password(
     db: AsyncSession = Depends(get_db),
 ):
     hashed_token = hash_reset_token(reset_request.token)
-    result = await db.execute(select(PasswordResetToken).where(PasswordResetToken.token_hash == hashed_token))
+    result = await db.execute(select(UserToken).where(UserToken.token_hash == hashed_token, UserToken.token_type == UserTokenType.PASSWORD_RESET))
     reset_entry = result.scalar_one_or_none()
     if not reset_entry:
         raise HTTPException(
@@ -189,11 +234,16 @@ async def reset_password(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found",
         )
-    user.password_hash = hash_password(reset_request.new_password)
-    db.add(user)
-    await db.delete(reset_entry)
-    await db.commit()
-    return {"message": "Password successfully reset."}
+    try:
+        user.password_hash = hash_password(reset_request.new_password)
+        db.add(user)
+        await db.execute(delete(UserToken).where(UserToken.user_id == user.id, UserToken.token_type == UserTokenType.PASSWORD_RESET))
+        await db.execute(delete(RefreshToken).where(RefreshToken.user_id == user.id))
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        raise
+    return {"message": "Password successfully reset. Please log in with your new password."}
 
 
 @router.post("/refresh-token", response_model=TokenResponse)
@@ -209,4 +259,12 @@ async def refresh_token(
         token_type="bearer",
     )
 
-    
+
+@router.post("/verify-email", response_model=MessageResponse)
+async def verify_email(
+    verification_request: VerifyEmailRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    await verify_email_token(db, verification_request.token)
+    return {"message": "Email successfully verified. You can now log in."}
+

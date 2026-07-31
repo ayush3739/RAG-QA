@@ -3,10 +3,10 @@ from datetime import datetime, timezone
 from typing import Tuple
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.models.models import RefreshToken, User
+from backend.models.models import RefreshToken, User, UserToken, UserTokenType
 from backend.services.security import (
     TokenType,
     create_access_token,
@@ -94,12 +94,6 @@ async def validate_refresh_token(db: AsyncSession, refresh_token: str) -> Tuple[
             detail="Invalid refresh token",
         )
 
-    if refresh_entry.revoked:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or revoked refresh token",
-        )
-
     if refresh_entry.expires_at < datetime.now(timezone.utc):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -117,9 +111,8 @@ async def validate_refresh_token(db: AsyncSession, refresh_token: str) -> Tuple[
 
 async def revoke_refresh_token(db: AsyncSession, refresh_token: str) -> None:
     refresh_entry, _ = await validate_refresh_token(db, refresh_token)
-    refresh_entry.revoked = True
     try:
-        db.add(refresh_entry)
+        await db.delete(refresh_entry)
         await db.commit()
     except Exception:
         await db.rollback()
@@ -204,3 +197,44 @@ async def rotate_refresh_token(db: AsyncSession, old_refresh_token: str) -> tupl
 
     access_token = create_access_token(user.id, user.role.value)
     return access_token, new_refresh_token
+
+
+async def verify_email(db: AsyncSession, verification_token: str) -> None:
+    hashed_token = hash_reset_token(verification_token)
+    result = await db.execute(
+        select(UserToken).where(
+            UserToken.token_hash == hashed_token,
+            UserToken.token_type == UserTokenType.EMAIL_VERIFICATION,
+        )
+    )
+    verification_entry = result.scalar_one_or_none()
+    if not verification_entry:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Invalid or expired verification token",
+        )
+    if verification_entry.expires_at < datetime.now(timezone.utc):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Token has expired",
+        )
+    user_result = await db.execute(select(User).where(User.id == verification_entry.user_id))
+    user = user_result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+    try:
+        user.is_verified = True
+        db.add(user)
+        await db.execute(
+            delete(UserToken).where(
+                UserToken.user_id == user.id,
+                UserToken.token_type == UserTokenType.EMAIL_VERIFICATION,
+            )
+        )
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        raise

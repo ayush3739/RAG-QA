@@ -1,5 +1,6 @@
 from datetime import datetime,UTC
 from typing import Any, Dict, Optional
+from langchain_classic.indexes import index
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, Boolean, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import JSONB,UUID
@@ -12,6 +13,9 @@ class UserRole(str, Enum):
     PRO = "Pro"
     ADMIN = "admin"
 
+class UserTokenType(str, Enum):
+    EMAIL_VERIFICATION = "email_verification"
+    PASSWORD_RESET = "password_reset"
 class User(Base):
     __tablename__ = "users"
     
@@ -24,7 +28,7 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True  ), nullable=True)
     sessions: Mapped[list["Session"]] = relationship(back_populates="user", cascade="all, delete-orphan")
-    reset_tokens : Mapped[list["PasswordResetToken"]] = relationship(back_populates="user",cascade="all , delete-orphan")
+    user_tokens : Mapped[list["UserToken"]] = relationship(back_populates="user",cascade="all , delete-orphan")
     documents: Mapped[list["Document"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     data_usages: Mapped[list["DataUsage"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     refresh_tokens: Mapped[list["RefreshToken"]] = relationship(back_populates="user", cascade="all, delete-orphan")
@@ -36,7 +40,6 @@ class RefreshToken(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False,index=True)
     token_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
     jti: Mapped[str] = mapped_column(String(36), unique=True, nullable=False)
-    revoked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     expires_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -58,12 +61,13 @@ class DataUsage(Base):
     query_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     user: Mapped["User"] = relationship(back_populates="data_usages")
 
-class PasswordResetToken(Base):
-    __tablename__ = "password_reset_tokens"
+class UserToken(Base):
+    __tablename__ = "user_tokens"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False,index=True)
     token_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    token_type: Mapped[UserTokenType] = mapped_column(String(50), nullable=False)
     expires_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -73,7 +77,7 @@ class PasswordResetToken(Base):
         default=lambda: datetime.now(UTC),
     )
 
-    user: Mapped[User] = relationship(back_populates="reset_tokens")
+    user: Mapped[User] = relationship(back_populates="user_tokens")
 
 
 class Session(Base):

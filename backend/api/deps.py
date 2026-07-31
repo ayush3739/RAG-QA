@@ -39,9 +39,11 @@ async def get_current_user(
     payload = decode_token(token,"access")
     if payload is None:
         raise credentials_exception
-
-    user_id = int(payload.get("sub"))
-
+    try:
+        user_id = int(payload.get("sub"))
+    except :
+        raise credentials_exception
+    
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
 
