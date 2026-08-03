@@ -1,19 +1,11 @@
-import { useRef, useState, useEffect } from 'react'
-import { motion, useInView, useReducedMotion } from 'framer-motion'
+import { motion } from 'framer-motion'
 
 export default function WhyDocuMind() {
-  const sectionRef = useRef<HTMLElement>(null)
-  const isInView = useInView(sectionRef, { once: true, margin: '-80px' })
-  const prefersReduced = useReducedMotion()
-  const shouldAnimate = !prefersReduced
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => { setMounted(true) }, [])
-
   const containerVariants = {
-    hidden: {},
+    hidden: { opacity: 0 },
     visible: {
-      transition: { staggerChildren: 0.1 },
+      opacity: 1,
+      transition: { staggerChildren: 0.15 },
     },
   }
 
@@ -22,89 +14,79 @@ export default function WhyDocuMind() {
     visible: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.6, ease: [0.23, 1, 0.32, 1] },
+      transition: { duration: 0.5, ease: [0.23, 1, 0.32, 1] },
     },
   }
 
   return (
-    <section
-      id="why-exists"
-      ref={sectionRef}
-      className="relative py-20 md:py-24 overflow-hidden"
-      
-    >
-      <div className="max-w-5xl mx-auto px-6">
-        {/* Divider */}
-        <div className="linear-gradient-line mb-12" />
-
+    <section id="why-exists" className="border-t border-white/[0.05] bg-[#09090b] py-28">
+      <div className="mx-auto max-w-5xl px-6">
         {/* Header */}
         <motion.div
-          initial={mounted && shouldAnimate ? { opacity: 0, y: 16 } : false}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
-          className="mb-12 text-center md:text-left"
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-50px' }}
+          transition={{ duration: 0.6 }}
+          className="mb-16"
         >
-          <span className="text-sm font-medium text-primary">
-            Case Study
-          </span>
-          <h2 className="mt-4 text-3xl md:text-5xl font-light tracking-tight linear-gradient-text-subtle">
+          <p className="mb-3 font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-600">
+            Case Study · 01
+          </p>
+          <h2
+            className="text-3xl font-medium leading-tight tracking-[-0.03em] text-white md:text-4xl"
+            style={{ fontFamily: "'DM Sans', sans-serif" }}
+          >
             Why DocuMind Exists
           </h2>
-          <p className="mt-4 text-muted-foreground max-w-xl text-base leading-relaxed">
+          <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-zinc-500">
             Evaluating the trade-offs of modern RAG pipelines and addressing standard architectural limitations.
           </p>
         </motion.div>
 
         {/* Two Column Layout: The Problem vs The Approach */}
         <motion.div
-          variants={mounted && shouldAnimate ? containerVariants : undefined}
-          initial={mounted && shouldAnimate ? 'hidden' : false}
-          animate={isInView ? 'visible' : 'hidden'}
-          className="grid grid-cols-1 md:grid-cols-2 gap-8"
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: '-50px' }}
+          className="grid grid-cols-1 gap-8 md:grid-cols-2"
         >
           {/* Column 1: The Problem */}
           <motion.div
-            variants={shouldAnimate ? cardVariants : undefined}
-            className="linear-gradient-border p-6 md:p-8 bg-surface-container-lowest"
+            variants={cardVariants}
+            className="group rounded-2xl border border-white/[0.05] bg-white/[0.02] p-8 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:bg-white/[0.03] hover:shadow-xl hover:shadow-black/50"
           >
-            <h3 className="text-lg font-medium text-foreground mb-6 flex items-center gap-2">
-              <span className="text-red-500 font-mono text-sm">❌</span> The Problem
+            <h3 className="mb-8 text-[15px] font-medium text-white transition-colors duration-200 group-hover:text-red-300">
+              The Problem
             </h3>
-            <p className="text-xs font-mono text-muted uppercase mb-4 tracking-wider">Most &quot;Chat with PDF&quot; systems</p>
-            <ul className="space-y-4">
-              <li className="flex items-start gap-3">
-                <span className="text-red-500 mt-0.5 font-mono text-xs">·</span>
+            <p className="mb-6 font-mono text-[10px] uppercase tracking-wider text-zinc-600">
+              Most &quot;Chat with PDF&quot; systems
+            </p>
+            <ul className="space-y-6">
+              <li className="flex items-start gap-4">
+                <span className="font-mono text-xs text-red-400">01</span>
                 <div>
-                  <h4 className="text-sm font-medium text-foreground leading-snug">Retrieve on every query</h4>
-                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  <h4 className="text-[13px] font-medium text-zinc-300">Retrieve on every query</h4>
+                  <p className="mt-1.5 text-[13px] leading-relaxed text-zinc-500 transition-colors duration-200 group-hover:text-zinc-400">
                     Keyword-based and general knowledge questions waste database operations, adding unnecessary retrieval latency.
                   </p>
                 </div>
               </li>
-              <li className="flex items-start gap-3">
-                <span className="text-red-500 mt-0.5 font-mono text-xs">·</span>
+              <li className="flex items-start gap-4">
+                <span className="font-mono text-xs text-red-400">02</span>
                 <div>
-                  <h4 className="text-sm font-medium text-foreground leading-snug">Hallucinate confidently</h4>
-                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  <h4 className="text-[13px] font-medium text-zinc-300">Hallucinate confidently</h4>
+                  <p className="mt-1.5 text-[13px] leading-relaxed text-zinc-500 transition-colors duration-200 group-hover:text-zinc-400">
                     Standard systems output answers regardless of context quality, lacking fallbacks or groundedness validation.
                   </p>
                 </div>
               </li>
-              <li className="flex items-start gap-3">
-                <span className="text-red-500 mt-0.5 font-mono text-xs">·</span>
+              <li className="flex items-start gap-4">
+                <span className="font-mono text-xs text-red-400">03</span>
                 <div>
-                  <h4 className="text-sm font-medium text-foreground leading-snug">Cannot reason across sources</h4>
-                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  <h4 className="text-[13px] font-medium text-zinc-300">Cannot reason across sources</h4>
+                  <p className="mt-1.5 text-[13px] leading-relaxed text-zinc-500 transition-colors duration-200 group-hover:text-zinc-400">
                     Locked into single-pass vector database crawls without web search fallbacks or structured research synthesis.
-                  </p>
-                </div>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="text-red-500 mt-0.5 font-mono text-xs">·</span>
-                <div>
-                  <h4 className="text-sm font-medium text-foreground leading-snug">No measurable quality</h4>
-                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                    Iterating on code without automated validation pipelines leads to silent performance and retrieval regressions.
                   </p>
                 </div>
               </li>
@@ -113,47 +95,40 @@ export default function WhyDocuMind() {
 
           {/* Column 2: The Approach */}
           <motion.div
-            variants={shouldAnimate ? cardVariants : undefined}
-            className="linear-gradient-border p-6 md:p-8 bg-surface-container-lowest"
+            variants={cardVariants}
+            className="group rounded-2xl border border-white/[0.05] bg-white/[0.02] p-8 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:bg-white/[0.03] hover:shadow-xl hover:shadow-black/50"
           >
-            <h3 className="text-lg font-medium text-foreground mb-6 flex items-center gap-2">
-              <span className="text-secondary font-mono text-sm">✅</span> The Approach
+            <h3 className="mb-8 text-[15px] font-medium text-white transition-colors duration-200 group-hover:text-indigo-200">
+              The Approach
             </h3>
-            <p className="text-xs font-mono text-primary/75 uppercase mb-4 tracking-wider">DocuMind Router Architecture</p>
-            <ul className="space-y-4">
-              <li className="flex items-start gap-3">
-                <span className="text-secondary mt-0.5 font-mono text-xs">·</span>
+            <p className="mb-6 font-mono text-[10px] uppercase tracking-wider text-zinc-600">
+              Agentic RAG Architecture
+            </p>
+            <ul className="space-y-6">
+              <li className="flex items-start gap-4">
+                <span className="font-mono text-xs text-indigo-400">01</span>
                 <div>
-                  <h4 className="text-sm font-medium text-foreground leading-snug">Routes to the right tool</h4>
-                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                    LLM-based classification decides whether to answer directly, crawl indexed documents, search the web, or run research.
+                  <h4 className="text-[13px] font-medium text-zinc-300">Intelligent Routing</h4>
+                  <p className="mt-1.5 text-[13px] leading-relaxed text-zinc-500 transition-colors duration-200 group-hover:text-zinc-400">
+                    Queries bypass the vector DB entirely if the LLM detects it can answer directly or needs web search.
                   </p>
                 </div>
               </li>
-              <li className="flex items-start gap-3">
-                <span className="text-secondary mt-0.5 font-mono text-xs">·</span>
+              <li className="flex items-start gap-4">
+                <span className="font-mono text-xs text-indigo-400">02</span>
                 <div>
-                  <h4 className="text-sm font-medium text-foreground leading-snug">Measures confidence</h4>
-                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                    Evaluates retrieval scoring and falls back gracefully to secondary tools or declines to answer when uncertain.
+                  <h4 className="text-[13px] font-medium text-zinc-300">Multi-Hop Reasoning</h4>
+                  <p className="mt-1.5 text-[13px] leading-relaxed text-zinc-500 transition-colors duration-200 group-hover:text-zinc-400">
+                    Complex research queries spawn a multi-step workflow, extracting context from both vector store and web.
                   </p>
                 </div>
               </li>
-              <li className="flex items-start gap-3">
-                <span className="text-secondary mt-0.5 font-mono text-xs">·</span>
+              <li className="flex items-start gap-4">
+                <span className="font-mono text-xs text-indigo-400">03</span>
                 <div>
-                  <h4 className="text-sm font-medium text-foreground leading-snug">Supports multi-step research</h4>
-                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                    Iteratively search, synthesize claims, and cross-reference document contexts alongside live web search paths.
-                  </p>
-                </div>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="text-secondary mt-0.5 font-mono text-xs">·</span>
-                <div>
-                  <h4 className="text-sm font-medium text-foreground leading-snug">Includes evaluation and guardrails</h4>
-                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                    Built-in RAGAS assessment metrics and input/output filters validate source grounding dynamically.
+                  <h4 className="text-[13px] font-medium text-zinc-300">Strict Citations</h4>
+                  <p className="mt-1.5 text-[13px] leading-relaxed text-zinc-500 transition-colors duration-200 group-hover:text-zinc-400">
+                    Responses are forced into structured JSON formats that require source citation and confidence scores.
                   </p>
                 </div>
               </li>

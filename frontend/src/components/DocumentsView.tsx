@@ -204,13 +204,45 @@ export function DocumentsView({
           </div>
         ) : documents.length === 0 ? (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="col-span-2 text-center py-16 px-8 bg-surface-container-lowest/40 rounded-2xl border border-dashed border-border"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            className="col-span-2 flex flex-col items-center justify-center py-24 px-8 bg-surface-container-lowest/40 rounded-2xl border border-dashed border-border"
           >
-            <UploadCloud className="w-10 h-10 text-muted-foreground/40 mx-auto mb-4" />
-            <p className="text-sm font-medium text-muted-foreground">Your library is empty.</p>
-            <p className="text-xs text-muted-foreground/70 mt-1">Upload documents using the drop zone above.</p>
+            {/* Animated illustration */}
+            <div className="relative mb-8">
+              <motion.div
+                className="w-24 h-24 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center"
+                animate={{ y: [0, -8, 0] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <UploadCloud className="w-10 h-10 text-primary/60" />
+              </motion.div>
+              {/* Floating decorative dots */}
+              <motion.div
+                className="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-primary/30"
+                animate={{ scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] }}
+                transition={{ duration: 2, repeat: Infinity, delay: 0.3 }}
+              />
+              <motion.div
+                className="absolute -bottom-1 -left-3 w-3 h-3 rounded-full bg-secondary/40"
+                animate={{ scale: [1, 1.4, 1], opacity: [0.4, 0.9, 0.4] }}
+                transition={{ duration: 2.4, repeat: Infinity, delay: 0.8 }}
+              />
+            </div>
+
+            <h3 className="text-lg font-semibold text-foreground tracking-tight mb-2">Your library is empty</h3>
+            <p className="text-sm text-muted-foreground text-center max-w-xs leading-relaxed">
+              Upload your first document to get started. The RAG router will index it and make it instantly queryable.
+            </p>
+            <button
+              type="button"
+              onClick={() => (document.querySelector('input[type="file"]') as HTMLInputElement)?.click()}
+              className="mt-6 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary/10 hover:bg-primary/20 border border-primary/20 text-primary text-sm font-medium transition-all duration-200 hover:scale-[1.02]"
+            >
+              <UploadCloud className="w-4 h-4" />
+              Upload a document
+            </button>
           </motion.div>
         ) : (
           <motion.div

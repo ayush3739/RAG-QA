@@ -1,162 +1,178 @@
-import { useRef, useState, useEffect } from 'react';
-import { motion, useInView, useReducedMotion } from 'framer-motion';
+import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 interface ApiTab {
-  id: string;
-  name: string;
-  endpoint: string;
-  method: string;
-  request: string;
-  response: JSX.Element;
+  id: string
+  name: string
+  endpoint: string
+  method: string
+  request: string
+  response: JSX.Element
 }
 
+const tabs: ApiTab[] = [
+  {
+    id: 'chat',
+    name: 'Chat API',
+    endpoint: '/api/v1/chat',
+    method: 'POST',
+    request: `{\n  "message": "Verify the Q3 margin details",\n  "collection_id": "finance_docs_2024"\n}`,
+    response: (
+      <>
+        <span className="text-emerald-400">&quot;event&quot;</span>: <span className="text-amber-400">&quot;text_stream&quot;</span>,
+        {'\n  '}
+        <span className="text-indigo-400">&quot;chunk&quot;</span>: <span className="text-emerald-400">&quot;Q3 operating margin expanded to 28.4%...&quot;</span>,
+        {'\n  '}
+        <span className="text-indigo-400">&quot;confidence&quot;</span>: <span className="text-amber-400">0.89</span>,
+        {'\n  '}
+        <span className="text-indigo-400">&quot;citations&quot;</span>: [<span className="text-emerald-400">&quot;report_page_12.pdf&quot;</span>]
+      </>
+    )
+  },
+  {
+    id: 'research',
+    name: 'Research API',
+    endpoint: '/api/v1/research',
+    method: 'POST',
+    request: `{\n  "topic": "Summarize Vercel hosting latency benchmarks",\n  "include_web": true\n}`,
+    response: (
+      <>
+        <span className="text-indigo-400">&quot;summary&quot;</span>: <span className="text-emerald-400">&quot;Vercel edge networks averaged 15ms global TTFB...&quot;</span>,
+        {'\n  '}
+        <span className="text-indigo-400">&quot;sources&quot;</span>: [
+        {'\n    '}{'{'} <span className="text-indigo-400">&quot;type&quot;</span>: <span className="text-emerald-400">&quot;web&quot;</span>, <span className="text-indigo-400">&quot;url&quot;</span>: <span className="text-emerald-400">&quot;https://vercel.com/blog/...&quot;</span> {'}'}
+        {'\n  '}],
+        {'\n  '}
+        <span className="text-indigo-400">&quot;tool_trace&quot;</span>: [<span className="text-emerald-400">&quot;web_search&quot;</span>, <span className="text-emerald-400">&quot;evidence_synthesis&quot;</span>]
+      </>
+    )
+  },
+  {
+    id: 'upload',
+    name: 'Upload API',
+    endpoint: '/api/v1/collections/upload',
+    method: 'POST',
+    request: `// multipart/form-data\nfile: path/to/quarterly_audit.pdf\ncollection_id: audit_log`,
+    response: (
+      <>
+        <span className="text-indigo-400">&quot;status&quot;</span>: <span className="text-emerald-400">&quot;processing&quot;</span>,
+        {'\n  '}
+        <span className="text-indigo-400">&quot;job_id&quot;</span>: <span className="text-emerald-400">&quot;job_984cf82&quot;</span>,
+        {'\n  '}
+        <span className="text-indigo-400">&quot;chunks_expected&quot;</span>: <span className="text-amber-400">420</span>,
+        {'\n  '}
+        <span className="text-indigo-400">&quot;parent_child_mapping&quot;</span>: <span className="text-emerald-400">&quot;enabled&quot;</span>
+      </>
+    )
+  }
+]
+
 export default function ApiShowcase() {
-  const sectionRef = useRef<HTMLDivElement>(null);
-  const isInView = useInView(sectionRef, { once: true, margin: '-20%' });
-  const prefersReduced = useReducedMotion();
-  const [mounted, setMounted] = useState(false);
-  const [activeTab, setActiveTab] = useState('chat');
-
-  useEffect(() => { setMounted(true) }, []);
-
-  const tabs: ApiTab[] = [
-    {
-      id: 'chat',
-      name: 'Chat API',
-      endpoint: '/api/v1/chat',
-      method: 'POST',
-      request: `{\n  "message": "Verify the Q3 margin details",\n  "collection_id": "finance_docs_2024"\n}`,
-      response: (
-        <code>
-          <span className="text-[#3FD8C4]">&quot;event&quot;</span>: <span className="text-[#F5B942]">&quot;text_stream&quot;</span>,
-          {'\n  '}
-          <span className="text-[#7C5CFF]">&quot;chunk&quot;</span>: <span className="text-[#3FD8C4]">&quot;Q3 operating margin expanded to 28.4%...&quot;</span>,
-          {'\n  '}
-          <span className="text-[#7C5CFF]">&quot;confidence&quot;</span>: <span className="text-[#F5B942]">0.89</span>,
-          {'\n  '}
-          <span className="text-[#7C5CFF]">&quot;citations&quot;</span>: [<span className="text-[#3FD8C4]">&quot;report_page_12.pdf&quot;</span>]
-        </code>
-      )
-    },
-    {
-      id: 'research',
-      name: 'Research API',
-      endpoint: '/api/v1/research',
-      method: 'POST',
-      request: `{\n  "topic": "Summarize Vercel hosting latency benchmarks",\n  "include_web": true\n}`,
-      response: (
-        <code>
-          <span className="text-[#7C5CFF]">&quot;summary&quot;</span>: <span className="text-[#3FD8C4]">&quot;Vercel edge networks averaged 15ms global TTFB...&quot;</span>,
-          {'\n  '}
-          <span className="text-[#7C5CFF]">&quot;sources&quot;</span>: [
-          {'\n    '}{'{'} <span className="text-[#7C5CFF]">&quot;type&quot;</span>: <span className="text-[#3FD8C4]">&quot;web&quot;</span>, <span className="text-[#7C5CFF]">&quot;url&quot;</span>: <span className="text-[#3FD8C4]">&quot;https://vercel.com/blog/...&quot;</span> {'}'}
-          {'\n  '}],
-          {'\n  '}
-          <span className="text-[#7C5CFF]">&quot;tool_trace&quot;</span>: [<span className="text-[#3FD8C4]">&quot;web_search&quot;</span>, <span className="text-[#3FD8C4]">&quot;evidence_synthesis&quot;</span>]
-        </code>
-      )
-    },
-    {
-      id: 'upload',
-      name: 'Upload API',
-      endpoint: '/api/v1/collections/upload',
-      method: 'POST',
-      request: `// multipart/form-data\nfile: path/to/quarterly_audit.pdf\ncollection_id: audit_log`,
-      response: (
-        <code>
-          <span className="text-[#7C5CFF]">&quot;status&quot;</span>: <span className="text-[#3FD8C4]">&quot;processing&quot;</span>,
-          {'\n  '}
-          <span className="text-[#7C5CFF]">&quot;job_id&quot;</span>: <span className="text-[#3FD8C4]">&quot;job_984cf82&quot;</span>,
-          {'\n  '}
-          <span className="text-[#7C5CFF]">&quot;chunks_expected&quot;</span>: <span className="text-[#F5B942]">420</span>,
-          {'\n  '}
-          <span className="text-[#7C5CFF]">&quot;parent_child_mapping&quot;</span>: <span className="text-[#3FD8C4]">&quot;enabled&quot;</span>
-        </code>
-      )
-    }
-  ];
-
-  const currentTabData = tabs.find(t => t.id === activeTab) || tabs[0];
+  const [activeTab, setActiveTab] = useState('chat')
+  const currentTabData = tabs.find(t => t.id === activeTab) || tabs[0]
 
   return (
-    <section id="api" ref={sectionRef} className="relative py-20 md:py-24" style={{ backgroundColor: '#050505' }}>
+    <section id="api" className="border-t border-white/[0.05] bg-[#09090b] py-28">
       <div className="mx-auto max-w-5xl px-6">
-        {/* Divider */}
-        <div className="linear-gradient-line mb-12" />
-
         {/* Header */}
         <motion.div
-          initial={prefersReduced ? false : { opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-60px' }}
+          viewport={{ once: true, margin: '-50px' }}
           transition={{ duration: 0.6 }}
-          className="mb-8"
+          className="mb-16"
         >
-          <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-[#7C5CFF]/60">
-            API Specs
-          </span>
-          <h2 className="mt-3 text-3xl font-light tracking-tight md:text-5xl linear-gradient-text-subtle">
+          <p className="mb-3 font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-600">
+            Case Study · 06
+          </p>
+          <h2
+            className="text-3xl font-medium leading-tight tracking-[-0.03em] text-white md:text-4xl"
+            style={{ fontFamily: "'DM Sans', sans-serif" }}
+          >
             REST API Showcase
           </h2>
-          <p className="mt-3 max-w-lg text-[#707070] text-base">
-            Clean developer interfaces returning structured responses with complete confidence metrics and tool traces.
+          <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-zinc-500">
+            Every feature is exposed via a documented REST API. Built with FastAPI for high-concurrency streaming.
           </p>
         </motion.div>
 
-        {/* Tabs Control */}
-        <div className="flex gap-2 border-b border-white/5 pb-4 mb-6">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-1.5 rounded-full font-mono text-[11px] uppercase tracking-wider transition-all cursor-pointer ${
-                activeTab === tab.id
-                  ? 'bg-white text-black font-semibold'
-                  : 'bg-white/[0.02] text-[#707070] hover:text-white border border-white/5'
-              }`}
-            >
-              {tab.name}
-            </button>
-          ))}
-        </div>
-
-        {/* Code Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Request Panel */}
-          <div className="linear-gradient-border p-0">
-            <div className="linear-code p-0 overflow-hidden h-full flex flex-col justify-between">
-              <div className="flex items-center justify-between border-b border-[#1A1A1A] px-5 py-3 bg-white/[0.01]">
-                <span className="font-mono text-[10px] text-[#444] uppercase tracking-wider">Request payload</span>
-                <span className="font-mono text-[10px] text-[#3FD8C4]">{currentTabData.method} {currentTabData.endpoint}</span>
-              </div>
-              <div className="p-5 overflow-x-auto font-mono text-[12px] leading-relaxed text-[#888] flex-1 min-h-[160px]">
-                <pre><code>{currentTabData.request}</code></pre>
-              </div>
-            </div>
+        {/* Showcase Tool */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-50px' }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="overflow-hidden rounded-2xl border border-white/[0.05] bg-white/[0.02]"
+        >
+          {/* Tab Navigation */}
+          <div className="flex flex-wrap border-b border-white/[0.05] bg-[#060608]">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`relative px-6 py-4 text-sm font-medium transition-colors ${
+                  activeTab === tab.id
+                    ? 'text-white'
+                    : 'text-zinc-500 hover:bg-white/[0.02] hover:text-zinc-300'
+                }`}
+              >
+                {tab.name}
+                {activeTab === tab.id && (
+                  <motion.div
+                    layoutId="api-tab-indicator"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500"
+                    transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                  />
+                )}
+              </button>
+            ))}
           </div>
 
-          {/* Response Panel */}
-          <div className="linear-gradient-border p-0">
-            <div className="linear-code p-0 overflow-hidden h-full flex flex-col justify-between">
-              <div className="flex items-center justify-between border-b border-[#1A1A1A] px-5 py-3 bg-white/[0.01]">
-                <span className="font-mono text-[10px] text-[#444] uppercase tracking-wider">Response JSON</span>
-                <span className="font-mono text-[10px] text-[#F5B942]">200 OK</span>
-              </div>
-              <div className="p-5 overflow-x-auto font-mono text-[12px] leading-relaxed text-[#888] flex-1 min-h-[160px]">
-                <pre>
-                  <code>
-                    <span className="text-[#333]">{'{'}</span>
-                    {'\n  '}
-                    {currentTabData.response}
-                    {'\n'}
-                    <span className="text-[#333]">{'}'}</span>
-                  </code>
+          {/* Content Area */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentTabData.id}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.2 }}
+              className="grid grid-cols-1 divide-y divide-white/[0.05] md:grid-cols-2 md:divide-x md:divide-y-0"
+            >
+              {/* Request Pane */}
+              <div className="p-6 md:p-8">
+                <div className="mb-4 flex items-center justify-between">
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-zinc-500">Request</span>
+                  <span className="rounded-full bg-indigo-500/10 px-2 py-0.5 font-mono text-[10px] uppercase text-indigo-400">
+                    {currentTabData.method}
+                  </span>
+                </div>
+                <div className="font-mono text-[13px] text-zinc-300">
+                  <span className="text-indigo-400">{currentTabData.endpoint}</span>
+                </div>
+                <pre className="mt-6 overflow-x-auto font-mono text-[11px] leading-relaxed text-zinc-400">
+                  {currentTabData.request}
                 </pre>
               </div>
-            </div>
-          </div>
-        </div>
+
+              {/* Response Pane */}
+              <div className="bg-[#060608] p-6 md:p-8">
+                <div className="mb-4 flex items-center justify-between">
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-zinc-500">Response</span>
+                  <div className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] uppercase text-emerald-400">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    200 OK
+                  </div>
+                </div>
+                <pre className="overflow-x-auto font-mono text-[11px] leading-relaxed text-zinc-400">
+                  {'{'}{'\n  '}
+                  {currentTabData.response}
+                  {'\n}'}
+                </pre>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        </motion.div>
       </div>
     </section>
-  );
+  )
 }

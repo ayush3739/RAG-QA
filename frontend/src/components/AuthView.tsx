@@ -1,10 +1,25 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useStore, AuthMode } from "../store/useStore";
 import AnimatedGradientBackground from "./ui/animated-gradient-background";
 import { AnimatedShinyText } from "./magicui/animated-shiny-text";
-import { BrainCircuit, Eye, EyeOff, Loader2, Mail, CheckCircle2, AlertTriangle, ArrowLeft } from "lucide-react";
+import { BrainCircuit, Eye, EyeOff, Loader2, Mail, CheckCircle2, AlertTriangle, ArrowLeft, ShieldCheck } from "lucide-react";
 import { AnimatedBeamShowcase } from "./AnimatedBeamShowcase";
-import { api, ApiError } from "../lib/api";
+import { api, ApiError, NetworkError } from "../lib/api";
+
+// Password strength helper
+function getPasswordStrength(pw: string): { score: number; label: string; color: string } {
+  if (pw.length === 0) return { score: 0, label: "", color: "" };
+  let score = 0;
+  if (pw.length >= 8) score++;
+  if (pw.length >= 12) score++;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  if (score <= 1) return { score, label: "Weak", color: "bg-red-500" };
+  if (score <= 2) return { score, label: "Fair", color: "bg-orange-400" };
+  if (score <= 3) return { score, label: "Good", color: "bg-yellow-400" };
+  return { score, label: "Strong", color: "bg-emerald-500" };
+}
 
 export default function AuthView() {
   const authMode = useStore((s) => s.authMode);
@@ -20,11 +35,21 @@ export default function AuthView() {
   const [successInfo, setSuccessInfo] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
 
+  const passwordStrength = useMemo(() => getPasswordStrength(password), [password]);
+  const isPasswordInvalid = authMode === "register" && password.length > 0 && password.length < 8;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setUnverifiedNotice(null);
     setIsLoading(true);
+
+    // Frontend validation
+    if (authMode === "register" && password.length < 8) {
+      setError("Password must be at least 8 characters.");
+      setIsLoading(false);
+      return;
+    }
 
     try {
       if (authMode === "login") {
@@ -40,7 +65,9 @@ export default function AuthView() {
         setAuthMode("forgot-password-sent");
       }
     } catch (err: any) {
-      if (err instanceof ApiError) {
+      if (err instanceof NetworkError) {
+        setError('No internet connection. Please check your network and try again.');
+      } else if (err instanceof ApiError) {
         if (err.status === 403) {
           setUnverifiedNotice(err.message || "Email not verified. Please check your inbox for the verification link.");
         } else {
@@ -268,8 +295,13 @@ export default function AuthView() {
                             type={showPassword ? "text" : "password"}
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            placeholder="••••••••"
-                            className="w-full h-10 px-3 pr-10 rounded-lg bg-[#24292e] border border-[#3b4148] text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-150"
+                          placeholder="••••••••"
+                            autoComplete={authMode === "register" ? "new-password" : "current-password"}
+                            className={`w-full h-10 px-3 pr-10 rounded-lg bg-[#24292e] border text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-1 transition-all duration-150 ${
+                              isPasswordInvalid
+                                ? "border-red-500/60 focus:border-red-500 focus:ring-red-500"
+                                : "border-[#3b4148] focus:border-blue-500 focus:ring-blue-500"
+                            }`}
                             required
                           />
                           <button
@@ -280,13 +312,41 @@ export default function AuthView() {
                             {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                           </button>
                         </div>
+
+                        {/* Password strength bar (register only) */}
+                        {authMode === "register" && password.length > 0 && (
+                          <div className="mt-2 space-y-1">
+                            <div className="flex gap-1">
+                              {[1,2,3,4].map((i) => (
+                                <div
+                                  key={i}
+                                  className={`h-1 flex-1 rounded-full transition-all duration-300 ${
+                                    passwordStrength.score >= i ? passwordStrength.color : "bg-white/10"
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <p className={`text-[11px] font-medium ${
+                                passwordStrength.score <= 1 ? "text-red-400" :
+                                passwordStrength.score <= 2 ? "text-orange-400" :
+                                passwordStrength.score <= 3 ? "text-yellow-400" : "text-emerald-400"
+                              }`}>
+                                {passwordStrength.label}
+                              </p>
+                              {isPasswordInvalid && (
+                                <p className="text-[11px] text-red-400">Min. 8 characters</p>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
 
                     <button
                       type="submit"
-                      disabled={isLoading}
-                      className="w-full flex items-center justify-center gap-2 bg-white hover:bg-neutral-200 text-black font-semibold text-sm py-2.5 rounded-lg transition-all duration-300 mt-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] shadow-[0_0_20px_-5px_rgba(255,255,255,0.3)] hover:-translate-y-0.5 disabled:opacity-70 disabled:hover:translate-y-0 disabled:cursor-not-allowed"
+                      disabled={isLoading || isPasswordInvalid}
+                      className="w-full flex items-center justify-center gap-2 bg-white hover:bg-neutral-200 text-black font-semibold text-sm py-2.5 rounded-lg transition-all duration-300 mt-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] shadow-[0_0_20px_-5px_rgba(255,255,255,0.3)] hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0 disabled:cursor-not-allowed"
                     >
                       {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                       {authMode === "login"

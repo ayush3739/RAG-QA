@@ -18,6 +18,7 @@ import { api } from "./lib/api";
 import { Toaster, toast } from 'sonner';
 import { motion, AnimatePresence } from "framer-motion";
 import LandingPage from "./landing/page";
+import NoInternetBanner from "./components/NoInternetBanner";
 
 const normalizeSourceScore = (score: any): number | null => {
   if (score == null) return null;
@@ -782,6 +783,7 @@ export default function App() {
   return (
     <div className="bg-background text-foreground flex h-screen overflow-hidden font-sans selection:bg-primary/20 selection:text-primary relative">
       <Toaster position="top-right" richColors />
+      <NoInternetBanner />
       
       {/* Background Ambient Moving Orbs */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none hidden dark:block">
