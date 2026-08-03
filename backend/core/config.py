@@ -1,3 +1,4 @@
+from feedparser import http
 from pydantic import SecretStr
 from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -29,6 +30,9 @@ class Settings(BaseSettings):
     llm_model: str = "llama-3.3-70b-versatile"
 
     # Auth
+    GITHUB_CLIENT_ID = SecretStr("")
+    GITHUB_CLIENT_SECRET = SecretStr("")
+    GITHUB_REDIRECT_URI= "http://localhost:8000/api/v1/auth/github/callback"
     test_key: Optional[str] = None
     secret_key: str = "change-me-in-production"
     algorithm: str = "HS256"
@@ -51,6 +55,7 @@ class Settings(BaseSettings):
     confidence_threshold: float = 0.3
     chunk_size: int = 600
     chunk_overlap: int = 150
+
 
     # Mail
     mail_server: str = "localhost"

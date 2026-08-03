@@ -9,9 +9,9 @@ GET  /auth/me         → return current user profile
 """
 
 from datetime import datetime, timedelta, timezone
-
 from sqlalchemy import delete, select
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated
@@ -26,7 +26,14 @@ from backend.models.auth_schemas import (
     RefreshTokenRequest,
     VerifyEmailRequest,
 )
-from backend.models.models import RefreshToken, User, UserToken, UserTokenType
+from backend.models.models import OauthAccount, OAuthProvider, RefreshToken, User, UserToken, UserTokenType
+from backend.services.oauth_service import (
+    build_github_authorization_url,
+    create_github_oauth_state,
+    exchange_github_code,
+    fetch_github_user_info,
+    validate_github_oauth_state,
+)
 
 from backend.services.auth_service import (
     persist_refresh_token,
@@ -268,3 +275,82 @@ async def verify_email(
     await verify_email_token(db, verification_request.token)
     return {"message": "Email successfully verified. You can now log in."}
 
+
+@router.get("/github/login")
+async def github_login():
+    state = create_github_oauth_state()
+    return RedirectResponse(
+        url=build_github_authorization_url(state),
+        status_code=status.HTTP_302_FOUND,
+    )
+}
+
+@router.get("/github/callback")
+async def github_callback(code: str, state: str, db: Annotated[AsyncSession, Depends(get_db)]):
+    validate_github_oauth_state(state)
+
+    github_access_token = await exchange_github_code(code)
+    profile = await fetch_github_user_info(github_access_token)
+
+    oauth_result = await db.execute(
+        select(OauthAccount).where(
+            OauthAccount.provider == OAuthProvider.GITHUB,
+            OauthAccount.provider_account_id == profile.provider_id,
+        )
+    )
+    oauth_account = oauth_result.scalar_one_or_none()
+
+    if oauth_account:
+        user_result = await db.execute(select(User).where(User.id == oauth_account.user_id))
+        user = user_result.scalar_one_or_none()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Linked OAuth user not found",
+            )
+    else:
+        user_result = await db.execute(select(User).where(User.email == profile.email))
+        user = user_result.scalar_one_or_none()
+
+        try:
+            if not user:
+                user = User(
+                    email=profile.email,
+                    name=profile.name,
+                    is_verified=True,
+                )
+                db.add(user)
+                await db.flush()
+            else:
+                user.is_verified = True
+                if not user.name:
+                    user.name = profile.name
+                db.add(user)
+
+            oauth_account = OauthAccount(
+                user_id=user.id,
+                provider=OAuthProvider.GITHUB,
+                provider_account_id=profile.provider_id,
+            )
+            db.add(oauth_account)
+            await db.commit()
+            await db.refresh(user)
+        except Exception:
+            await db.rollback()
+            raise
+
+    access_token = create_access_token(user.id, user.role.value)
+    refresh_token = create_refresh_token(user.id)
+
+    # Persist this login's refresh token as a separate session entry.
+    try:
+        await persist_refresh_token(db, user.id, refresh_token)
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error storing refresh token",
+        )
+
+    return TokenResponse(access_token=access_token, refresh_token=refresh_token, token_type="bearer")

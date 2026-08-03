@@ -64,9 +64,13 @@ class RefreshTokenRequest(BaseModel):
     refresh_token: str
 
 
-class VerifyEmailRequest(BaseModel):
-    token: str
 
 
 class MessageResponse(BaseModel):
     message: str
+
+class OAuthProfile(BaseModel):
+    provider_id: str
+    email: str
+    name: str
+    avatar_url: str | None

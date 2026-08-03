@@ -1,7 +1,7 @@
 from datetime import datetime,UTC
 from typing import Any, Dict, Optional
 from langchain_classic.indexes import index
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, Boolean, Float
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, Boolean, Float, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import JSONB,UUID
 from pgvector.sqlalchemy import Vector
@@ -16,6 +16,11 @@ class UserRole(str, Enum):
 class UserTokenType(str, Enum):
     EMAIL_VERIFICATION = "email_verification"
     PASSWORD_RESET = "password_reset"
+
+class OAuthProvider(str, Enum):
+    GOOGLE = "google"
+    GITHUB = "github"
+
 class User(Base):
     __tablename__ = "users"
     
@@ -32,6 +37,24 @@ class User(Base):
     documents: Mapped[list["Document"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     data_usages: Mapped[list["DataUsage"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     refresh_tokens: Mapped[list["RefreshToken"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    oauth_accounts: Mapped[list["OAuthAccount"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+
+class OAuthAccount(Base):
+    __tablename__ = "oauth_accounts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    provider: Mapped[OAuthProvider] = mapped_column(String(50), nullable=False)
+    provider_account_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    provider_email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    provider_username: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+
+    user: Mapped["User"] = relationship(back_populates="oauth_accounts")
+
+    __table_args__ = (
+        UniqueConstraint("provider", "provider_account_id", name="uq_oauth_provider_account"),
+    )
 
 class RefreshToken(Base):
     __tablename__ = "refresh_tokens"
