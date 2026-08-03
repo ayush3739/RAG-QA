@@ -6,6 +6,8 @@ import DashboardView from "./components/DashboardView";
 import SessionsView from "./components/SessionsView";
 import SettingsView from "./components/SettingsView";
 import AuthView from "./components/AuthView";
+import VerifyEmailView from "./components/VerifyEmailView";
+import ResetPasswordView from "./components/ResetPasswordView";
 import { DocumentsView } from "./components/DocumentsView";
 import DocumentDetailsView from "./components/DocumentDetailsView";
 import { Message, Conversation, DocType, SourceDocument, Citation } from "./types";
@@ -71,16 +73,29 @@ const mapSourcesToCitations = (sources: any): Citation[] => {
   });
 };
 
+function getTokenFromSearch(search: string): string | null {
+  const params = new URLSearchParams(search);
+  return params.get('token');
+}
+
 export default function App() {
   const queryClient = useQueryClient();
   const [hash, setHash] = useState(window.location.hash);
+  const [pathname, setPathname] = useState(window.location.pathname);
+  const [search, setSearch] = useState(window.location.search);
 
   useEffect(() => {
     const handleHash = () => {
       setHash(window.location.hash);
+      setPathname(window.location.pathname);
+      setSearch(window.location.search);
     };
     window.addEventListener("hashchange", handleHash);
-    return () => window.removeEventListener("hashchange", handleHash);
+    window.addEventListener("popstate", handleHash);
+    return () => {
+      window.removeEventListener("hashchange", handleHash);
+      window.removeEventListener("popstate", handleHash);
+    };
   }, []);
   
   const currentTab = useStore(s => s.currentTab);
@@ -725,6 +740,34 @@ export default function App() {
   };
 
   const activeConversation = activeConvId === "" ? null : conversations.find((c) => c.id === activeConvId) || conversations[0];
+
+  // --- Dedicated auth routes: check pathname first, then hash ---
+  // Support both /verify-email?token=... and #/verify-email?token=... patterns
+  const hashPath = hash.replace(/^#\/?/, '').split('?')[0];
+  const hashSearch = hash.includes('?') ? '?' + hash.split('?')[1] : '';
+
+  const resolvedPath = pathname !== '/' ? pathname : '/' + hashPath;
+  const resolvedSearch = search || hashSearch;
+
+  if (resolvedPath === '/verify-email') {
+    const token = getTokenFromSearch(resolvedSearch);
+    return (
+      <VerifyEmailView
+        token={token || ''}
+        onNavigateToLogin={() => window.location.replace('/#/app')}
+      />
+    );
+  }
+
+  if (resolvedPath === '/reset-password') {
+    const token = getTokenFromSearch(resolvedSearch);
+    return (
+      <ResetPasswordView
+        token={token || ''}
+        onNavigateToLogin={() => window.location.replace('/#/app')}
+      />
+    );
+  }
 
   const isLanding = !hash || hash === "#" || hash === "#/";
 

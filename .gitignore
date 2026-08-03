@@ -222,7 +222,7 @@ tempCodeRunnerFile.py
 marimo/_static/
 marimo/_lsp/
 __marimo__/
-
+animation-plan.md
 # Streamlit
 .streamlit/secrets.toml
 test.py

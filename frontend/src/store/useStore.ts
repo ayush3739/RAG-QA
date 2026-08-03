@@ -3,7 +3,10 @@ import { persist } from 'zustand/middleware';
 import { SourceDocument, Conversation, ModelParams, DocType } from '../types';
 import { INITIAL_DOCUMENTS } from '../data';
 
+export type AuthMode = 'login' | 'register' | 'forgot-password' | 'verification-sent' | 'forgot-password-sent';
+
 interface UserData {
+  id?: number;
   name: string;
   email: string;
 }
@@ -32,10 +35,13 @@ interface AppState {
 
   isAuthenticated: boolean;
   setIsAuthenticated: (val: boolean) => void;
-  authMode: 'login' | 'register';
-  setAuthMode: (mode: 'login' | 'register') => void;
+  authMode: AuthMode;
+  setAuthMode: (mode: AuthMode) => void;
   accessToken: string | null;
+  refreshToken: string | null;
   setAccessToken: (token: string | null) => void;
+  setRefreshToken: (token: string | null) => void;
+  setTokens: (accessToken: string | null, refreshToken: string | null) => void;
   user: UserData | null;
   setUser: (user: UserData | null) => void;
   logout: () => void;
@@ -51,10 +57,24 @@ export const useStore = create<AppState>()(
       authMode: 'login',
       setAuthMode: (mode) => set({ authMode: mode }),
       accessToken: null,
+      refreshToken: null,
       setAccessToken: (token) => set({ accessToken: token, isAuthenticated: !!token }),
+      setRefreshToken: (token) => set({ refreshToken: token }),
+      setTokens: (accessToken, refreshToken) => set({
+        accessToken,
+        refreshToken,
+        isAuthenticated: !!accessToken,
+      }),
       user: null,
       setUser: (user) => set({ user }),
-      logout: () => set({ accessToken: null, isAuthenticated: false, activeConvId: null, user: null }),
+      logout: () => set({
+        accessToken: null,
+        refreshToken: null,
+        isAuthenticated: false,
+        activeConvId: null,
+        user: null,
+        authMode: 'login',
+      }),
 
       currentTab: 'dashboard',
       isMobileSidebarOpen: false,
@@ -91,6 +111,7 @@ export const useStore = create<AppState>()(
       partialize: (state) => ({ 
         theme: state.theme,
         accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
         params: state.params
       }),
       onRehydrateStorage: () => (state) => {
