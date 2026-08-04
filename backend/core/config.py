@@ -1,4 +1,4 @@
-from feedparser import http
+
 from pydantic import SecretStr
 from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -29,11 +29,18 @@ class Settings(BaseSettings):
     llm_provider: str = "groq"
     llm_model: str = "llama-3.3-70b-versatile"
 
-    # Auth
-    GITHUB_CLIENT_ID = SecretStr("")
-    GITHUB_CLIENT_SECRET = SecretStr("")
-    GITHUB_REDIRECT_URI= "http://localhost:8000/api/v1/auth/github/callback"
-    test_key: Optional[str] = None
+    # Auth - GitHub
+    GITHUB_CLIENT_ID: SecretStr = SecretStr("")
+    GITHUB_CLIENT_SECRET: SecretStr = SecretStr("")
+    GITHUB_REDIRECT_URI: str = "http://localhost:8000/api/v1/auth/github/callback"
+
+    # Auth - Google
+    GOOGLE_CLIENT_ID: SecretStr = SecretStr("")
+    GOOGLE_CLIENT_SECRET: SecretStr = SecretStr("")
+    GOOGLE_REDIRECT_URI: str = "http://localhost:8000/api/v1/auth/google/callback"
+
+    # Frontend Redirect Base URL
+    FRONTEND_URL: str = "http://localhost:3000"
     secret_key: str = "change-me-in-production"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 60 * 24 

@@ -108,6 +108,29 @@ export default function App() {
   const user = useStore(s => s.user);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
+  // Handle OAuth Callback Tokens
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    let accessToken = searchParams.get('access_token');
+    let refreshToken = searchParams.get('refresh_token');
+
+    if (!accessToken && window.location.hash.includes('access_token')) {
+      const hashParts = window.location.hash.split('?');
+      if (hashParts.length > 1) {
+        const hashParams = new URLSearchParams(hashParts[1]);
+        accessToken = hashParams.get('access_token');
+        refreshToken = hashParams.get('refresh_token');
+      }
+    }
+
+    if (accessToken && refreshToken) {
+      useStore.getState().setTokens(accessToken, refreshToken);
+      toast.success("Successfully logged in via OAuth!");
+      window.history.replaceState({}, document.title, window.location.pathname + "#/dashboard");
+      useStore.getState().setCurrentTab("dashboard");
+    }
+  }, []);
+
   useEffect(() => {
     if (theme === "dark") {
       document.documentElement.classList.add("dark");
