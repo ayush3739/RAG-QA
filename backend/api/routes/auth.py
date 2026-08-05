@@ -14,7 +14,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Annotated
+from typing import Annotated, Optional
+from urllib.parse import quote_plus
 from backend.api.deps import get_current_user, get_db
 from backend.core.config import settings
 from backend.models.auth_schemas import (
@@ -293,15 +294,39 @@ async def github_login():
 
 
 @router.get("/github/callback")
-async def github_callback(code: str, state: str, db: Annotated[AsyncSession, Depends(get_db)]):
-    validate_github_oauth_state(state)
+async def github_callback(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    code: Optional[str] = None,
+    state: Optional[str] = None,
+    error: Optional[str] = None,
+    error_description: Optional[str] = None,
+):
+    if error or not code or not state:
+        msg = quote_plus(error_description or "GitHub authentication was cancelled or failed.")
+        return RedirectResponse(
+            url=f"{settings.FRONTEND_URL}/#/auth?oauth_error=github_cancelled&message={msg}",
+            status_code=status.HTTP_302_FOUND,
+        )
 
-    github_access_token = await exchange_github_code(code)
-    profile = await fetch_github_user_info(github_access_token)
-
-    token_data = await login_or_create_oauth_user(db, profile, "github")
-    redirect_url = f"{settings.FRONTEND_URL}/#/oauth/callback?access_token={token_data.access_token}&refresh_token={token_data.refresh_token}"
-    return RedirectResponse(url=redirect_url, status_code=status.HTTP_302_FOUND)
+    try:
+        validate_github_oauth_state(state)
+        github_access_token = await exchange_github_code(code)
+        profile = await fetch_github_user_info(github_access_token)
+        token_data = await login_or_create_oauth_user(db, profile, "github")
+        redirect_url = f"{settings.FRONTEND_URL}/#/oauth/callback?access_token={token_data.access_token}&refresh_token={token_data.refresh_token}"
+        return RedirectResponse(url=redirect_url, status_code=status.HTTP_302_FOUND)
+    except HTTPException as exc:
+        msg = quote_plus(str(exc.detail))
+        return RedirectResponse(
+            url=f"{settings.FRONTEND_URL}/#/auth?oauth_error=github_failed&message={msg}",
+            status_code=status.HTTP_302_FOUND,
+        )
+    except Exception:
+        msg = quote_plus("An unexpected error occurred during GitHub login.")
+        return RedirectResponse(
+            url=f"{settings.FRONTEND_URL}/#/auth?oauth_error=github_failed&message={msg}",
+            status_code=status.HTTP_302_FOUND,
+        )
 
 
 @router.get("/google/login")
@@ -314,12 +339,36 @@ async def google_login():
 
 
 @router.get("/google/callback")
-async def google_callback(code: str, state: str, db: Annotated[AsyncSession, Depends(get_db)]):
-    validate_google_oauth_state(state)
+async def google_callback(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    code: Optional[str] = None,
+    state: Optional[str] = None,
+    error: Optional[str] = None,
+    error_description: Optional[str] = None,
+):
+    if error or not code or not state:
+        msg = quote_plus(error_description or "Google authentication was cancelled or failed.")
+        return RedirectResponse(
+            url=f"{settings.FRONTEND_URL}/#/auth?oauth_error=google_cancelled&message={msg}",
+            status_code=status.HTTP_302_FOUND,
+        )
 
-    google_access_token = await exchange_google_code(code)
-    profile = await fetch_google_user_info(google_access_token)
-
-    token_data = await login_or_create_oauth_user(db, profile, "google")
-    redirect_url = f"{settings.FRONTEND_URL}/#/oauth/callback?access_token={token_data.access_token}&refresh_token={token_data.refresh_token}"
-    return RedirectResponse(url=redirect_url, status_code=status.HTTP_302_FOUND)
+    try:
+        validate_google_oauth_state(state)
+        google_access_token = await exchange_google_code(code)
+        profile = await fetch_google_user_info(google_access_token)
+        token_data = await login_or_create_oauth_user(db, profile, "google")
+        redirect_url = f"{settings.FRONTEND_URL}/#/oauth/callback?access_token={token_data.access_token}&refresh_token={token_data.refresh_token}"
+        return RedirectResponse(url=redirect_url, status_code=status.HTTP_302_FOUND)
+    except HTTPException as exc:
+        msg = quote_plus(str(exc.detail))
+        return RedirectResponse(
+            url=f"{settings.FRONTEND_URL}/#/auth?oauth_error=google_failed&message={msg}",
+            status_code=status.HTTP_302_FOUND,
+        )
+    except Exception:
+        msg = quote_plus("An unexpected error occurred during Google login.")
+        return RedirectResponse(
+            url=f"{settings.FRONTEND_URL}/#/auth?oauth_error=google_failed&message={msg}",
+            status_code=status.HTTP_302_FOUND,
+        )

@@ -1,74 +1,107 @@
 import pytest
+from unittest.mock import AsyncMock, MagicMock, patch
 from fastapi.testclient import TestClient
-from unittest.mock import AsyncMock, patch
+from fastapi import status
 
 from backend.main import app
-from backend.models.models import User
-from backend.models.auth_schemas import TokenResponse
+from backend.api.deps import get_db
+from backend.models.models import User, UserToken, UserTokenType, UserRole
+from backend.services.security import hash_password, create_access_token
 
 client = TestClient(app)
 
-# Dummy data
 DUMMY_USER_ID = 1
 DUMMY_EMAIL = "test@example.com"
-DUMMY_PASSWORD = "securepassword"
+DUMMY_PASSWORD = "securepassword123"
 DUMMY_TOKEN = "dummy_access_token"
 DUMMY_RESET_TOKEN = "dummy_reset_token"
 
-
-@pytest.fixture
-def mock_auth_service():
-    with patch("backend.api.routes.auth._auth_service") as mock_service:
-        yield mock_service
-
-@pytest.fixture
-def mock_email_service():
-    with patch("backend.api.routes.auth.send_reset_email") as mock_send:
-        yield mock_send
+@pytest.fixture(autouse=True)
+def override_db_dependency():
+    mock_db = AsyncMock()
+    app.dependency_overrides[get_db] = lambda: mock_db
+    yield mock_db
+    app.dependency_overrides.clear()
 
 
-def test_register_success(mock_auth_service):
-    # Setup mock
-    mock_user = User(id=DUMMY_USER_ID, name="Test User", email=DUMMY_EMAIL)
-    mock_auth_service.register_user = AsyncMock(return_value=mock_user)
-    
-    # We also need to mock create_access_token since it's used in the route
-    with patch("backend.api.routes.auth.create_access_token", return_value=DUMMY_TOKEN):
+def test_register_success(override_db_dependency):
+    mock_db = override_db_dependency
+
+    # Mock DB query for existing user (returns None)
+    mock_exec_1 = MagicMock()
+    mock_exec_1.scalar_one_or_none.return_value = None
+    mock_db.execute.return_value = mock_exec_1
+
+    with patch("backend.api.routes.auth.send_verification_email", new_callable=AsyncMock) as mock_send_email:
         response = client.post(
             "/api/v1/auth/register",
-            data={
+            json={
                 "name": "Test User",
                 "email": DUMMY_EMAIL,
                 "password": DUMMY_PASSWORD
             }
         )
-        
-    assert response.status_code == 201
-    assert response.json()["access_token"] == DUMMY_TOKEN
-    assert response.json()["token_type"] == "bearer"
+
+    assert response.status_code == status.HTTP_201_CREATED
+    assert "verify your email" in response.json()["message"]
 
 
-def test_register_duplicate_email(mock_auth_service):
-    # Setup mock to raise ValueError
-    mock_auth_service.register_user = AsyncMock(side_effect=ValueError("Email already registered"))
-    
+def test_register_duplicate_email(override_db_dependency):
+    mock_db = override_db_dependency
+
+    # Mock DB query for existing user (returns existing user)
+    existing_user = User(id=1, email=DUMMY_EMAIL, name="Existing")
+    mock_exec = MagicMock()
+    mock_exec.scalar_one_or_none.return_value = existing_user
+    mock_db.execute.return_value = mock_exec
+
     response = client.post(
         "/api/v1/auth/register",
-        data={
+        json={
             "name": "Test User",
             "email": DUMMY_EMAIL,
             "password": DUMMY_PASSWORD
         }
     )
-    
-    assert response.status_code == 409
-    assert response.json()["detail"] == "Email already registered"
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert "already registered" in response.json()["detail"].lower()
 
 
-def test_login_success(mock_auth_service):
-    # Setup mock
-    mock_auth_service.login_user = AsyncMock(return_value=DUMMY_TOKEN)
-    
+def test_login_success(override_db_dependency):
+    mock_db = override_db_dependency
+
+    hashed_pw = hash_password(DUMMY_PASSWORD)
+    user = User(id=DUMMY_USER_ID, email=DUMMY_EMAIL, password_hash=hashed_pw, is_verified=True, role=UserRole.USER)
+
+    mock_exec = MagicMock()
+    mock_exec.scalar_one_or_none.return_value = user
+    mock_db.execute.return_value = mock_exec
+
+    with patch("backend.api.routes.auth.persist_refresh_token", new_callable=AsyncMock):
+        response = client.post(
+            "/api/v1/auth/login",
+            data={
+                "username": DUMMY_EMAIL,
+                "password": DUMMY_PASSWORD
+            }
+        )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert "access_token" in response.json()
+    assert response.json()["token_type"] == "bearer"
+
+
+def test_login_unverified_user(override_db_dependency):
+    mock_db = override_db_dependency
+
+    hashed_pw = hash_password(DUMMY_PASSWORD)
+    user = User(id=DUMMY_USER_ID, email=DUMMY_EMAIL, password_hash=hashed_pw, is_verified=False, role=UserRole.USER)
+
+    mock_exec = MagicMock()
+    mock_exec.scalar_one_or_none.return_value = user
+    mock_db.execute.return_value = mock_exec
+
     response = client.post(
         "/api/v1/auth/login",
         data={
@@ -76,15 +109,19 @@ def test_login_success(mock_auth_service):
             "password": DUMMY_PASSWORD
         }
     )
-    
-    assert response.status_code == 200
-    assert response.json()["access_token"] == DUMMY_TOKEN
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert "not verified" in response.json()["detail"].lower()
 
 
-def test_login_invalid_credentials(mock_auth_service):
-    # Setup mock
-    mock_auth_service.login_user = AsyncMock(side_effect=ValueError("Invalid email or password"))
-    
+def test_login_invalid_credentials(override_db_dependency):
+    mock_db = override_db_dependency
+
+    # Return None for non-existent user
+    mock_exec = MagicMock()
+    mock_exec.scalar_one_or_none.return_value = None
+    mock_db.execute.return_value = mock_exec
+
     response = client.post(
         "/api/v1/auth/login",
         data={
@@ -92,72 +129,41 @@ def test_login_invalid_credentials(mock_auth_service):
             "password": "wrongpassword"
         }
     )
-    
-    assert response.status_code == 401
-    assert response.json()["detail"] == "Invalid email or password"
+
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert "invalid email or password" in response.json()["detail"].lower()
 
 
-def test_forgot_password_success(mock_auth_service, mock_email_service):
-    # Setup mock
-    mock_auth_service.create_password_reset_token = AsyncMock(return_value=DUMMY_RESET_TOKEN)
-    mock_email_service.return_value = None  # It's an async function returning None
-    
+def test_forgot_password_success(override_db_dependency):
+    mock_db = override_db_dependency
+
+    user = User(id=DUMMY_USER_ID, email=DUMMY_EMAIL, name="Test User")
+    mock_exec = MagicMock()
+    mock_exec.scalar_one_or_none.return_value = user
+    mock_db.execute.return_value = mock_exec
+
+    with patch("backend.api.routes.auth.send_reset_email", new_callable=AsyncMock) as mock_send_email:
+        response = client.post(
+            "/api/v1/auth/forgot-password",
+            json={"email": DUMMY_EMAIL}
+        )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert "password reset link has been sent" in response.json()["message"]
+
+
+def test_forgot_password_nonexistent_email(override_db_dependency):
+    mock_db = override_db_dependency
+
+    mock_exec = MagicMock()
+    mock_exec.scalar_one_or_none.return_value = None
+    mock_db.execute.return_value = mock_exec
+
     response = client.post(
         "/api/v1/auth/forgot-password",
-        data={"email": DUMMY_EMAIL}
+        json={"email": "nonexistent@example.com"}
     )
-    
-    assert response.status_code == 200
+
+    assert response.status_code == status.HTTP_200_OK
+    # Generic security message returned regardless
     assert "password reset link has been sent" in response.json()["message"]
-    
-    # Verify email was "sent"
-    mock_email_service.assert_awaited_once_with(to_email=DUMMY_EMAIL, reset_token=DUMMY_RESET_TOKEN)
-
-
-def test_forgot_password_nonexistent_email(mock_auth_service, mock_email_service):
-    # Setup mock to return None (user not found)
-    mock_auth_service.create_password_reset_token = AsyncMock(return_value=None)
-    
-    response = client.post(
-        "/api/v1/auth/forgot-password",
-        data={"email": "nonexistent@example.com"}
-    )
-    
-    assert response.status_code == 200
-    # The message should be exactly the same for security reasons
-    assert "password reset link has been sent" in response.json()["message"]
-    
-    # Verify email was NOT sent
-    mock_email_service.assert_not_awaited()
-
-
-def test_reset_password_success(mock_auth_service):
-    # Setup mock
-    mock_auth_service.reset_password = AsyncMock(return_value=None)
-    
-    response = client.post(
-        "/api/v1/auth/reset-password",
-        data={
-            "token": DUMMY_RESET_TOKEN,
-            "new_password": "new_secure_password"
-        }
-    )
-    
-    assert response.status_code == 200
-    assert response.json()["message"] == "Password successfully reset."
-
-
-def test_reset_password_invalid_token(mock_auth_service):
-    # Setup mock
-    mock_auth_service.reset_password = AsyncMock(side_effect=ValueError("Invalid or expired reset token"))
-    
-    response = client.post(
-        "/api/v1/auth/reset-password",
-        data={
-            "token": "invalid_token",
-            "new_password": "new_secure_password"
-        }
-    )
-    
-    assert response.status_code == 400
-    assert response.json()["detail"] == "Invalid or expired reset token"

@@ -108,18 +108,22 @@ export default function App() {
   const user = useStore(s => s.user);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
-  // Handle OAuth Callback Tokens
+  // Handle OAuth Callback Tokens & Errors
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     let accessToken = searchParams.get('access_token');
     let refreshToken = searchParams.get('refresh_token');
+    let oauthError = searchParams.get('oauth_error');
+    let errorMessage = searchParams.get('message');
 
-    if (!accessToken && window.location.hash.includes('access_token')) {
+    if (!accessToken && !oauthError && window.location.hash.includes('?')) {
       const hashParts = window.location.hash.split('?');
       if (hashParts.length > 1) {
         const hashParams = new URLSearchParams(hashParts[1]);
-        accessToken = hashParams.get('access_token');
-        refreshToken = hashParams.get('refresh_token');
+        accessToken = accessToken || hashParams.get('access_token');
+        refreshToken = refreshToken || hashParams.get('refresh_token');
+        oauthError = oauthError || hashParams.get('oauth_error');
+        errorMessage = errorMessage || hashParams.get('message');
       }
     }
 
@@ -128,6 +132,11 @@ export default function App() {
       toast.success("Successfully logged in via OAuth!");
       window.history.replaceState({}, document.title, window.location.pathname + "#/dashboard");
       useStore.getState().setCurrentTab("dashboard");
+    } else if (oauthError) {
+      const displayMsg = errorMessage || "OAuth authentication failed. Please try again.";
+      toast.error(`Login Error: ${displayMsg}`);
+      window.history.replaceState({}, document.title, window.location.pathname + "#/auth");
+      useStore.getState().setCurrentTab("auth");
     }
   }, []);
 

@@ -235,14 +235,6 @@ export function DocumentsView({
             <p className="text-sm text-muted-foreground text-center max-w-xs leading-relaxed">
               Upload your first document to get started. The RAG router will index it and make it instantly queryable.
             </p>
-            <button
-              type="button"
-              onClick={() => (document.querySelector('input[type="file"]') as HTMLInputElement)?.click()}
-              className="mt-6 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary/10 hover:bg-primary/20 border border-primary/20 text-primary text-sm font-medium transition-all duration-200 hover:scale-[1.02]"
-            >
-              <UploadCloud className="w-4 h-4" />
-              Upload a document
-            </button>
           </motion.div>
         ) : (
           <motion.div
