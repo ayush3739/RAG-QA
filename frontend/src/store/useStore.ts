@@ -111,7 +111,6 @@ export const useStore = create<AppState>()(
       partialize: (state) => ({ 
         theme: state.theme,
         accessToken: state.accessToken,
-        refreshToken: state.refreshToken,
         params: state.params
       }),
       onRehydrateStorage: () => (state) => {

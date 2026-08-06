@@ -10,7 +10,7 @@ GET  /auth/me         → return current user profile
 
 from datetime import datetime, timedelta, timezone
 from sqlalchemy import delete, select
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -46,6 +46,7 @@ from backend.services.oauth_service import (
 from backend.services.auth_service import (
     persist_refresh_token,
     revoke_refresh_token,
+    revoke_all_refresh_tokens,
     rotate_refresh_token,
     verify_email as verify_email_token,
 )
@@ -62,6 +63,32 @@ from backend.services.email_service import send_reset_email,send_verification_em
 
 
 router = APIRouter()
+
+
+def set_refresh_cookie(response: Response, refresh_token: str) -> None:
+    """Attach secure HttpOnly refresh token cookie to HTTP response."""
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=settings.cookie_secure,
+        samesite=settings.cookie_samesite,
+        max_age=60 * 60 * 24 * settings.refresh_token_expire_days,
+        domain=settings.cookie_domain,
+        path="/api/v1/auth",
+    )
+
+
+def clear_refresh_cookie(response: Response) -> None:
+    """Delete HttpOnly refresh token cookie on HTTP response."""
+    response.delete_cookie(
+        key="refresh_token",
+        httponly=True,
+        secure=settings.cookie_secure,
+        samesite=settings.cookie_samesite,
+        domain=settings.cookie_domain,
+        path="/api/v1/auth",
+    )
 
 
 @router.get("/me", response_model=UserResponse)
@@ -131,7 +158,11 @@ async def register(user: UserRegister,db: Annotated[AsyncSession, Depends(get_db
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(form_data: Annotated[OAuth2PasswordRequestForm,Depends()] ,db: Annotated[AsyncSession, Depends(get_db)],):
+async def login(
+    response: Response,
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
     result = await db.execute(select(User).where(User.email == form_data.username))
     user = result.scalar_one_or_none()
     if not user:
@@ -166,20 +197,39 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm,Depends()] ,db: A
             detail="Error storing refresh token",
         )
 
-    return TokenResponse(access_token=access_token,refresh_token=refresh_token,token_type="bearer")
+    set_refresh_cookie(response, refresh_token)
+    return TokenResponse(access_token=access_token, token_type="bearer")
 
 
 
 @router.post("/logout")
 async def logout(
-    refresh_request: RefreshTokenRequest,
+    response: Response,
     db: Annotated[AsyncSession, Depends(get_db)],
+    refresh_token_cookie: Optional[str] = Cookie(None, alias="refresh_token"),
+    refresh_request: Optional[RefreshTokenRequest] = None,
 ):
-    await revoke_refresh_token(db, refresh_request.refresh_token)
+    token_to_use = refresh_request.refresh_token if (refresh_request and refresh_request.refresh_token) else refresh_token_cookie
+    if token_to_use:
+        await revoke_refresh_token(db, token_to_use)
 
+    clear_refresh_cookie(response)
     return {"message": "Successfully logged out."}
 
 
+@router.post("/logout-all")
+async def logout_all(
+    response: Response,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    refresh_token_cookie: Optional[str] = Cookie(None, alias="refresh_token"),
+    refresh_request: Optional[RefreshTokenRequest] = None,
+):
+    token_to_use = refresh_request.refresh_token if (refresh_request and refresh_request.refresh_token) else refresh_token_cookie
+    if token_to_use:
+        await revoke_all_refresh_tokens(db, token_to_use)
+
+    clear_refresh_cookie(response)
+    return {"message": "Successfully logged out of all sessions."}
 
 
 @router.post("/forgot-password")
@@ -263,14 +313,24 @@ async def reset_password(
 
 @router.post("/refresh-token", response_model=TokenResponse)
 async def refresh_token(
-    refresh_request: RefreshTokenRequest,
+    response: Response,
     db: Annotated[AsyncSession, Depends(get_db)],
+    refresh_token_cookie: Optional[str] = Cookie(None, alias="refresh_token"),
+    refresh_request: Optional[RefreshTokenRequest] = None,
 ):
-    access_token, new_refresh_token = await rotate_refresh_token(db, refresh_request.refresh_token)
+    token_to_use = refresh_request.refresh_token if (refresh_request and refresh_request.refresh_token) else refresh_token_cookie
+    if not token_to_use:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token missing",
+        )
+
+    access_token, new_refresh_token = await rotate_refresh_token(db, token_to_use)
+
+    set_refresh_cookie(response, new_refresh_token)
 
     return TokenResponse(
         access_token=access_token,
-        refresh_token=new_refresh_token,
         token_type="bearer",
     )
 
@@ -313,8 +373,12 @@ async def github_callback(
         github_access_token = await exchange_github_code(code)
         profile = await fetch_github_user_info(github_access_token)
         token_data = await login_or_create_oauth_user(db, profile, "github")
-        redirect_url = f"{settings.FRONTEND_URL}/#/oauth/callback?access_token={token_data.access_token}&refresh_token={token_data.refresh_token}"
-        return RedirectResponse(url=redirect_url, status_code=status.HTTP_302_FOUND)
+        redirect_res = RedirectResponse(
+            url=f"{settings.FRONTEND_URL}/#/oauth/callback?access_token={token_data.access_token}",
+            status_code=status.HTTP_302_FOUND,
+        )
+        set_refresh_cookie(redirect_res, token_data.refresh_token)
+        return redirect_res
     except HTTPException as exc:
         msg = quote_plus(str(exc.detail))
         return RedirectResponse(
@@ -358,8 +422,12 @@ async def google_callback(
         google_access_token = await exchange_google_code(code)
         profile = await fetch_google_user_info(google_access_token)
         token_data = await login_or_create_oauth_user(db, profile, "google")
-        redirect_url = f"{settings.FRONTEND_URL}/#/oauth/callback?access_token={token_data.access_token}&refresh_token={token_data.refresh_token}"
-        return RedirectResponse(url=redirect_url, status_code=status.HTTP_302_FOUND)
+        redirect_res = RedirectResponse(
+            url=f"{settings.FRONTEND_URL}/#/oauth/callback?access_token={token_data.access_token}",
+            status_code=status.HTTP_302_FOUND,
+        )
+        set_refresh_cookie(redirect_res, token_data.refresh_token)
+        return redirect_res
     except HTTPException as exc:
         msg = quote_plus(str(exc.detail))
         return RedirectResponse(

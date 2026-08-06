@@ -1,4 +1,3 @@
-
 from datetime import datetime, timezone
 from typing import Tuple
 
@@ -118,6 +117,27 @@ async def revoke_refresh_token(db: AsyncSession, refresh_token: str) -> None:
         await db.rollback()
         raise
 
+async def revoke_all_refresh_tokens(db: AsyncSession, refresh_token: str) -> None:
+    """
+    Validate the provided refresh token, find the associated user ID, and revoke
+    all active refresh tokens for that user across all devices/sessions.
+    """
+    _, payload = await validate_refresh_token(db, refresh_token)
+    user_id = payload.get("sub")
+    try:
+        user_id_int = int(user_id)
+    except (TypeError, ValueError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token payload",
+        )
+
+    try:
+        await db.execute(delete(RefreshToken).where(RefreshToken.user_id == user_id_int))
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        raise
 
 async def refresh_access_token(db: AsyncSession, refresh_token: str) -> str:
     _, payload = await validate_refresh_token(db, refresh_token)

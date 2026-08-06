@@ -39,6 +39,11 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: SecretStr = SecretStr("")
     GOOGLE_REDIRECT_URI: str = "http://localhost:8000/api/v1/auth/google/callback"
 
+    # Cookie - AUTH
+    cookie_secure: bool = False  # Set to True in production (HTTPS)
+    cookie_domain: Optional[str] = None
+    cookie_samesite: str = "lax"
+
     # Frontend Redirect Base URL
     FRONTEND_URL: str = "http://localhost:3000"
     secret_key: str = "change-me-in-production"

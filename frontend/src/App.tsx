@@ -127,8 +127,8 @@ export default function App() {
       }
     }
 
-    if (accessToken && refreshToken) {
-      useStore.getState().setTokens(accessToken, refreshToken);
+    if (accessToken) {
+      useStore.getState().setAccessToken(accessToken);
       toast.success("Successfully logged in via OAuth!");
       window.history.replaceState({}, document.title, window.location.pathname + "#/dashboard");
       useStore.getState().setCurrentTab("dashboard");
