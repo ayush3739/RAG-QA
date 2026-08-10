@@ -162,7 +162,7 @@ export default function ProductShowcase() {
           }
 
           focus={
-            <Card className="h-full">
+            <Card className="h-full group cursor-default">
               <CardContent className="flex h-full flex-col justify-between p-6">
                 <div className="flex items-start justify-between">
                   <div>
@@ -170,11 +170,21 @@ export default function ProductShowcase() {
                     <CardTitle className="mt-1 text-base font-medium">Router Latency</CardTitle>
                     <CardDescription className="text-xs">Single-pass function call</CardDescription>
                   </div>
-                  <Badge variant="outline" className="border-indigo-500/30 text-indigo-400">
+                  <Badge variant="outline" className="border-indigo-500/30 text-indigo-400 group-hover:bg-indigo-500/10 transition-colors duration-500">
                     &lt;150ms
                   </Badge>
                 </div>
-                <IsometricPyramidSvg />
+                <div className="mt-4 flex justify-center h-24">
+                   <div className="relative w-full h-full flex items-end gap-1 opacity-60 group-hover:opacity-100 transition-opacity duration-500">
+                      {[30, 45, 20, 60, 35, 80, 40, 25, 55, 30].map((h, i) => (
+                        <div 
+                           key={i} 
+                           className="flex-1 bg-indigo-500/40 rounded-t-sm transition-all duration-500 ease-out origin-bottom group-hover:bg-indigo-400 group-hover:scale-y-[1.2] group-hover:shadow-[0_0_10px_rgba(99,102,241,0.5)]" 
+                           style={{ height: `${h}%`, transitionDelay: `${i * 30}ms` }} 
+                        />
+                      ))}
+                   </div>
+                </div>
               </CardContent>
             </Card>
           }
@@ -192,24 +202,6 @@ export default function ProductShowcase() {
                 <div className="mt-4 flex items-center gap-2 font-mono text-[11px] text-zinc-400">
                   <Database className="h-4 w-4 text-indigo-400" />
                   <span>pgvector SQL extension</span>
-                </div>
-              </CardContent>
-            </Card>
-          }
-
-          shortcuts={
-            <Card className="h-full">
-              <CardContent className="flex h-full flex-wrap items-center justify-between gap-4 p-6">
-                <div>
-                  <span className="font-mono text-[10px] uppercase tracking-widest text-zinc-500">FIG 0.6</span>
-                  <CardTitle className="mt-1 text-base font-medium">Programmatic REST APIs</CardTitle>
-                  <CardDescription className="text-xs">
-                    Structured streaming JSON with confidence scores and source metadata.
-                  </CardDescription>
-                </div>
-                <div className="flex items-center gap-2 rounded-lg border border-white/[0.08] bg-[#060608] px-3 py-2 font-mono text-xs text-zinc-300">
-                  <Terminal className="h-3.5 w-3.5 text-indigo-400" />
-                  <span>POST /api/v1/chat</span>
                 </div>
               </CardContent>
             </Card>

@@ -18,6 +18,7 @@ import { api } from "./lib/api";
 import { Toaster, toast } from 'sonner';
 import { motion, AnimatePresence } from "framer-motion";
 import LandingPage from "./landing/page";
+import ArchitecturePage from "./landing/ArchitecturePage";
 import NoInternetBanner from "./components/NoInternetBanner";
 
 const normalizeSourceScore = (score: any): number | null => {
@@ -802,7 +803,13 @@ export default function App() {
     );
   }
 
-  const isLanding = !hash || hash === "#" || hash === "#/";
+  const landingHashes = ["", "#", "#/", "#hero", "#how-it-works", "#metrics", "#system-features", "#faq"];
+  const isLanding = landingHashes.includes(hash);
+  const isArchitecture = hash === "#/architecture";
+
+  if (isArchitecture) {
+    return <ArchitecturePage />;
+  }
 
   if (isLanding) {
     return <LandingPage />;

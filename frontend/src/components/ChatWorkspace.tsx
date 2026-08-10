@@ -686,13 +686,15 @@ export default function ChatWorkspace({
         {/* Input Bar */}
         <div className="shrink-0 px-6 md:px-12 pb-6 pt-2 flex justify-center relative z-30">
           <div className="absolute inset-0 bg-primary/20 blur-[100px] ambient-glow max-w-2xl mx-auto rounded-full h-24 bottom-0 top-auto translate-y-6 pointer-events-none" />
-          <form 
-            onSubmit={handleSubmit} 
-            className={cn(
-              "w-full bg-surface-container-lowest backdrop-blur-xl rounded-2xl p-2 flex flex-col relative z-10 input-glow-ring",
-              isInspectorOpen ? "max-w-4xl" : "max-w-5xl"
-            )}
-          >
+          <div className={cn(
+            "w-full relative rounded-[17px] p-[1px] shadow-[0_0_15px_rgba(99,102,241,0.15)] transition-shadow duration-300 hover:shadow-[0_0_25px_rgba(99,102,241,0.25)] z-10 group",
+            isInspectorOpen ? "max-w-4xl" : "max-w-5xl"
+          )}>
+            <div className="absolute inset-0 rounded-[17px] bg-gradient-to-r from-blue-400/60 via-purple-400/60 to-blue-400/60 opacity-60 transition-opacity duration-300 group-focus-within:opacity-100 group-hover:opacity-100" />
+            <form 
+              onSubmit={handleSubmit} 
+              className="w-full h-full bg-[#0a0a0c]/90 backdrop-blur-xl rounded-2xl p-2 flex flex-col relative z-10"
+            >
             <textarea
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
@@ -750,6 +752,7 @@ export default function ChatWorkspace({
               </div>
             </div>
           </form>
+          </div>
         </div>
       </div>
 

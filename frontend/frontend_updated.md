@@ -4,6 +4,57 @@
 > This document is the single source of truth for the DocuMind React frontend. Every page includes purpose, layout, component list, all states, and backend integration. The backend is fully built — build from this, not from assumptions.
 
 ---
+# DocuMind Frontend Design System
+
+This document outlines the core colors, gradients, and visual motifs used to create the premium "Deep Tech" aesthetic for DocuMind.
+
+## 1. Core Color Palette
+
+- **Background Base**: `#0a0a0c` (Slightly warm, extremely dark grey/black)
+- **Background Alternate**: `#050508` (Used in footer and deep sections)
+- **Border Subtle**: `white/[0.04]` to `white/[0.1]`
+- **Text Primary**: `text-white` or `text-zinc-100`
+- **Text Secondary**: `text-zinc-400` or `text-zinc-500`
+
+## 2. Signature Gradients
+
+We use a specific blend of electric blue and deep purple to signify "Advanced AI" and high-end compute.
+
+### The "Neon Tech" Gradient
+Used for active borders, glows, and key highlights.
+- **Tailwind**: `from-blue-400 via-purple-400 to-blue-400`
+- **Opacity**: Usually layered with `/60` or `/80` for a glass effect.
+- **CSS Values**: 
+  - Blue: `#60a5fa`
+  - Purple: `#c084fc`
+
+### The "White Light" Gradient
+Used for text that needs to pop (e.g., buttons, hero headlines).
+- **Tailwind (Buttons)**: `from-blue-100 to-purple-200`
+- **Tailwind (Headline)**: `from-blue-400 via-indigo-400 to-purple-500` (mixed with white/transparent)
+
+## 3. UI Components
+
+### Glowing Gradient Borders
+Instead of solid borders, primary interactive elements (like the CTA buttons and chat input) use a full wraparound gradient wrapper:
+```html
+<div className="relative p-[1px] rounded-full shadow-[0_0_20px_rgba(99,102,241,0.2)]">
+  <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-400/80 via-purple-400/80 to-blue-400/80" />
+  <div className="relative bg-[#050508]/90 backdrop-blur-md">
+    <!-- Content here -->
+  </div>
+</div>
+```
+
+### Ambient Glows
+To prevent backgrounds from feeling too empty or flat black, we use large, heavily blurred radial gradients placed absolutely behind content:
+- **Tailwind**: `bg-blue-600/10` or `bg-purple-600/10` with `blur-[120px]` or `blur-[150px]`
+
+## 4. Typography
+- **Headings**: `DM Sans` (tight tracking `tracking-[-0.03em]`, medium/semibold weight)
+- **Body**: `Inter` or standard sans-serif (`text-[14px]` or `text-[15px]`)
+- **Pixel Art / Tech Labels**: Custom SVG matrices for authentic blocky typography.
+
 
 ## Table of Contents
 

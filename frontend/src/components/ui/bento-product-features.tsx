@@ -34,7 +34,6 @@ interface BentoGridShowcaseProps {
   statistic: React.ReactNode;
   focus: React.ReactNode;
   productivity: React.ReactNode;
-  shortcuts: React.ReactNode;
   className?: string;
 }
 
@@ -44,7 +43,6 @@ export const BentoGridShowcase = ({
   statistic,
   focus,
   productivity,
-  shortcuts,
   className,
 }: BentoGridShowcaseProps) => {
   return (
@@ -54,7 +52,7 @@ export const BentoGridShowcase = ({
       whileInView="visible"
       viewport={{ once: true, margin: "-50px" }}
       className={cn(
-        "grid w-full grid-cols-1 gap-4 md:grid-cols-3 md:grid-rows-3 auto-rows-[minmax(180px,auto)]",
+        "grid w-full grid-cols-1 gap-4 md:grid-cols-3 md:grid-rows-2 auto-rows-[minmax(180px,auto)]",
         className
       )}
     >
@@ -81,11 +79,6 @@ export const BentoGridShowcase = ({
       {/* Slot 5: Productivity */}
       <motion.div variants={itemVariants} className="md:col-span-1 md:row-span-1">
         {productivity}
-      </motion.div>
-
-      {/* Slot 6: Shortcuts (Spans 2 cols) */}
-      <motion.div variants={itemVariants} className="md:col-span-2 md:row-span-1">
-        {shortcuts}
       </motion.div>
     </motion.section>
   );

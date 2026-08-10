@@ -8,7 +8,8 @@ These are request/response shapes only — ORM models live in models/models.py.
 
 
 
-from pydantic import BaseModel, EmailStr,Field
+from typing import Optional
+from pydantic import BaseModel, EmailStr, Field
 
 
 # ---------------------------------------------------------------------------
@@ -60,7 +61,7 @@ class VerifyEmailRequest(BaseModel):
     token: str
 
 class RefreshTokenRequest(BaseModel):
-    refresh_token: str
+    refresh_token: Optional[str] = None
 
 
 
