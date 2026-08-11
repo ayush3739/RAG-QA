@@ -10,40 +10,41 @@ import { Cpu, Database, Search, ShieldCheck, Terminal, Layers } from "lucide-rea
 const IsometricStackSvg = () => (
   <div className="relative flex h-48 w-full items-center justify-center overflow-hidden py-4">
     <svg width="220" height="180" viewBox="0 0 220 180" fill="none" className="text-zinc-500">
-      {/* Top Layer */}
+      {/* Vertical Axis Guide Lines */}
+      <line x1="110" y1="20" x2="110" y2="160" stroke="rgba(99,102,241,0.3)" strokeWidth="1" strokeDasharray="2 2" />
+
+      {/* Bottom Layer */}
+      <g>
+        <path d="M110 80 L170 110 L110 140 L50 110 Z" stroke="currentColor" strokeWidth="1" fill="rgba(255,255,255,0.02)" />
+        <path d="M50 110 L50 130 L110 160 L170 130 L170 110" stroke="currentColor" strokeWidth="1" />
+        <path d="M110 140 L110 160" stroke="#6366f1" strokeWidth="1.5" />
+      </g>
+
+      {/* Middle Layer */}
+      <g>
+        <path d="M110 50 L170 80 L110 110 L50 80 Z" stroke="currentColor" strokeWidth="1" fill="rgba(255,255,255,0.02)" />
+        <path d="M50 80 L50 90 L110 120 L170 90 L170 80" stroke="currentColor" strokeWidth="1" />
+      </g>
+
+      {/* Top Layer - Floating */}
       <motion.g
-        initial={{ y: -10, opacity: 0 }}
-        whileInView={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
+        animate={{ y: [-5, 5, -5] }}
+        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
       >
         <path d="M110 20 L170 50 L110 80 L50 50 Z" stroke="currentColor" strokeWidth="1.2" strokeDasharray="3 3" fill="rgba(99,102,241,0.06)" />
         <path d="M110 20 L170 50 L110 80 L50 50 Z" stroke="#6366f1" strokeWidth="1.2" />
         <circle cx="110" cy="50" r="4" fill="#818cf8" className="animate-pulse" />
       </motion.g>
 
-      {/* Middle Layer */}
-      <motion.g
-        initial={{ y: 0, opacity: 0 }}
-        whileInView={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.8, delay: 0.2 }}
-      >
-        <path d="M110 50 L170 80 L110 110 L50 80 Z" stroke="currentColor" strokeWidth="1" fill="rgba(255,255,255,0.02)" />
-        <path d="M50 80 L50 90 L110 120 L170 90 L170 80" stroke="currentColor" strokeWidth="1" />
-      </motion.g>
-
-      {/* Bottom Layer */}
-      <motion.g
-        initial={{ y: 10, opacity: 0 }}
-        whileInView={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.8, delay: 0.4 }}
-      >
-        <path d="M110 80 L170 110 L110 140 L50 110 Z" stroke="currentColor" strokeWidth="1" fill="rgba(255,255,255,0.02)" />
-        <path d="M50 110 L50 130 L110 160 L170 130 L170 110" stroke="currentColor" strokeWidth="1" />
-        <path d="M110 140 L110 160" stroke="#6366f1" strokeWidth="1.5" />
-      </motion.g>
-
-      {/* Vertical Axis Guide Lines */}
-      <line x1="110" y1="20" x2="110" y2="160" stroke="rgba(99,102,241,0.3)" strokeWidth="1" strokeDasharray="2 2" />
+      {/* Animated Data particle flowing down */}
+      <motion.circle
+        cx="110"
+        cy="50"
+        r="2"
+        fill="#a5b4fc"
+        animate={{ cy: [50, 160], opacity: [0, 1, 0] }}
+        transition={{ duration: 2, repeat: Infinity, ease: "linear", repeatDelay: 1 }}
+      />
     </svg>
   </div>
 );
@@ -52,19 +53,42 @@ const IsometricStackSvg = () => (
 const IsometricCubesSvg = () => (
   <div className="relative flex h-36 w-full items-center justify-center overflow-hidden">
     <svg width="200" height="130" viewBox="0 0 200 130" fill="none" className="text-zinc-600">
+      
+      {/* Connecting energy beam */}
+      <motion.line 
+        x1="70" y1="35" x2="130" y2="50" 
+        stroke="#818cf8" strokeWidth="2" strokeDasharray="4 4"
+        animate={{ strokeDashoffset: [24, 0] }}
+        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+      />
+
       {/* Cube 1 */}
-      <g transform="translate(40, 20)">
+      <motion.g 
+        animate={{ x: [40, 45, 40], y: [20, 20, 20] }}
+        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+      >
         <path d="M30 0 L60 15 L30 30 L0 15 Z" stroke="currentColor" strokeWidth="1" fill="rgba(255,255,255,0.03)" />
         <path d="M0 15 L0 45 L30 60 L30 30 Z" stroke="currentColor" strokeWidth="1" fill="rgba(0,0,0,0.4)" />
         <path d="M60 15 L60 45 L30 60 L30 30 Z" stroke="currentColor" strokeWidth="1" />
-      </g>
+      </motion.g>
+      
       {/* Cube 2 (Highlighted) */}
-      <g transform="translate(100, 35)">
+      <motion.g 
+        animate={{ x: [100, 95, 100], y: [35, 35, 35] }}
+        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+      >
         <path d="M30 0 L60 15 L30 30 L0 15 Z" stroke="#818cf8" strokeWidth="1.2" fill="rgba(99,102,241,0.15)" />
         <path d="M0 15 L0 45 L30 60 L30 30 Z" stroke="#6366f1" strokeWidth="1.2" fill="rgba(99,102,241,0.05)" />
         <path d="M60 15 L60 45 L30 60 L30 30 Z" stroke="#6366f1" strokeWidth="1.2" />
         <circle cx="30" cy="15" r="3" fill="#818cf8" className="animate-ping" />
-      </g>
+      </motion.g>
+
+      {/* Fusion Data particles */}
+      <motion.circle
+        r="2.5" fill="#818cf8"
+        animate={{ cx: [70, 130], cy: [35, 50], opacity: [0, 1, 0] }}
+        transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+      />
     </svg>
   </div>
 );
@@ -78,6 +102,43 @@ const IsometricPyramidSvg = () => (
       <path d="M90 50 L120 65 L90 80 L60 65 Z" stroke="currentColor" strokeWidth="1" />
       <path d="M30 40 L30 90 L90 120 L150 90 L150 40" stroke="currentColor" strokeWidth="1" />
       <path d="M90 70 L90 120" stroke="#6366f1" strokeWidth="1.2" />
+    </svg>
+  </div>
+);
+
+// FIG 0.5: Database Vector Storage
+const DbVectorSvg = () => (
+  <div className="relative flex h-36 w-full items-center justify-center overflow-hidden">
+    <svg width="200" height="120" viewBox="0 0 200 120" fill="none" className="text-zinc-600">
+      
+      {/* Database Cylinder */}
+      <g transform="translate(100, 70)">
+        {/* DB Body */}
+        <path d="M-35 0 L-35 30 A35 12 0 0 0 35 30 L35 0 Z" stroke="currentColor" strokeWidth="1" fill="rgba(0,0,0,0.4)" />
+        {/* DB Top */}
+        <ellipse cx="0" cy="0" rx="35" ry="12" stroke="#6366f1" strokeWidth="1.2" fill="rgba(99,102,241,0.08)" />
+        {/* DB Middle Lines for rings */}
+        <path d="M-35 15 A35 12 0 0 0 35 15" stroke="currentColor" strokeWidth="1" />
+      </g>
+
+      {/* Vector Embeddings entering DB */}
+      <motion.g 
+        initial={{ y: -10, opacity: 0 }}
+        animate={{ y: [-10, 40], opacity: [0, 1, 0] }}
+        transition={{ duration: 2, repeat: Infinity, ease: "easeIn" }}
+      >
+        <rect x="75" y="0" width="50" height="16" rx="3" stroke="#818cf8" strokeWidth="1" fill="rgba(99,102,241,0.15)" />
+        <text x="100" y="11" fill="#a5b4fc" fontSize="7" fontFamily="monospace" textAnchor="middle" letterSpacing="1">[0.2, 0.9]</text>
+      </motion.g>
+      
+      <motion.g 
+        initial={{ y: -10, opacity: 0 }}
+        animate={{ y: [-10, 40], opacity: [0, 1, 0] }}
+        transition={{ duration: 2, repeat: Infinity, ease: "easeIn", delay: 1 }}
+      >
+        <rect x="75" y="0" width="50" height="16" rx="3" stroke="#818cf8" strokeWidth="1" fill="rgba(99,102,241,0.15)" />
+        <text x="100" y="11" fill="#a5b4fc" fontSize="7" fontFamily="monospace" textAnchor="middle" letterSpacing="1">[-0.4, 0.1]</text>
+      </motion.g>
     </svg>
   </div>
 );
@@ -153,9 +214,19 @@ export default function ProductShowcase() {
                   <span className="font-mono text-[10px] uppercase tracking-widest text-zinc-500">FIG 0.3</span>
                   <Badge variant="outline" className="border-emerald-500/30 text-emerald-400">RAGAS Benchmark</Badge>
                 </div>
-                <div className="my-auto text-center">
-                  <span className="text-6xl font-bold tracking-tight text-white md:text-7xl">99%</span>
-                  <p className="mt-2 text-xs font-medium text-zinc-400">Groundedness Score</p>
+                <div className="my-auto flex flex-col gap-4 w-full px-2">
+                  <div className="flex justify-between items-end border-b border-white/10 pb-3">
+                    <span className="text-sm font-medium text-zinc-400">Faithfulness</span>
+                    <span className="text-3xl md:text-4xl font-bold tracking-tight text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">88<span className="text-xl text-zinc-500">.4%</span></span>
+                  </div>
+                  <div className="flex justify-between items-end border-b border-white/10 pb-3">
+                    <span className="text-sm font-medium text-zinc-400">Answer Relevancy</span>
+                    <span className="text-3xl md:text-4xl font-bold tracking-tight text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">91<span className="text-xl text-zinc-500">.4%</span></span>
+                  </div>
+                  <div className="flex justify-between items-end">
+                    <span className="text-sm font-medium text-zinc-400">P99 Latency</span>
+                    <span className="text-3xl md:text-4xl font-bold tracking-tight text-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.4)]">2.5<span className="text-xl text-emerald-700/50">s</span></span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -199,6 +270,9 @@ export default function ProductShowcase() {
                     Single relational database for document metadata and high-dimensional vector embeddings.
                   </CardDescription>
                 </div>
+                
+                <DbVectorSvg />
+
                 <div className="mt-4 flex items-center gap-2 font-mono text-[11px] text-zinc-400">
                   <Database className="h-4 w-4 text-indigo-400" />
                   <span>pgvector SQL extension</span>

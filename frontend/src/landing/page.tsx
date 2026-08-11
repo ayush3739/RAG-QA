@@ -7,6 +7,10 @@ import MetricsGrid from './components/MetricsGrid'
 import ProductShowcase from './components/ProductShowcase'
 import FAQSection from './components/FAQSection'
 import Footer from './components/Footer'
+import TerminalDemo from './components/TerminalDemo'
+import LogoMarquee from './components/LogoMarquee'
+import Testimonials from './components/Testimonials'
+import PricingSection from './components/PricingSection'
 
 export default function LandingPage() {
 
@@ -21,9 +25,16 @@ export default function LandingPage() {
       <main className="flex-1">
         {/* ── Above the fold: 4 clean sections ── */}
         <Hero />
+        <TerminalDemo />
+        <LogoMarquee />
         <RoutingFlowDiagram />
         <MetricsGrid />
         <ProductShowcase />
+        {/* ── Testimonials ── */}
+        <Testimonials />
+
+        {/* ── Pricing ── */}
+        <PricingSection />
 
         {/* ── FAQ ── */}
         <FAQSection />
