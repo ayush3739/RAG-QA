@@ -1,9 +1,8 @@
 import React, { useState, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useStore, AuthMode } from "../store/useStore";
-import AnimatedGradientBackground from "./ui/animated-gradient-background";
-import { AnimatedShinyText } from "./magicui/animated-shiny-text";
 import { BrainCircuit, Eye, EyeOff, Loader2, Mail, CheckCircle2, AlertTriangle, ArrowLeft, ShieldCheck } from "lucide-react";
-import { AnimatedBeamShowcase } from "./AnimatedBeamShowcase";
+import { LivingIntelligenceShowcase, AsciiHalftoneBackground, FadedBackgroundRibbons } from "./LivingIntelligenceShowcase";
 import { api, ApiError, NetworkError } from "../lib/api";
 
 // Password strength helper
@@ -34,6 +33,7 @@ export default function AuthView() {
   const [unverifiedNotice, setUnverifiedNotice] = useState<string | null>(null);
   const [successInfo, setSuccessInfo] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isFormFocused, setIsFormFocused] = useState(false);
   const [oauthLoadingProvider, setOauthLoadingProvider] = useState<'github' | 'google' | null>(null);
 
   const handleSocialLogin = (provider: 'github' | 'google') => {
@@ -94,45 +94,38 @@ export default function AuthView() {
   };
 
   return (
-    <div className="relative min-h-screen w-full flex bg-black overflow-hidden selection:bg-white/30 selection:text-white">
-      {/* Background Animated Gradient */}
-      <AnimatedGradientBackground
-        Breathing={true}
-        animationSpeed={0.015}
-        gradientColors={["#000000", "#040b16", "#0a192f", "#112240", "#233554", "#0a192f", "#000000"]}
-        gradientStops={[20, 40, 50, 60, 75, 90, 100]}
-      />
+    <div className="relative min-h-screen w-full flex bg-[#020617] overflow-hidden selection:bg-indigo-500/30 selection:text-white">
+      
+      {/* Full Page ASCII Halftone Background (Atmosphere) */}
+      <div className={`absolute inset-0 z-0 pointer-events-none transition-all duration-1000 ${isFormFocused ? 'opacity-10 blur-sm' : 'opacity-30'}`}>
+        <AsciiHalftoneBackground />
+      </div>
 
-      <div className="relative z-10 w-full grid grid-cols-1 lg:grid-cols-2 h-screen">
+      {/* Full Page Faded Background Ribbons (Hero Lines) */}
+      <div className={`absolute inset-0 z-0 pointer-events-none transition-all duration-1000 ${isFormFocused ? 'opacity-20 blur-2xl' : 'opacity-60 blur-md'}`}>
+        <FadedBackgroundRibbons />
+      </div>
+
+      <div className="relative z-10 w-full grid grid-cols-1 lg:grid-cols-2 h-screen pointer-events-none">
         {/* Left Column: Showcase (Hidden on smaller screens) */}
-        <div className="hidden lg:flex flex-col items-center justify-center p-12 relative border-r border-white/5 overflow-hidden">
-          <div className="absolute inset-0 pointer-events-none z-0 opacity-30">
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.15)_0%,transparent_70%)]" />
+        <div className="hidden lg:flex flex-col justify-between p-12 relative overflow-hidden bg-transparent">
+          {/* Full-panel Cinematic Showcase */}
+          <div className="absolute inset-0 z-0">
+            <LivingIntelligenceShowcase />
           </div>
+          
 
-          <div className="absolute top-12 left-12 flex items-center gap-3 z-10">
-            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
-              <BrainCircuit size={20} className="text-primary-foreground" />
-            </div>
-            <AnimatedShinyText className="text-xl font-black tracking-tight cursor-default m-0">
-              DocuMind
-            </AnimatedShinyText>
-          </div>
-
-          <div className="flex flex-col items-center justify-center w-full h-full max-h-[600px] z-10">
-            <AnimatedBeamShowcase />
-            <div className="mt-8 text-center max-w-sm space-y-2 z-10">
-              <h3 className="text-xl font-bold text-white tracking-tight">Curated Knowledge.</h3>
-              <p className="text-sm text-neutral-400">
-                Connect your documents to the Deep Forest vector engine and extract precise insights in real-time.
-              </p>
-            </div>
-          </div>
         </div>
 
         {/* Right Column: Auth Form */}
-        <div className="flex items-center justify-center w-full p-6 lg:p-12 overflow-y-auto">
-          <div className="w-full max-w-[440px]">
+        <div className="relative flex items-center justify-center w-full p-6 lg:p-12 overflow-y-auto overflow-x-hidden pointer-events-auto">
+          
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="relative z-10 w-full max-w-[440px] bg-[#050a19]/40 p-8 rounded-2xl border border-white/5 backdrop-blur-2xl shadow-[0_0_40px_rgba(0,0,0,0.5)]"
+          >
             {/* Top Company Logo (Mobile Only) */}
             <div className="flex lg:hidden justify-center items-center gap-2 mb-12 text-white">
               <BrainCircuit size={24} />
@@ -209,7 +202,7 @@ export default function AuthView() {
                         type="button"
                         disabled={!!oauthLoadingProvider}
                         onClick={() => handleSocialLogin("github")}
-                        className="w-full flex items-center justify-center gap-3 py-2.5 rounded-lg bg-[#24292e] border border-[#3b4148] hover:bg-[#2f363d] disabled:opacity-50 transition-all duration-300 text-sm font-medium text-white shadow-sm"
+                        className="w-full flex items-center justify-center gap-3 py-2.5 rounded-lg bg-[#24292e] border border-[#3b4148] hover:bg-[#2f363d] hover:shadow-[0_0_20px_rgba(255,255,255,0.05)] disabled:opacity-50 transition-all duration-300 text-sm font-medium text-white shadow-sm"
                       >
                         {oauthLoadingProvider === "github" ? (
                           <Loader2 className="w-4 h-4 animate-spin text-white" />
@@ -224,7 +217,7 @@ export default function AuthView() {
                         type="button"
                         disabled={!!oauthLoadingProvider}
                         onClick={() => handleSocialLogin("google")}
-                        className="w-full flex items-center justify-center gap-3 py-2.5 rounded-lg bg-[#24292e] border border-[#3b4148] hover:bg-[#2f363d] disabled:opacity-50 transition-all duration-300 text-sm font-medium text-white shadow-sm"
+                        className="w-full flex items-center justify-center gap-3 py-2.5 rounded-lg bg-[#24292e] border border-[#3b4148] hover:bg-[#2f363d] hover:shadow-[0_0_20px_rgba(255,255,255,0.05)] disabled:opacity-50 transition-all duration-300 text-sm font-medium text-white shadow-sm"
                       >
                         {oauthLoadingProvider === "google" ? (
                           <Loader2 className="w-4 h-4 animate-spin text-white" />
@@ -277,8 +270,10 @@ export default function AuthView() {
                           type="text"
                           value={name}
                           onChange={(e) => setName(e.target.value)}
+                          onFocus={() => setIsFormFocused(true)}
+                          onBlur={() => setIsFormFocused(false)}
                           placeholder="John Doe"
-                          className="w-full h-10 px-3 rounded-lg bg-[#24292e] border border-[#3b4148] text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-150"
+                          className="w-full h-10 px-3 rounded-lg bg-[#24292e] border border-[#3b4148] text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:bg-[#2c3137] transition-all duration-300"
                           required
                         />
                       </div>
@@ -292,8 +287,10 @@ export default function AuthView() {
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
+                        onFocus={() => setIsFormFocused(true)}
+                        onBlur={() => setIsFormFocused(false)}
                         placeholder="m@example.com"
-                        className="w-full h-10 px-3 rounded-lg bg-[#24292e] border border-[#3b4148] text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-150"
+                        className="w-full h-10 px-3 rounded-lg bg-[#24292e] border border-[#3b4148] text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:bg-[#2c3137] transition-all duration-300"
                         required
                       />
                     </div>
@@ -319,12 +316,14 @@ export default function AuthView() {
                             type={showPassword ? "text" : "password"}
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                          placeholder="••••••••"
+                            onFocus={() => setIsFormFocused(true)}
+                            onBlur={() => setIsFormFocused(false)}
+                            placeholder="••••••••"
                             autoComplete={authMode === "register" ? "new-password" : "current-password"}
-                            className={`w-full h-10 px-3 pr-10 rounded-lg bg-[#24292e] border text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-1 transition-all duration-150 ${
+                            className={`w-full h-10 px-3 pr-10 rounded-lg bg-[#24292e] border text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-4 transition-all duration-300 ${
                               isPasswordInvalid
-                                ? "border-red-500/60 focus:border-red-500 focus:ring-red-500"
-                                : "border-[#3b4148] focus:border-blue-500 focus:ring-blue-500"
+                                ? "border-red-500/60 focus:border-red-500 focus:ring-red-500/10 focus:bg-[#2c3137]"
+                                : "border-[#3b4148] focus:border-blue-500 focus:ring-blue-500/10 focus:bg-[#2c3137]"
                             }`}
                             required
                           />
@@ -344,7 +343,7 @@ export default function AuthView() {
                               {[1,2,3,4].map((i) => (
                                 <div
                                   key={i}
-                                  className={`h-1 flex-1 rounded-full transition-all duration-300 ${
+                                  className={`h-1 flex-1 rounded-full transition-all duration-500 ease-out ${
                                     passwordStrength.score >= i ? passwordStrength.color : "bg-white/10"
                                   }`}
                                 />
@@ -370,9 +369,13 @@ export default function AuthView() {
                     <button
                       type="submit"
                       disabled={isLoading || isPasswordInvalid}
-                      className="w-full flex items-center justify-center gap-2 bg-white hover:bg-neutral-200 text-black font-semibold text-sm py-2.5 rounded-lg transition-all duration-300 mt-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] shadow-[0_0_20px_-5px_rgba(255,255,255,0.3)] hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0 disabled:cursor-not-allowed"
+                      className="relative w-full flex items-center justify-center gap-2 bg-white hover:bg-neutral-200 text-black font-semibold text-sm py-2.5 rounded-lg transition-all duration-500 mt-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] shadow-[0_0_20px_-5px_rgba(255,255,255,0.3)] hover:-translate-y-0.5 disabled:opacity-60 disabled:hover:translate-y-0 disabled:cursor-not-allowed overflow-hidden"
                     >
-                      {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                      {isLoading && (
+                        <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10 backdrop-blur-sm">
+                          <Loader2 className="w-5 h-5 animate-spin text-black" />
+                        </div>
+                      )}
                       {authMode === "login"
                         ? "Login"
                         : authMode === "register"
@@ -405,7 +408,7 @@ export default function AuthView() {
                 </>
               )}
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
     </div>
