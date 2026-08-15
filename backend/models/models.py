@@ -176,7 +176,7 @@ class Chunk(Base):
     chunk_index: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     source: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     bm25_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    embedding: Mapped[Optional[list[float]]] = mapped_column(Vector(1536), nullable=True)
+    embedding: Mapped[Optional[list[float]]] = mapped_column(Vector(1024), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
     document : Mapped["Document"] = relationship(back_populates="chunks")

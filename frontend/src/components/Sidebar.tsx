@@ -6,6 +6,7 @@ import {
 import { motion } from "framer-motion";
 import { cn } from "../lib/utils";
 import { useStore } from "../store/useStore";
+import { api } from "../lib/api";
 interface SidebarProps {
   currentTab: string;
   setCurrentTab: (tab: string) => void;
@@ -17,7 +18,7 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
   const theme = useStore(s => s.theme);
   const setTheme = useStore(s => s.setTheme);
   const user = useStore(s => s.user);
-  const logout = useStore(s => s.logout);
+  const logout = () => { api.logout(); };
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isEdgeHovering, setIsEdgeHovering] = useState(false);

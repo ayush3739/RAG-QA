@@ -385,8 +385,10 @@ async def github_callback(
             url=f"{settings.FRONTEND_URL}/#/auth?oauth_error=github_failed&message={msg}",
             status_code=status.HTTP_302_FOUND,
         )
-    except Exception:
-        msg = quote_plus("An unexpected error occurred during GitHub login.")
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        msg = quote_plus(f"An unexpected error occurred during GitHub login: {str(e)}")
         return RedirectResponse(
             url=f"{settings.FRONTEND_URL}/#/auth?oauth_error=github_failed&message={msg}",
             status_code=status.HTTP_302_FOUND,
@@ -434,8 +436,11 @@ async def google_callback(
             url=f"{settings.FRONTEND_URL}/#/auth?oauth_error=google_failed&message={msg}",
             status_code=status.HTTP_302_FOUND,
         )
-    except Exception:
-        msg = quote_plus("An unexpected error occurred during Google login.")
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        # Fallback for unexpected errors
+        msg = quote_plus(f"An unexpected error occurred during Google login: {str(e)}")
         return RedirectResponse(
             url=f"{settings.FRONTEND_URL}/#/auth?oauth_error=google_failed&message={msg}",
             status_code=status.HTTP_302_FOUND,

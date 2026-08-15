@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     qdrant_url: str = "http://localhost:6333"
 
     # --- LLM API Keys ---
-    github_token: Optional[str] = None
+    jina_key: Optional[str] = None
     groq_api_key: Optional[str] = None
     groq_api_secondary: Optional[str] = None
     groq_api_third: Optional[str] = None
@@ -48,8 +48,8 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = "http://localhost:3000"
     secret_key: str = "change-me-in-production"
     algorithm: str = "HS256"
-    access_token_expire_minutes: int = 60 * 24 
-    refresh_token_expire_days: int = 60 * 24 * 7
+    access_token_expire_minutes: int = 60
+    refresh_token_expire_days: int = 7
     issuer: str = "rag-qa-v1"
 
     # Ollama (local)

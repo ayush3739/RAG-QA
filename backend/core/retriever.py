@@ -1,10 +1,11 @@
-from langchain_openai import OpenAIEmbeddings
+from langchain_community.embeddings import JinaEmbeddings
 from langchain_ollama import OllamaLLM
 from rank_bm25 import BM25Okapi
-from openai import OpenAI
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 import pickle
+from backend.services.llm_provider import LLMProvider
+import asyncio
 from pathlib import Path
 from backend.core.utils import simple_tokenize
 from backend.core.config import settings
@@ -23,14 +24,9 @@ t0 = time.perf_counter()
 class Retriever():
     def __init__(self, document_ids: list[int], db: AsyncSession):
         try:
-            # load configured credentials (non-fatal if missing)
-            self.github_token = settings.github_token
             self.document_ids = document_ids
             self.db = db
-            self.openai_client = OpenAI(
-                base_url="https://models.github.ai/inference",
-                api_key=self.github_token,
-            )
+            self.llm_provider = LLMProvider()
 
             self.llm = OllamaLLM(
                 model=settings.ollama_model,
@@ -40,10 +36,9 @@ class Retriever():
                 repeat_penalty=1.05,
                 base_url=settings.ollama_base_url,
             )
-            self.embedding_model = OpenAIEmbeddings(
-                model="text-embedding-3-small",
-                openai_api_key=self.github_token,
-                openai_api_base="https://models.github.ai/inference",
+            self.embedding_model = JinaEmbeddings(
+                jina_api_key=settings.jina_key,
+                model_name="jina-embeddings-v3",
             )
             BASE_DIR = Path(__file__).resolve().parent.parent
             
@@ -136,9 +131,11 @@ class Retriever():
             return
         self.bm25_loaded = True
         try:
+            print("Loading BM25 from DB...")
             result = await self.db.execute(
                 select(models.Document).where(models.Document.id.in_(self.document_ids))
             )
+            print("BM25 DB query completed.")
             docs = result.scalars().all()
             for doc in docs:
                 if not doc.bm25_path: continue
@@ -161,7 +158,9 @@ class Retriever():
 
 
     async def similarity_search(self, query: str | RetrievalQuery, k: int = 10):
+        print("Starting similarity_search...")
         await self._load_bm25_from_db()
+        print("BM25 loading finished.")
         try:
             if isinstance(query, str):
                 query = self.sanitize_query(query)
@@ -174,7 +173,16 @@ class Retriever():
                 original_query = query.original_query
 
             t0 = time.perf_counter()
-            query_embedding = self.embedding_model.embed_query(semantic_query)
+            print("Starting Jina embedding...")
+            try:
+                query_embedding = await asyncio.wait_for(
+                    self.embedding_model.aembed_query(semantic_query), 
+                    timeout=15.0
+                )
+            except asyncio.TimeoutError:
+                print("Jina Embedding timed out!")
+                raise RuntimeError("Embedding timed out")
+                
             print("Embedding:", time.perf_counter() - t0)
 
             t1 = time.perf_counter()
@@ -309,7 +317,7 @@ class Retriever():
             
         passages = [c.page_content for c in chunks]
         
-        if not settings.JINA_KEY:
+        if not settings.jina_key:
             print("Warning: JINA_KEY not set. Skipping reranker.")
             return chunks[:top_n], 0.0
 
@@ -319,7 +327,7 @@ class Retriever():
                 resp = await client.post(
                     "https://api.jina.ai/v1/rerank",
                     headers={
-                        "Authorization": f"Bearer {settings.JINA_KEY}",
+                        "Authorization": f"Bearer {settings.jina_key}",
                         "Content-Type": "application/json"
                     },
                     json={
@@ -356,7 +364,7 @@ class Retriever():
         ranked = sorted(chunks, reverse=True, key=lambda x: x.metadata.get("reranker_score", 0.0))
         return ranked[:top_n], float(ranked[0].metadata.get("reranker_score", 0.0))
 
-    def generate_response(self, query: str, retrieval_result: dict):
+    async def generate_response(self, query: str, retrieval_result: dict):
         # defensive sanitization: ensure the query used with the LLM is safe
         try:
             query = self.sanitize_query(query)
@@ -394,15 +402,12 @@ CONTEXT:
 {context}
 """
 
-        response = self.openai_client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": query},
-            ],
-        )
-
-        answer_text = response.choices[0].message.content or ""
+        response_text = await self.llm_provider.invoke([
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": query},
+        ])
+        
+        answer_text = response_text or ""
         citations = [
             {
                 "chunk_id": c.get("chunk_id"),
@@ -441,7 +446,7 @@ CONTEXT:
 
 
 
-        return self.generate_response(q, retrieval_result)
+        return await self.generate_response(q, retrieval_result)
     
 
 

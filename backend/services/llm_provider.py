@@ -226,19 +226,6 @@ async def _try_openrouter(messages: list[dict]) -> str:
     return resp.choices[0].message.content or ""
 
 
-async def _try_github(messages: list[dict]) -> str:
-    key = settings.github_token
-    if not key:
-        raise RuntimeError("No GitHub token configured.")
-    client = _openai_client(api_key=key, base_url="https://models.github.ai/inference")
-    resp = await client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=messages,
-        stream=False,
-    )
-    return resp.choices[0].message.content or ""
-
-
 async def _try_ollama(messages: list[dict]) -> str:
     from langchain_ollama import ChatOllama
     llm = ChatOllama(model=settings.ollama_model, temperature=0)
@@ -294,7 +281,6 @@ class LLMProvider:
                 "nvidia":     ("https://integrate.api.nvidia.com/v1",                      settings.nvidia_nim),
                 "groq":       ("https://api.groq.com/openai/v1",                          settings.groq_api_third),
                 "openrouter": ("https://openrouter.ai/api/v1",                            settings.open_router_key),
-                "github":     ("https://models.github.ai/inference",                      settings.github_token),
             }
             url, key = endpoints.get(self.provider, (None, None))
             self._client = _openai_client(api_key=key, base_url=url) if key and url else None
@@ -341,7 +327,7 @@ class LLMProvider:
         )
 
     def supports_native_tool_calls(self) -> bool:
-        return self.provider in {"groq", "github", "openrouter", "nvidia"}
+        return self.provider in {"groq", "openrouter", "nvidia"}
 
     async def tool_call(self, messages: list[dict], tools: list[dict]) -> dict:
         if not self.supports_native_tool_calls() or self._client is None:

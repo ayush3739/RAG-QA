@@ -154,10 +154,10 @@ async def upload_document(
         except ValueError:
             pass
 
-    if not settings.github_token:
+    if not settings.jina_key:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Missing GITHUB_TOKEN; required for embeddings during indexing",
+            status_code=500,
+            detail="Missing JINA_KEY; required for embeddings during indexing",
         )
 
     safe_name = _safe_filename(file.filename)

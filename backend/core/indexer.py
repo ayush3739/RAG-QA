@@ -6,7 +6,7 @@ from pathlib import Path
 
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_openai import OpenAIEmbeddings
+from langchain_community.embeddings import JinaEmbeddings
 from sqlalchemy.ext.asyncio import AsyncSession
 from langchain_core.documents import Document
 import docx
@@ -26,10 +26,9 @@ class Indexer:
         self.db = db_session
         self.document_id = document_id
         self.document_public_id = document_public_id
-        self.embedding_model = OpenAIEmbeddings(
-            api_key=settings.github_token,
-            model="text-embedding-3-small",
-            openai_api_base="https://models.github.ai/inference",
+        self.embedding_model = JinaEmbeddings(
+            jina_api_key=settings.jina_key,
+            model_name="jina-embeddings-v3",
         )
 
     async def index(self):

@@ -540,7 +540,7 @@ export default function ChatWorkspace({
                               {msg.citations.map((cite: any, cIdx) => {
                                 const isWeb = cite.type === "web";
                                 const name = cite.name || cite.title || "Source";
-                                const badge = isWeb ? "Web" : cite.page != null ? `P.${cite.page}` : "Doc";
+                                const badge = isWeb ? "Web" : cite.page != null ? `Page ${cite.page}` : "Doc";
                                 return (
                                   <button
                                     key={cIdx}

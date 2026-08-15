@@ -77,7 +77,7 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
   const [inspectorOpen, setInspectorOpen] = useState(() => localStorage.getItem("setting_inspector_open") !== "false");
 
   const user = useStore(s => s.user);
-  const logout = useStore(s => s.logout);
+  const logout = () => { api.logout(); };
   const theme = useStore(s => s.theme);
   const setTheme = useStore(s => s.setTheme);
 
@@ -343,7 +343,14 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
                     className="w-full flex items-center justify-center gap-2 bg-surface hover:bg-surface-container border border-border text-foreground font-semibold text-sm py-2.5 rounded-xl transition-all cursor-pointer"
                   >
                     <LogOut className="w-4 h-4" />
-                    Log Out
+                    Log Out Current Device
+                  </button>
+                  <button
+                    onClick={() => { api.logoutAll(); }}
+                    className="w-full flex items-center justify-center gap-2 bg-surface hover:bg-surface-container border border-border text-foreground font-semibold text-sm py-2.5 rounded-xl transition-all cursor-pointer"
+                  >
+                    <Server className="w-4 h-4" />
+                    Log Out All Devices
                   </button>
                   <button
                     onClick={() => setShowDeleteAccount(true)}
