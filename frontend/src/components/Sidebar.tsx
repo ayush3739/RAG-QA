@@ -92,11 +92,11 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
             <button
               type="button"
               onClick={() => setIsCollapsed(true)}
-              className="ml-auto rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
+              className="ml-auto rounded-md p-1.5 text-muted-foreground transition-all duration-200 hover:bg-surface-container-high hover:text-foreground active:scale-95"
               title="Collapse sidebar"
               aria-label="Collapse sidebar"
             >
-              <PanelLeftClose className="h-4 w-4" />
+              <PanelLeftClose className="h-5 w-5" />
             </button>
           </>
         )}
@@ -108,7 +108,7 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
         id="btn-new-research"
         onClick={onNewResearch}
         className={cn(
-          "bg-surface border border-border hover:bg-surface-container text-on-surface font-medium text-sm flex items-center cursor-pointer shadow-premium hover:shadow-premium-hover transition-all duration-200",
+          "bg-surface border border-border hover:bg-surface-container-high text-on-surface font-medium text-sm flex items-center cursor-pointer shadow-premium hover:shadow-premium-hover transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]",
           isCollapsed ? "h-10 w-10 justify-center self-center rounded-xl p-0" : "w-full rounded-lg py-2 px-3 justify-between"
         )}
         title="New Chat"

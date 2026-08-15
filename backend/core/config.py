@@ -48,7 +48,7 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = "http://localhost:3000"
     secret_key: str = "change-me-in-production"
     algorithm: str = "HS256"
-    access_token_expire_minutes: int = 60
+    access_token_expire_minutes: int = 1
     refresh_token_expire_days: int = 7
     issuer: str = "rag-qa-v1"
 

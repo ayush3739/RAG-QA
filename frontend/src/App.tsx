@@ -820,7 +820,7 @@ export default function App() {
   }
 
   return (
-    <div className="bg-background text-foreground flex h-screen overflow-hidden font-sans selection:bg-primary/20 selection:text-primary relative">
+    <div className="bg-background text-foreground flex h-screen overflow-hidden font-sans relative">
       <Toaster position="top-right" richColors />
       <NoInternetBanner />
       

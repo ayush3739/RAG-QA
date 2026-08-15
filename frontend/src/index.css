@@ -62,6 +62,15 @@
   * {
     border-color: var(--border);
   }
+
+  *::selection {
+    background-color: #b3d4fc !important; /* Standard default blue */
+    color: #000000 !important;
+  }
+  .dark *::selection {
+    background-color: rgba(123, 108, 246, 0.4) !important;
+    color: #ffffff !important;
+  }
 }
 
 @theme {

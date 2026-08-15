@@ -693,7 +693,7 @@ export default function ChatWorkspace({
             <div className="absolute inset-0 rounded-[17px] bg-gradient-to-r from-blue-400/60 via-purple-400/60 to-blue-400/60 opacity-60 transition-opacity duration-300 group-focus-within:opacity-100 group-hover:opacity-100" />
             <form 
               onSubmit={handleSubmit} 
-              className="w-full h-full bg-[#0a0a0c]/90 backdrop-blur-xl rounded-2xl p-2 flex flex-col relative z-10"
+              className="w-full h-full bg-background/90 dark:bg-[#0a0a0c]/90 backdrop-blur-xl rounded-2xl p-2 flex flex-col relative z-10"
             >
             <textarea
               value={inputText}

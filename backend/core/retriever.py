@@ -131,11 +131,9 @@ class Retriever():
             return
         self.bm25_loaded = True
         try:
-            print("Loading BM25 from DB...")
             result = await self.db.execute(
                 select(models.Document).where(models.Document.id.in_(self.document_ids))
             )
-            print("BM25 DB query completed.")
             docs = result.scalars().all()
             for doc in docs:
                 if not doc.bm25_path: continue
@@ -158,9 +156,7 @@ class Retriever():
 
 
     async def similarity_search(self, query: str | RetrievalQuery, k: int = 10):
-        print("Starting similarity_search...")
         await self._load_bm25_from_db()
-        print("BM25 loading finished.")
         try:
             if isinstance(query, str):
                 query = self.sanitize_query(query)
@@ -173,16 +169,7 @@ class Retriever():
                 original_query = query.original_query
 
             t0 = time.perf_counter()
-            print("Starting Jina embedding...")
-            try:
-                query_embedding = await asyncio.wait_for(
-                    self.embedding_model.aembed_query(semantic_query), 
-                    timeout=15.0
-                )
-            except asyncio.TimeoutError:
-                print("Jina Embedding timed out!")
-                raise RuntimeError("Embedding timed out")
-                
+            query_embedding = await self.embedding_model.aembed_query(semantic_query)
             print("Embedding:", time.perf_counter() - t0)
 
             t1 = time.perf_counter()
