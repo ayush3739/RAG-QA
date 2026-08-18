@@ -25,16 +25,17 @@ export function useKeyboardShortcuts(shortcuts: ShortcutMap) {
         e.key.toLowerCase()
       ].join('');
 
-      // Also check exact key (for uppercase single letters like 'U' when Shift is held, though usually better to just check lower)
+      // Also check exact key (for uppercase single letters like 'U' when Shift is held)
       const exactKey = e.key;
+      const hasModifier = e.metaKey || e.ctrlKey || e.altKey;
 
       if (shortcuts[keyCombo]) {
         e.preventDefault();
         shortcuts[keyCombo](e);
-      } else if (shortcuts[exactKey]) {
+      } else if (!hasModifier && shortcuts[exactKey]) {
         e.preventDefault();
         shortcuts[exactKey](e);
-      } else if (shortcuts[exactKey.toLowerCase()]) {
+      } else if (!hasModifier && shortcuts[exactKey.toLowerCase()]) {
         e.preventDefault();
         shortcuts[exactKey.toLowerCase()](e);
       }

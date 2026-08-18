@@ -27,7 +27,7 @@ class Settings(BaseSettings):
 
     # Active provider/model (overridden at the bottom of this file)
     llm_provider: str = "groq"
-    llm_model: str = "llama-3.3-70b-versatile"
+    llm_model: str = "openai/gpt-oss-120b"
 
     # Auth - GitHub
     GITHUB_CLIENT_ID: SecretStr = SecretStr("")
@@ -94,4 +94,4 @@ settings = Settings()
 # Active provider — Groq first.
 # Fallback chain: Groq → Groq Secondary
 settings.llm_provider = "groq"
-settings.llm_model = "llama-3.3-70b-versatile"
+settings.llm_model = "openai/gpt-oss-120b"

@@ -35,10 +35,10 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
   }, []);
 
   const tabs = [
-    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { id: "chats", label: "Chats", icon: MessageSquare, count: conversationsCount },
-    { id: "documents", label: "Documents", icon: FolderOpen },
-    { id: "settings", label: "Settings", icon: Settings },
+    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, shortcut: "D" },
+    { id: "chats", label: "Chats", icon: MessageSquare, count: conversationsCount, shortcut: "T" },
+    { id: "documents", label: "Documents", icon: FolderOpen, shortcut: "U" },
+    { id: "settings", label: "Settings", icon: Settings, shortcut: "S" },
   ];
 
   return (
@@ -147,13 +147,26 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
               )}
               <item.icon className={cn("relative z-10 w-4 h-4 transition-colors", !isCollapsed && "mr-3", isActive ? "text-foreground" : "text-muted-foreground group-hover:text-foreground")} />
               {!isCollapsed && <span className="relative z-10">{item.label}</span>}
-              {item.count !== undefined && !isCollapsed && (
-                <span className={cn(
-                  "relative z-10 ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-md",
-                  isActive ? "bg-background text-foreground shadow-sm" : "bg-transparent text-muted-foreground group-hover:bg-surface-container-high"
-                )}>
-                  {item.count}
-                </span>
+              {!isCollapsed && (
+                <div className="relative z-10 ml-auto flex items-center justify-end h-5 w-8">
+                  {item.shortcut && (
+                    <span className={cn(
+                      "absolute right-0 text-[10px] font-mono text-muted-foreground border border-border rounded px-1.5 py-0.5 transition-all duration-200",
+                      "opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100"
+                    )}>
+                      {item.shortcut}
+                    </span>
+                  )}
+                  {item.count !== undefined && (
+                    <span className={cn(
+                      "absolute right-0 text-[10px] font-bold px-1.5 py-0.5 rounded-md transition-all duration-200",
+                      isActive ? "bg-background text-foreground shadow-sm" : "bg-transparent text-muted-foreground group-hover:bg-surface-container-high",
+                      item.shortcut && "group-hover:opacity-0 group-hover:scale-95"
+                    )}>
+                      {item.count}
+                    </span>
+                  )}
+                </div>
               )}
               {item.count !== undefined && isCollapsed && item.count > 0 && (
                 <span className="absolute right-1.5 top-1.5 z-10 h-2 w-2 rounded-full bg-primary" />

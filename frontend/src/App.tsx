@@ -597,11 +597,8 @@ export default function App() {
 
   useKeyboardShortcuts({
     'u': () => setCurrentTab("documents"),
-    'c': () => handleNewResearch(),
-    'r': () => handleNewResearch(),
     'd': () => setCurrentTab("dashboard"),
     't': () => setCurrentTab("chats"),
-    'l': () => setCurrentTab("documents"),
     's': () => setCurrentTab("settings"),
     'cmd+k': () => handleNewResearch(),
   });
