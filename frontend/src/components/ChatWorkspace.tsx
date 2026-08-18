@@ -710,7 +710,7 @@ export default function ChatWorkspace({
               </div>
               
               <div className="flex items-center space-x-2">
-                <button
+                {/* <button
                   type="button"
                   onClick={handleMicToggle}
                   className={cn(
@@ -720,7 +720,7 @@ export default function ChatWorkspace({
                   title="Voice input"
                 >
                   <Mic className="w-4 h-4" />
-                </button>
+                </button> */}
 
                 <button
                   type="button"
