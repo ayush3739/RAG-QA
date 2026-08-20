@@ -5,6 +5,7 @@ import json
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.services.session_service import SessionService
+from backend.services.analytics_service import AnalyticsService
 from backend.agent.graph_agent import stream_answer_query_with_graph
 
 
@@ -12,6 +13,7 @@ class ChatService:
 
     def __init__(self):
         self.session_service = SessionService()
+        self.analytics_service = AnalyticsService()
 
     async def stream_chat(
         self,
@@ -44,6 +46,15 @@ class ChatService:
             content=question,
             db=db,
         )
+
+        # 2b. Track query usage
+        try:
+            await self.analytics_service.record_user_query(
+                user_id=user_id,
+                db=db,
+            )
+        except Exception:
+            pass  # Do not block chat execution if analytics tracking fails
 
         # 3. Load history
         # Already includes the user message saved above — no need to append it again.

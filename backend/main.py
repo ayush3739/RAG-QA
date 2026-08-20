@@ -15,7 +15,7 @@ from backend.core.config import settings
 from backend.db.base import engine, get_db
 
 # Import routers
-from backend.api.routes import chat, documents, research, feedback, auth, user, sessions
+from backend.api.routes import chat, documents, research, feedback, auth, user, sessions, analytics
 
 logging.basicConfig(
     level=logging.INFO,
@@ -107,6 +107,7 @@ app.include_router(feedback.router, prefix="/api/v1", tags=["Feedback"])
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"])
 app.include_router(user.router, prefix="/api/v1/user", tags=["User"])
 app.include_router(sessions.router, prefix="/api/v1/sessions", tags=["Sessions"])
+app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["Analytics"])
 
 
 @app.get("/", tags=["Health"])

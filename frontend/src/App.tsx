@@ -565,6 +565,7 @@ export default function App() {
       });
 
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['user-activity'] });
       setGraphStatuses([]);
     }
   };

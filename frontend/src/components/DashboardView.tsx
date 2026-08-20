@@ -129,6 +129,30 @@ export default function DashboardView({
     refetchOnMount: false,
   });
 
+  const { data: activityResponse } = useQuery({
+    queryKey: ['user-activity'],
+    queryFn: () => api.getActivity(7),
+    staleTime: 10 * 60 * 1000, // 10 min cache
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  });
+
+  const chartData = activityResponse?.activity && activityResponse.activity.length > 0
+    ? activityResponse.activity
+    : [
+        { name: 'Mon', queries: 0 },
+        { name: 'Tue', queries: 0 },
+        { name: 'Wed', queries: 0 },
+        { name: 'Thu', queries: 0 },
+        { name: 'Fri', queries: 0 },
+        { name: 'Sat', queries: 0 },
+        { name: 'Sun', queries: 0 },
+      ];
+
+  const totalQueriesPast7Days = activityResponse?.activity 
+    ? activityResponse.activity.reduce((acc: number, curr: any) => acc + (curr.queries || 0), 0)
+    : 0;
+
   const healthStatus = isError ? "offline" : (healthData ? "online" : "offline");
   const healthTime = healthData?.time ? new Date(healthData.time).toLocaleTimeString() : new Date().toLocaleTimeString();
 
@@ -175,7 +199,7 @@ export default function DashboardView({
           
           <div className="flex-1 w-full min-h-0 relative z-10">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={mockActivityData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+              <BarChart data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
                 <defs>
                   <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="var(--primary)" stopOpacity={1} />
@@ -184,9 +208,14 @@ export default function DashboardView({
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" strokeOpacity={0.5} />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--muted-foreground)', fontFamily: 'JetBrains Mono' }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--muted-foreground)', fontFamily: 'JetBrains Mono' }} />
+                <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--muted-foreground)', fontFamily: 'JetBrains Mono' }} />
                 <Tooltip 
                   cursor={{ fill: 'var(--surface-container-high)', opacity: 0.4 }}
+                  formatter={(value: any) => [`${value} queries`, 'Activity']}
+                  labelFormatter={(label, payload) => {
+                    const item = payload?.[0]?.payload;
+                    return item?.date ? `${label} (${item.date})` : label;
+                  }}
                   contentStyle={{ backgroundColor: 'var(--surface-container-lowest)', borderColor: 'var(--border)', borderRadius: '6px', fontSize: '12px', fontFamily: 'JetBrains Mono', color: 'var(--foreground)' }}
                   itemStyle={{ color: 'var(--primary)', fontWeight: 600 }}
                 />
