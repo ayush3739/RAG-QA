@@ -20,6 +20,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import LandingPage from "./landing/page";
 import ArchitecturePage from "./landing/ArchitecturePage";
 import NoInternetBanner from "./components/NoInternetBanner";
+import NotFoundView from "./components/NotFoundView";
+import RateLimitView from "./components/RateLimitView";
+import ServerErrorView from "./components/ServerErrorView";
 
 const normalizeSourceScore = (score: any): number | null => {
   if (score == null) return null;
@@ -249,13 +252,29 @@ export default function App() {
   // Sync URL hash to state and vice versa
   useEffect(() => {
     const handleHashChange = () => {
-      if (!isAuthenticated) return;
       const hash = window.location.hash;
       if (!hash) {
-        setCurrentTab("dashboard");
-        setActiveConvId(null);
+        if (isAuthenticated) {
+          setCurrentTab("dashboard");
+          setActiveConvId(null);
+        }
         return;
       }
+
+      if (hash === "#/rate-limit") {
+        setCurrentTab("rate_limit");
+        return;
+      }
+      if (hash === "#/500") {
+        setCurrentTab("server_error");
+        return;
+      }
+      if (hash === "#/404") {
+        setCurrentTab("not_found");
+        return;
+      }
+
+      if (!isAuthenticated) return;
 
       const parts = hash.replace("#/", "").split("/");
       const route = parts[0];
@@ -282,13 +301,18 @@ export default function App() {
         } else {
           setActiveConvId("");
         }
+      } else if (route === "auth") {
+        // Handled by AuthView
+      } else if (landingHashes.includes(hash) || hash === "#/architecture") {
+        // Handled by landing / architecture
+      } else {
+        // Unknown route -> 404
+        setCurrentTab("not_found");
       }
     };
 
     window.addEventListener("hashchange", handleHashChange);
-    if (isAuthenticated) {
-      handleHashChange();
-    }
+    handleHashChange();
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, [setCurrentTab, setActiveConvId, isAuthenticated]);
 
@@ -804,6 +828,21 @@ export default function App() {
   const landingHashes = ["", "#", "#/", "#hero", "#how-it-works", "#metrics", "#system-features", "#faq"];
   const isLanding = landingHashes.includes(hash);
   const isArchitecture = hash === "#/architecture";
+  const isRateLimit = hash === "#/rate-limit" || currentTab === "rate_limit";
+  const isServerError = hash === "#/500" || currentTab === "server_error";
+  const isNotFound = hash === "#/404" || currentTab === "not_found";
+
+  if (isRateLimit) {
+    return <RateLimitView />;
+  }
+
+  if (isServerError) {
+    return <ServerErrorView />;
+  }
+
+  if (isNotFound) {
+    return <NotFoundView onNavigate={setCurrentTab} />;
+  }
 
   if (isArchitecture) {
     return <ArchitecturePage />;
