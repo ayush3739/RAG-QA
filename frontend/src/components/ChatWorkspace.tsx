@@ -324,11 +324,11 @@ export default function ChatWorkspace({
         )}
       >
         {/* Header */}
-        <header className="h-16 shrink-0 flex justify-between items-center px-6 pt-1 bg-background/80 backdrop-blur-md border-b border-border z-20">
+        <header className="h-14 shrink-0 flex justify-between items-center px-6 pt-1 bg-background z-20 shadow-[0_1px_0_0_rgba(255,255,255,0.04)]">
           <div className="flex items-center space-x-3">
-            <span className="text-sm font-semibold text-foreground tracking-tight leading-none">{sessionTitle}</span>
+            <span className="text-sm font-medium text-foreground tracking-tight leading-none">{sessionTitle}</span>
             <span className="text-xs text-muted-foreground flex items-center leading-none">
-              <Paperclip className="w-3.5 h-3.5 mr-1" />
+              <Paperclip className="w-3 h-3 mr-1" />
               {documents.length} Docs
             </span>
           </div>
@@ -336,8 +336,8 @@ export default function ChatWorkspace({
             <button
               onClick={() => setIsInspectorOpen(!isInspectorOpen)}
               className={cn(
-                "p-1.5 rounded-md transition-colors flex items-center space-x-2 text-xs font-semibold btn-press",
-                isInspectorOpen ? "bg-surface-container-high text-foreground" : "text-muted-foreground hover:bg-surface hover:text-foreground"
+                "p-1.5 rounded-md transition-colors flex items-center space-x-2 text-xs font-medium btn-press",
+                isInspectorOpen ? "text-foreground" : "text-muted-foreground hover:text-foreground"
               )}
             >
               <span>Inspector</span>
@@ -356,65 +356,59 @@ export default function ChatWorkspace({
             
             {messages.length === 0 && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-16 select-none mt-10 text-center flex flex-col items-center w-full">
-                <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-6 shadow-glow-primary float-icon">
-                   <BrainCircuit className="w-8 h-8 text-primary" />
+                {/* Brand mark — neutral, not accented */}
+                <div className="w-14 h-14 rounded-xl bg-surface-container border border-border flex items-center justify-center mb-5">
+                   <BrainCircuit className="w-7 h-7 text-muted-foreground" />
                 </div>
-                <h2 className="text-3xl font-semibold text-foreground tracking-tight mb-3">
+                <h2 className="text-2xl font-semibold text-foreground tracking-tight mb-2" style={{ letterSpacing: '-0.03em' }}>
                   Welcome to DocuMind
                 </h2>
-                <p className="text-muted-foreground text-sm max-w-xl text-center mb-8">
-                  Start a new conversation to research your documents. The system will automatically provide quick answers or execute deep semantic search across your attached context.
+                <p className="text-muted-foreground text-sm max-w-sm text-center mb-8 leading-relaxed">
+                  Start a new conversation to research your documents.
                 </p>
 
-                {/* Prompt Suggestions Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-2xl px-4">
+                {/* Prompt Suggestions Grid — one neutral tone, content differentiates cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-2xl px-4">
                   {[
                     {
                       title: "Summarize latest document",
-                      desc: "Extract key findings and generate an executive summary",
+                      desc: "Extract key findings and generate a summary",
                       prompt: "Please write a detailed summary of the main topics and key findings in my document.",
                       icon: FileText,
-                      color: "text-amber-500 bg-amber-500/10 border-amber-500/20"
                     },
                     {
                       title: "Verify grounding context",
-                      desc: "Cross-reference facts and check for correct context bounds",
+                      desc: "Cross-reference facts and check context bounds",
                       prompt: "Identify the critical evidence in the document that supports the claim: ",
                       icon: Search,
-                      color: "text-blue-500 bg-blue-500/10 border-blue-500/20"
                     },
                     {
                       title: "Compare documents",
-                      desc: "Extract side-by-side differences between multiple sources",
+                      desc: "Extract side-by-side differences between sources",
                       prompt: "Compare the main themes and identify any contrasting information between the documents.",
                       icon: Layers,
-                      color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20"
                     },
                     {
                       title: "Draft QA verification script",
                       desc: "Write a verification logic script based on standard models",
                       prompt: "Write a python script to run verification rules on retrieved contexts.",
                       icon: Settings2,
-                      color: "text-pink-500 bg-pink-500/10 border-pink-500/20"
                     }
                   ].map((item, idx) => (
-                    <motion.button
+                    <button
                       key={idx}
-                      whileHover={{ y: -3, scale: 1.01 }}
                       onClick={() => setInputText(item.prompt)}
-                      className="flex items-start p-4 rounded-2xl border border-border bg-surface-container-lowest hover:border-primary/45 hover:bg-surface/50 transition-all text-left group cursor-pointer btn-press"
+                      className="flex items-start p-4 rounded-xl border border-border bg-surface hover:border-border/80 hover:bg-surface-container transition-all text-left group cursor-pointer"
                     >
-                      <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mr-4 group-hover:scale-105 group-hover:rotate-6 transition-all duration-300", item.color)}>
-                        <item.icon className="w-5 h-5" />
+                      {/* Single neutral icon — no per-card hue */}
+                      <div className="w-8 h-8 rounded-lg bg-surface-container border border-border flex items-center justify-center flex-shrink-0 mr-3.5 group-hover:border-border/80 transition-colors">
+                        <item.icon className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
                       </div>
-                      <div className="flex-1 min-w-0 pr-2">
-                        <h4 className="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">{item.title}</h4>
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{item.desc}</p>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-semibold text-foreground truncate">{item.title}</h4>
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{item.desc}</p>
                       </div>
-                      <div className="w-5 h-5 rounded-full border border-border flex items-center justify-center text-muted-foreground group-hover:scale-110 group-hover:bg-primary group-hover:border-primary group-hover:text-primary-foreground transition-all duration-300 flex-shrink-0 self-center">
-                        <Plus className="w-3.5 h-3.5" />
-                      </div>
-                    </motion.button>
+                    </button>
                   ))}
                 </div>
               </motion.div>
@@ -451,12 +445,13 @@ export default function ChatWorkspace({
                       </div>
                     ) : (
                       <div className="flex items-start space-x-4 w-full min-w-0">
-                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center text-white flex-shrink-0 mt-0.5 shadow-sm">
-                          <Sparkles className="w-4 h-4" />
+                        {/* Neutral assistant avatar — no gradient */}
+                        <div className="w-7 h-7 rounded-lg bg-surface-container border border-border flex items-center justify-center text-muted-foreground flex-shrink-0 mt-0.5">
+                          <Sparkles className="w-3.5 h-3.5" />
                         </div>
                         <div className={cn(
-                          "min-w-0 flex-1 flex flex-col space-y-2 p-3 rounded-2xl border border-transparent transition-all duration-300",
-                          isStreaming && "bg-primary/[0.02] border-primary/10 shadow-[0_0_20px_rgba(123,108,246,0.06)]"
+                          "min-w-0 flex-1 flex flex-col space-y-2 transition-all duration-300",
+                          isStreaming && "border-l-2 border-l-primary/40 pl-3"
                         )}>
                           <div className="max-w-none min-w-0 text-foreground">
                             {msg.text ? (
@@ -685,65 +680,56 @@ export default function ChatWorkspace({
 
         {/* Input Bar */}
         <div className="shrink-0 px-6 md:px-12 pb-6 pt-2 flex justify-center relative z-30">
-          <div className="absolute inset-0 bg-primary/20 blur-[100px] ambient-glow max-w-2xl mx-auto rounded-full h-24 bottom-0 top-auto translate-y-6 pointer-events-none" />
           <div className={cn(
-            "w-full relative rounded-[17px] p-[1px] shadow-[0_0_15px_rgba(99,102,241,0.15)] transition-shadow duration-300 hover:shadow-[0_0_25px_rgba(99,102,241,0.25)] z-10 group",
+            "w-full relative z-10",
             isInspectorOpen ? "max-w-4xl" : "max-w-5xl"
           )}>
-            <div className="absolute inset-0 rounded-[17px] bg-gradient-to-r from-blue-400/60 via-purple-400/60 to-blue-400/60 opacity-60 transition-opacity duration-300 group-focus-within:opacity-100 group-hover:opacity-100" />
             <form 
               onSubmit={handleSubmit} 
-              className="w-full h-full bg-background/90 dark:bg-[#0a0a0c]/90 backdrop-blur-xl rounded-2xl p-2 flex flex-col relative z-10"
+              className={cn(
+                "w-full bg-surface border border-border rounded-xl p-2 flex flex-col transition-colors duration-200",
+                "focus-within:border-border/70"
+              )}
             >
             <textarea
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="w-full max-h-32 min-h-[56px] resize-none overflow-y-auto overflow-x-hidden bg-transparent border-none px-4 pt-3 text-[15px] font-medium text-foreground placeholder:text-muted-foreground outline-none focus:outline-none focus:ring-0"
+              className="w-full max-h-32 min-h-[52px] resize-none overflow-y-auto overflow-x-hidden bg-transparent border-none px-4 pt-3 text-[15px] font-medium text-foreground placeholder:text-muted-foreground outline-none focus:outline-none focus:ring-0"
               placeholder="Ask anything..."
               rows={1}
             />
             
-            <div className="flex items-center justify-between px-2 pb-1 pt-2">
+            <div className="flex items-center justify-between px-2 pb-1 pt-1.5">
               <div className="flex items-center space-x-1">
                 {/* File upload removed from chat input */}
               </div>
               
               <div className="flex items-center space-x-2">
-                {/* <button
-                  type="button"
-                  onClick={handleMicToggle}
-                  className={cn(
-                    "p-1.5 rounded-md transition-colors cursor-pointer flex items-center justify-center btn-press",
-                    isMicActive ? "bg-red-500/10 text-red-500" : "text-muted-foreground hover:bg-surface hover:text-foreground"
-                  )}
-                  title="Voice input"
-                >
-                  <Mic className="w-4 h-4" />
-                </button> */}
-
+                {/* Mode toggle — brightness-only, no background fill */}
                 <button
                   type="button"
                   onClick={() => setChatMode(prev => prev === "auto" ? "research" : "auto")}
                   className={cn(
-                    "px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition-colors border btn-press",
+                    "px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors",
                     chatMode === "auto" 
-                      ? "bg-surface border-border text-foreground hover:bg-surface-container-high" 
-                      : "bg-primary/10 border-primary/20 text-primary hover:bg-primary/20"
+                      ? "text-muted-foreground hover:text-foreground" 
+                      : "text-foreground"
                   )}
                   title="Toggle Mode"
                 >
                   {chatMode === "auto" ? "Auto" : "Research"}
                 </button>
 
+                {/* Send button — outlined accent, not filled */}
                 <button
                   type="submit"
                   disabled={!inputText.trim() || isProcessing}
                   className={cn(
-                    "p-2 rounded-xl transition-all flex items-center justify-center btn-press",
+                    "p-1.5 rounded-lg transition-all flex items-center justify-center btn-press",
                     !inputText.trim() || isProcessing 
-                      ? "opacity-50 bg-surface-container-high text-muted-foreground cursor-not-allowed" 
-                      : "bg-primary text-primary-foreground cursor-pointer hover:bg-primary/90 shadow-sm"
+                      ? "text-muted-foreground cursor-not-allowed opacity-40" 
+                      : "text-primary border border-primary/30 hover:bg-primary/10 cursor-pointer"
                   )}
                   title="Send message"
                 >

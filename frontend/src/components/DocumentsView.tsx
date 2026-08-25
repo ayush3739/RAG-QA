@@ -41,11 +41,9 @@ function DocTypeIcon({ type }: { type: string }) {
   return <File className="w-5 h-5" />;
 }
 
-function docTypeColor(type: string) {
-  if (type === "spreadsheet") return "bg-emerald-500/10 border-emerald-500/20 text-emerald-500";
-  if (type === "link") return "bg-sky-500/10 border-sky-500/20 text-sky-500";
-  if (type === "pdf") return "bg-rose-500/10 border-rose-500/20 text-rose-500";
-  return "bg-amber-500/10 border-amber-500/20 text-amber-500";
+// Single neutral color — shape communicates type, not hue
+function docTypeColor(_type: string) {
+  return "bg-surface-container border-border text-muted-foreground";
 }
 
 export function DocumentsView({
@@ -156,14 +154,15 @@ export function DocumentsView({
           {documents.length > 0 && (
             <div className="flex items-center gap-4 mt-5">
               <div className="flex items-center gap-2 px-3 py-1.5 bg-surface-container-lowest border border-border rounded-lg text-xs font-medium text-muted-foreground">
-                <Layers className="w-3.5 h-3.5 text-primary" />
+                <Layers className="w-3.5 h-3.5 text-muted-foreground" />
                 <span><strong className="text-foreground font-mono">{documents.length}</strong> documents</span>
               </div>
               <div className="flex items-center gap-2 px-3 py-1.5 bg-surface-container-lowest border border-border rounded-lg text-xs font-medium text-muted-foreground">
-                <Database className="w-3.5 h-3.5 text-secondary" />
+                <Database className="w-3.5 h-3.5 text-muted-foreground" />
                 <span><strong className="text-foreground font-mono">{totalChunks}</strong> chunks indexed</span>
               </div>
               <div className="flex items-center gap-2 px-3 py-1.5 bg-surface-container-lowest border border-border rounded-lg text-xs font-medium text-muted-foreground">
+                {/* Active dot stays green — it's semantic (live/inactive) */}
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
                 <span><strong className="text-foreground font-mono">{activeCount}</strong> active</span>
               </div>
@@ -178,12 +177,12 @@ export function DocumentsView({
           transition={{ delay: 0.1, duration: 0.4 }}
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="w-full border-2 border-dashed border-border hover:border-primary/50 hover:bg-primary/[0.02] transition-all duration-300 rounded-2xl bg-surface-container-lowest p-8 flex flex-col items-center justify-center cursor-pointer group"
+          className="w-full border border-border hover:border-border/70 hover:bg-surface-container/50 transition-all duration-200 rounded-xl bg-surface p-8 flex flex-col items-center justify-center cursor-pointer group"
         >
-          <div className="w-12 h-12 rounded-xl bg-surface-container border border-border flex items-center justify-center text-muted-foreground group-hover:text-primary group-hover:bg-primary/10 group-hover:border-primary/20 transition-all duration-300 mb-4 group-hover:scale-110">
-            <UploadCloud className="w-6 h-6" />
+          <div className="w-11 h-11 rounded-xl bg-surface-container border border-border flex items-center justify-center text-muted-foreground group-hover:text-foreground group-hover:border-border/70 transition-all duration-200 mb-4">
+            <UploadCloud className="w-5 h-5" />
           </div>
-          <h3 className="text-sm font-semibold text-foreground tracking-tight mb-1 group-hover:text-primary transition-colors">Click or drag documents to ingest</h3>
+          <h3 className="text-sm font-semibold text-foreground tracking-tight mb-1">Click or drag documents to ingest</h3>
           <p className="text-xs text-muted-foreground">PDF, DOCX, TXT, Markdown · Max 30 MB per file</p>
         </motion.button>
 
@@ -212,23 +211,12 @@ export function DocumentsView({
             {/* Animated illustration */}
             <div className="relative mb-8">
               <motion.div
-                className="w-24 h-24 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center"
+                className="w-20 h-20 rounded-xl bg-surface-container border border-border flex items-center justify-center"
                 animate={{ y: [0, -8, 0] }}
                 transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
               >
-                <UploadCloud className="w-10 h-10 text-primary/60" />
+                <UploadCloud className="w-9 h-9 text-muted-foreground" />
               </motion.div>
-              {/* Floating decorative dots */}
-              <motion.div
-                className="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-primary/30"
-                animate={{ scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] }}
-                transition={{ duration: 2, repeat: Infinity, delay: 0.3 }}
-              />
-              <motion.div
-                className="absolute -bottom-1 -left-3 w-3 h-3 rounded-full bg-secondary/40"
-                animate={{ scale: [1, 1.4, 1], opacity: [0.4, 0.9, 0.4] }}
-                transition={{ duration: 2.4, repeat: Infinity, delay: 0.8 }}
-              />
             </div>
 
             <h3 className="text-lg font-semibold text-foreground tracking-tight mb-2">Your library is empty</h3>

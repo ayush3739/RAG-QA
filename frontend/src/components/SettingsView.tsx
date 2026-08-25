@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { 
   Cpu, Sliders, User, Shield, RefreshCw, Moon, Sun, LogOut, Trash2, Save, Check,
-  Server, Palette, AlertTriangle
+  Server, Palette, AlertTriangle, Crown, CheckCircle2, Sparkles
 } from "lucide-react";
 import { ModelParams } from "../types";
 import { cn } from "../lib/utils";
@@ -289,9 +289,22 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
                   <div className="w-14 h-14 rounded-2xl bg-primary/20 text-primary flex items-center justify-center font-bold text-xl shrink-0 ring-2 ring-primary/20">
                     {user?.name?.charAt(0)?.toUpperCase() || "U"}
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-base font-bold text-foreground truncate">{user?.name || "User"}</p>
-                    <p className="text-sm text-muted-foreground truncate">{user?.email || "No email"}</p>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="text-base font-bold text-foreground truncate">{user?.name || "User"}</p>
+                      <span className={cn(
+                        "text-[10px] font-mono font-extrabold uppercase px-2 py-0.5 rounded tracking-wider flex items-center gap-1",
+                        user?.role?.toLowerCase() === "pro"
+                          ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                          : user?.role?.toLowerCase() === "admin"
+                          ? "bg-purple-500/15 text-purple-400 border border-purple-500/30"
+                          : "bg-surface-container-high text-muted-foreground border border-border/60"
+                      )}>
+                        {user?.role?.toLowerCase() === "pro" && <Crown className="w-3 h-3 text-amber-400" />}
+                        {user?.role?.toLowerCase() === "admin" ? "ADMIN" : user?.role?.toLowerCase() === "pro" ? "PRO PLAN" : "FREE PLAN"}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground truncate mt-0.5">{user?.email || "No email"}</p>
                   </div>
                 </div>
 
@@ -327,6 +340,56 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
                           value={user?.email || ""}
                           className="w-full text-sm font-medium bg-surface border border-border rounded-lg px-3 py-2.5 text-muted-foreground cursor-not-allowed focus:outline-none"
                         />
+                      </div>
+                    </div>
+                  </SettingsSection>
+                </div>
+
+                {/* Plan & Subscription Card */}
+                <div className="premium-card p-6 space-y-4">
+                  <SettingsSection title="Subscription & Plan">
+                    <div className="p-4 rounded-xl bg-surface-container/40 border border-border/70 space-y-3 mt-1">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2.5">
+                          <div className={cn(
+                            "p-2 rounded-lg",
+                            user?.role?.toLowerCase() === "pro"
+                              ? "bg-amber-500/15 text-amber-400"
+                              : "bg-surface-container text-primary"
+                          )}>
+                            {user?.role?.toLowerCase() === "pro" ? <Crown className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-bold text-foreground">
+                              {user?.role?.toLowerCase() === "admin" ? "Enterprise Administrator" : user?.role?.toLowerCase() === "pro" ? "DocuMind Pro Access" : "Community Free Plan"}
+                            </h4>
+                            <p className="text-xs text-muted-foreground">
+                              {user?.role?.toLowerCase() === "pro" ? "Full model capacity and active tool-routing" : "Standard query routing and vector database"}
+                            </p>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-mono font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                          ACTIVE
+                        </span>
+                      </div>
+
+                      <div className="pt-2 border-t border-border/50 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-muted-foreground">
+                        <div className="flex items-center space-x-2">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                          <span>Hybrid Vector + BM25 RAG</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                          <span>Groq 120B Model Inference</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                          <span>Grounded Source Citations</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                          <span>Unlimited Document Storage</span>
+                        </div>
                       </div>
                     </div>
                   </SettingsSection>

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { 
   Database, Plus, FolderOpen, MessageSquare, 
-  LayoutDashboard, Settings, LogOut, Sun, Moon, PanelLeftClose, PanelLeftOpen
+  LayoutDashboard, Settings, LogOut, Sun, Moon, PanelLeftClose, PanelLeftOpen, Sparkles, Crown
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "../lib/utils";
@@ -202,12 +202,40 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
         {/* Dropdown Menu (expanded mode) */}
         {showUserMenu && !isCollapsed && (
           <div className="absolute bottom-full left-2 right-2 mb-2 bg-surface border border-border rounded-xl shadow-xl overflow-hidden z-50">
-            <div className="p-2">
+            {/* Plan Info Strip */}
+            <div className="px-3.5 py-2.5 bg-surface-container/50 border-b border-border/60 flex items-center justify-between">
+              <div>
+                <p className="text-[11px] font-semibold text-foreground">Current Plan</p>
+                <p className="text-[10px] text-muted-foreground">
+                  {user?.role?.toLowerCase() === "admin" ? "System Administrator" : user?.role?.toLowerCase() === "pro" ? "Pro Plan (Full Access)" : "Free Plan"}
+                </p>
+              </div>
+              <span className={cn(
+                "text-[9px] font-mono font-extrabold uppercase px-1.5 py-0.5 rounded tracking-wider flex items-center gap-1",
+                user?.role?.toLowerCase() === "pro"
+                  ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                  : user?.role?.toLowerCase() === "admin"
+                  ? "bg-purple-500/15 text-purple-400 border border-purple-500/30"
+                  : "bg-surface-container text-muted-foreground border border-border"
+              )}>
+                {user?.role?.toLowerCase() === "pro" && <Crown className="w-2.5 h-2.5 text-amber-400" />}
+                {user?.role?.toLowerCase() === "admin" ? "ADMIN" : user?.role?.toLowerCase() === "pro" ? "PRO" : "FREE"}
+              </span>
+            </div>
+
+            <div className="p-1.5 space-y-1">
+              <button 
+                onClick={() => { setCurrentTab("settings"); setShowUserMenu(false); }}
+                className="w-full flex items-center px-3 py-2 text-xs text-foreground font-medium hover:bg-surface-container rounded-lg transition-colors cursor-pointer"
+              >
+                <Settings className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                Account Settings
+              </button>
               <button 
                 onClick={logout}
-                className="w-full flex items-center px-3 py-2 text-sm text-red-500 font-medium hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
+                className="w-full flex items-center px-3 py-2 text-xs text-red-500 font-medium hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
               >
-                <LogOut className="w-4 h-4 mr-2" />
+                <LogOut className="w-3.5 h-3.5 mr-2" />
                 Log Out
               </button>
             </div>
@@ -225,12 +253,29 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
               isCollapsed ? "justify-center" : "space-x-3 flex-1"
             )}
           >
-            <div className="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs ring-1 ring-border flex-shrink-0">
-              {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+            <div className="relative flex-shrink-0">
+              <div className="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs ring-1 ring-border">
+                {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+              </div>
+              {isCollapsed && (user?.role?.toLowerCase() === "pro" || user?.role?.toLowerCase() === "admin") && (
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-amber-400 ring-2 ring-background" />
+              )}
             </div>
             {!isCollapsed && (
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-on-surface truncate leading-tight tracking-tight">{user?.name || "User"}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-sm font-semibold text-on-surface truncate leading-tight tracking-tight">{user?.name || "User"}</p>
+                <span className={cn(
+                  "text-[9px] font-mono font-extrabold uppercase px-1.5 py-0.2 rounded tracking-wider flex items-center gap-0.5 shrink-0",
+                  user?.role?.toLowerCase() === "pro"
+                    ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                    : user?.role?.toLowerCase() === "admin"
+                    ? "bg-purple-500/15 text-purple-400 border border-purple-500/30"
+                    : "bg-surface-container-high text-muted-foreground border border-border/60"
+                )}>
+                  {user?.role?.toLowerCase() === "admin" ? "ADMIN" : user?.role?.toLowerCase() === "pro" ? "PRO" : "FREE"}
+                </span>
+              </div>
               <span className="text-[10px] text-muted-foreground truncate block">{user?.email || "No email"}</span>
             </div>
             )}

@@ -9,7 +9,7 @@ import FAQSection from './components/FAQSection'
 import Footer from './components/Footer'
 import TerminalDemo from './components/TerminalDemo'
 import LogoMarquee from './components/LogoMarquee'
-import Testimonials from './components/Testimonials'
+// import Testimonials from './components/Testimonials'
 import PricingSection from './components/PricingSection'
 
 export default function LandingPage() {
@@ -30,8 +30,8 @@ export default function LandingPage() {
         <RoutingFlowDiagram />
         <MetricsGrid />
         <ProductShowcase />
-        {/* ── Testimonials ── */}
-        <Testimonials />
+        {/* ── Testimonials (Hidden for now) ── */}
+        {/* <Testimonials /> */}
 
         {/* ── Pricing ── */}
         <PricingSection />

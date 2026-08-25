@@ -256,7 +256,7 @@ export default function DashboardView({
         {/* Metric Block 1 (Spans 3 cols, 1 row) */}
         <motion.div variants={itemVariants} className="col-span-1 md:col-span-3 row-span-1 premium-card p-5 flex flex-col justify-between">
           <div className="flex items-start justify-between">
-            <FileText className="w-4 h-4 text-amber-500/80" />
+            <FileText className="w-4 h-4 text-muted-foreground" />
             <span className="text-[10px] font-mono text-muted-foreground">DOCS</span>
           </div>
           <div>
@@ -268,7 +268,7 @@ export default function DashboardView({
         {/* Metric Block 2 (Spans 3 cols, 1 row) */}
         <motion.div variants={itemVariants} className="col-span-1 md:col-span-3 row-span-1 premium-card p-5 flex flex-col justify-between">
           <div className="flex items-start justify-between">
-            <Database className="w-4 h-4 text-blue-500/80" />
+            <Database className="w-4 h-4 text-muted-foreground" />
             <span className="text-[10px] font-mono text-muted-foreground">CHUNKS</span>
           </div>
           <div>
@@ -280,7 +280,7 @@ export default function DashboardView({
         {/* Metric Block 3 (Spans 3 cols, 1 row) */}
         <motion.div variants={itemVariants} className="col-span-1 md:col-span-3 row-span-1 premium-card p-5 flex flex-col justify-between">
           <div className="flex items-start justify-between">
-            <MessageSquare className="w-4 h-4 text-purple-500/80" />
+            <MessageSquare className="w-4 h-4 text-muted-foreground" />
             <span className="text-[10px] font-mono text-muted-foreground">SESSIONS</span>
           </div>
           <div>
@@ -292,7 +292,7 @@ export default function DashboardView({
         {/* Metric Block 4 (Spans 3 cols, 1 row) */}
         <motion.div variants={itemVariants} className="col-span-1 md:col-span-3 row-span-1 premium-card p-5 flex flex-col justify-between">
           <div className="flex items-start justify-between">
-            <CheckCircle2 className="w-4 h-4 text-emerald-500/80" />
+            <CheckCircle2 className="w-4 h-4 text-muted-foreground" />
             <span className="text-[10px] font-mono text-muted-foreground">COVERAGE</span>
           </div>
           <div>
@@ -351,13 +351,8 @@ export default function DashboardView({
                   className="w-full px-3 py-2.5 bg-transparent hover:bg-surface-container-lowest rounded-lg transition-colors cursor-pointer flex items-center group text-left"
                 >
                   <div className="min-w-0 flex-1 flex items-center">
-                    <div className={cn(
-                      "p-1 rounded bg-surface border mr-3 flex-shrink-0",
-                      doc.type === "spreadsheet" ? "border-emerald-500/20 text-emerald-500" :
-                      doc.type === "link" ? "border-sky-500/20 text-sky-500" :
-                      doc.type === "pdf" ? "border-rose-500/20 text-rose-500" :
-                      "border-amber-500/20 text-amber-500"
-                    )}>
+                    {/* Single neutral doc-type icon — type communicated by shape, not hue */}
+                    <div className="p-1 rounded bg-surface-container border border-border mr-3 flex-shrink-0 text-muted-foreground">
                       {doc.type === "spreadsheet" && <FileSpreadsheet className="w-3.5 h-3.5" />}
                       {doc.type === "link" && <Globe className="w-3.5 h-3.5" />}
                       {(doc.type === "pdf" || doc.type === "doc") && <FileText className="w-3.5 h-3.5" />}

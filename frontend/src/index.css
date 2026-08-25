@@ -6,16 +6,16 @@
 
 @layer base {
   :root {
-    /* Light — cool off-white, not warm cream (avoids default look #1) */
-    --background: #F5F6FA;
+    /* Light — near-white, barely perceptible tint */
+    --background: #F9F9FB;
     --bg-image: none;
     --foreground: #0D0F1A;
 
-    --surface: #ECEEF6;
+    --surface: #F3F3F7;
     --surface-container-lowest: #FFFFFF;
-    --surface-container-low: #F5F6FA;
-    --surface-container: #ECEEF6;
-    --surface-container-high: #E0E3EF;
+    --surface-container-low: #F9F9FB;
+    --surface-container: #F3F3F7;
+    --surface-container-high: #EAEAEF;
 
     /* Violet — more distinctive than plain indigo */
     --primary: #5B4FE8;
@@ -28,21 +28,22 @@
     --muted: #6B7494;
     --muted-foreground: #9BA5C0;
 
-    --border: #D8DBE8;
+    --border: #E2E2E8;
     --ring: #5B4FE8;
   }
 
   .dark {
-    /* Premium near-black and pure-black layout (Linear-inspired) */
-    --background: #08090c;
-    --bg-image: radial-gradient(circle at top left, rgba(124, 58, 237, 0.12), transparent 45%);
+    /* Premium near-black layout (Linear/Vercel-inspired) */
+    --background: #0A0A0C;
+    --bg-image: radial-gradient(circle at top left, rgba(124, 58, 237, 0.08), transparent 45%);
     --foreground: #FAFAFA;
 
-    --surface: #0E0E11;
-    --surface-container-lowest: #060608;
-    --surface-container-low: #000000;
-    --surface-container: #141418;
-    --surface-container-high: #1D1D24;
+    /* Clear 3-step elevation: page → card → interactive */
+    --surface: #101014;              /* Elevated card bg — 1 step above page */
+    --surface-container-lowest: #0A0A0C; /* Same as bg — no card darker than page */
+    --surface-container-low: #0D0D10;    /* Subtle well / inset */
+    --surface-container: #16161A;        /* Hover / active states */
+    --surface-container-high: #1E1E24;   /* Pressed / emphasized states */
 
     /* Violet primary */
     --primary: #7B6CF6;
@@ -53,9 +54,9 @@
     --secondary: #2DD4BF;
 
     --muted: #27272A;
-    --muted-foreground: #94A3B8;
+    --muted-foreground: #71717A;
 
-    --border: #27272A;
+    --border: #1F1F23;     /* Quieter by default — reads on hover, not at rest */
     --ring: #7B6CF6;
   }
 
