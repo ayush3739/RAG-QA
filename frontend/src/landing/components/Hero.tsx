@@ -288,23 +288,10 @@ export default function Hero() {
       id="hero"
       className="relative flex min-h-screen flex-col items-center bg-[#060608]"
     >
-      {/* ── Deep purple upper glow ── */}
+      {/* ── Butter-smooth ambient hero spotlight (zero hard lines or banding) ── */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0 h-[80vh]"
-        style={{
-          background:
-            'radial-gradient(ellipse 80% 60% at 50% -5%, rgba(100,40,220,0.35) 0%, rgba(80,20,180,0.14) 40%, transparent 70%)',
-        }}
-      />
-      {/* Secondary indigo mid glow */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-[30%] h-[55vh]"
-        style={{
-          background:
-            'radial-gradient(ellipse 55% 35% at 50% 0%, rgba(99,102,241,0.12) 0%, transparent 68%)',
-        }}
+        className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-0 h-[500px] w-[850px] -translate-y-1/4 rounded-full bg-gradient-to-b from-violet-600/30 via-indigo-900/15 to-transparent blur-[120px]"
       />
       {/* Star-dot pattern */}
       <div
@@ -318,20 +305,28 @@ export default function Hero() {
 
       {/* ── Text content ── */}
       <div className="relative z-10 mx-auto flex w-full max-w-4xl flex-col items-center px-6 pt-36 pb-10 text-center">
-        {/* Badge */}
+        {/* Editorial Badge Pill */}
         <motion.div
           custom={0}
           variants={fadeUp}
           initial="hidden"
           animate="visible"
-          className="mb-7 inline-flex items-center gap-2 rounded-full border border-white/[0.07] bg-white/[0.03] px-3.5 py-1 backdrop-blur-sm"
+          className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3.5 py-1 backdrop-blur-md transition-all hover:bg-white/[0.06]"
         >
           <span
             className="h-1.5 w-1.5 rounded-full bg-violet-400"
             style={{ animation: 'pulse 2s infinite' }}
           />
-          <span className="font-mono text-[10.5px] font-medium uppercase tracking-[0.1em] text-zinc-500">
-            Agentic RAG · Tool-Routing · Open Source
+          <span className="text-[11.5px] font-medium text-zinc-200">
+            Agentic RAG
+          </span>
+          <span className="text-[10px] text-zinc-600 font-light">/</span>
+          <span className="text-[11.5px] text-zinc-400">
+            Tool-routing
+          </span>
+          <span className="text-[10px] text-zinc-600 font-light">/</span>
+          <span className="text-[11.5px] text-zinc-400">
+            Open source
           </span>
         </motion.div>
 
@@ -341,24 +336,26 @@ export default function Hero() {
           variants={fadeUp}
           initial="hidden"
           animate="visible"
-          className="text-balance text-5xl font-semibold leading-[1.06] text-white md:text-[68px] lg:text-[76px]"
+          className="text-balance text-5xl font-semibold leading-[1.04] text-white md:text-[68px] lg:text-[76px]"
           style={{
-            fontFamily: "'DM Sans', sans-serif",
-            letterSpacing: '-0.03em',
+            fontFamily: "'DM Sans', -apple-system, sans-serif",
+            letterSpacing: '-0.035em',
             textWrap: 'balance',
           }}
         >
           The RAG workspace that{' '}
-          <span style={{ color: 'rgba(167,139,250,0.88)' }}>thinks before it searches.</span>
+          <span style={{ color: '#818CF8' }}>
+            thinks before it searches.
+          </span>
         </motion.h1>
 
-        {/* Sub-line */}
+        {/* Sub-line with higher contrast weight & looser leading */}
         <motion.p
           custom={0.22}
           variants={fadeUp}
           initial="hidden"
           animate="visible"
-          className="mt-6 max-w-[530px] text-[16px] leading-relaxed text-zinc-500"
+          className="mt-6 max-w-[540px] text-[15px] md:text-[16.5px] font-normal leading-[1.65] text-zinc-400"
         >
           Agentic tool-routing decides between document retrieval, web search, deep research,
           and direct reasoning — each answer grounded with citations.
@@ -407,6 +404,12 @@ export default function Hero() {
         </motion.p>
       </div>
 
+      {/* Bottom fade into next section for cohesive scroll transition */}
+      <div 
+        className="pointer-events-none absolute bottom-0 left-0 right-0 h-64 z-20"
+        style={{ background: 'linear-gradient(to bottom, transparent 0%, #09090b 100%)' }} 
+      />
+
       {/* ── Product mockup ── */}
       <motion.div
         custom={0.52}
@@ -415,61 +418,21 @@ export default function Hero() {
         animate="visible"
         className="relative z-10 mx-auto w-full max-w-[1100px] px-4 pb-20"
       >
-        {/* ── Full Perimeter Backlight (glows from all sides) ── */}
+        {/* ── Premium Product Horizon Glow (tightly anchored to card rim) ── */}
+        {/* Soft tight ambient bloom strictly behind top horizon rim */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 -mx-10 -my-10"
-          style={{
-            background:
-              'radial-gradient(ellipse 95% 85% at 50% 50%, rgba(139,92,246,0.3) 0%, rgba(59,130,246,0.3) 30%, rgba(139,92,246,0.1) 60%, transparent 75%)',
-            filter: 'blur(24px)',
-          }}
+          className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 h-[90px] w-[75%] max-w-[750px] rounded-full bg-gradient-to-b from-violet-500/30 via-indigo-600/10 to-transparent blur-[25px]"
         />
 
-        {/* ── Intensified Top Horizon Glow ── */}
-        {/* Massive top bloom */}
+        {/* Crisp hairline horizon light on top edge */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute left-0 right-0"
-          style={{
-            top: '-10px',
-            height: '300px',
-            background:
-              'radial-gradient(ellipse 90% 100% at 50% 0%, rgba(139,92,246,0.85) 0%, rgba(59,130,246,0.65) 35%, rgba(99,102,241,0.25) 65%, transparent 85%)',
-            filter: 'blur(4px)',
-          }}
-        />
-        {/* Blinding white-blue-purple hot core ON the border line */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute left-1/2 -translate-x-1/2"
-          style={{
-            top: '-15px',
-            width: '100%',
-            maxWidth: '1000px',
-            height: '100px',
-            background:
-              'radial-gradient(ellipse 100% 100% at 50% 0%, rgba(255,255,255,0.95) 0%, rgba(210,235,255,0.8) 15%, rgba(192,160,252,0.5) 45%, transparent 80%)',
-            filter: 'blur(16px)',
-          }}
-        />
-        {/* Sharp horizontal flare precisely on the border line */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute left-1/2 -translate-x-1/2"
-          style={{
-            top: '-2px',
-            width: '80%',
-            height: '4px',
-            background:
-              'linear-gradient(90deg, transparent 0%, rgba(192,160,252,0.8) 30%, rgba(255,255,255,1) 50%, rgba(147,197,253,0.8) 70%, transparent 100%)',
-            filter: 'blur(1px)',
-            boxShadow: '0 0 20px 4px rgba(192,160,252,0.8)',
-          }}
+          className="pointer-events-none absolute -top-[1px] left-1/2 -translate-x-1/2 h-[1px] w-[60%] max-w-[600px] bg-gradient-to-r from-transparent via-violet-300/70 to-transparent"
         />
 
-        {/* Browser chrome */}
-        <div className="relative overflow-hidden rounded-[14px] border border-indigo-400/30 bg-[#0d0d10] shadow-[0_40px_100px_rgba(0,0,0,0.8),0_0_80px_rgba(99,102,241,0.25)]">
+        {/* Browser chrome with crisp 1px light border separating object from glow */}
+        <div className="relative overflow-hidden rounded-[14px] border border-white/[0.08] border-t-white/[0.18] bg-[#0d0d10] shadow-[0_30px_90px_rgba(0,0,0,0.8)]">
           {/* Title bar */}
           <div className="flex h-10 items-center border-b border-white/[0.06] bg-[#09090d] px-4">
             <div className="flex items-center gap-1.5">
