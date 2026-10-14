@@ -108,10 +108,30 @@ class ChatService:
             if result is None:
                 raise RuntimeError("Graph agent did not return a result")
         except Exception as exc:
-            error_message = (
-                "Sorry, I couldn't complete this response because the agent "
-                f"failed: {exc}"
+            exc_str = str(exc).lower()
+            is_rate_limited = (
+                "rate limit" in exc_str
+                or "ratelimit" in exc_str
+                or "resource_exhausted" in exc_str
+                or "resourceexhausted" in exc_str
+                or "quota" in exc_str
+                or "429" in exc_str
+                or "too many requests" in exc_str
             )
+
+            if is_rate_limited:
+                error_message = (
+                    "The AI provider is currently rate-limited. "
+                    "Please wait a moment and try again."
+                )
+                event_type_to_yield = "rate_limit"
+            else:
+                error_message = (
+                    "Sorry, I couldn't complete this response because the agent "
+                    
+                )
+                event_type_to_yield = "error"
+
             await self.session_service.add_message(
                 session_id=session_id,
                 role="assistant",
@@ -121,7 +141,7 @@ class ChatService:
                 sources=[],
                 tool_used="error",
             )
-            yield ("error", error_message)
+            yield (event_type_to_yield, error_message)
             yield ("done", "[DONE]")
             return
 

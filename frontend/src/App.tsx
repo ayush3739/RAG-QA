@@ -494,7 +494,15 @@ export default function App() {
         body: JSON.stringify({ question: text })
       });
 
-      if (!res.ok || !res.body) throw new Error("Chat failed");
+      if (!res.ok || !res.body) {
+        if (res.status === 429) {
+          const rateLimitMsg = "⏳ **Rate Limited** — The AI provider is busy. Please wait a moment and try again.";
+          setActiveMessages(prev => prev.map(m => m.id === botMsgId ? { ...m, text: rateLimitMsg } : m));
+          toast.warning("Rate limited by AI provider. Try again in a few seconds.", { duration: 6000 });
+          return;
+        }
+        throw new Error(`Chat failed with status ${res.status}`);
+      }
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -556,6 +564,15 @@ export default function App() {
                   chunks: data.chunks || undefined
                 } : m));
               } catch (e) {}
+            } else if (currentEvent === 'rate_limit') {
+              const rateLimitMsg = "⏳ **Rate Limited** — The AI provider is busy. Please wait a moment and try again.";
+              currentText = rateLimitMsg;
+              setActiveMessages((prev) => prev.map(m => m.id === botMsgId ? { ...m, text: rateLimitMsg } : m));
+              toast.warning("Rate limited by AI provider. Try again in a few seconds.", { duration: 6000 });
+            } else if (currentEvent === 'error') {
+              const errMsg = dataStr ? `⚠️ **Error** — ${dataStr}` : "⚠️ **Error** — Something went wrong. Please try again.";
+              currentText = errMsg;
+              setActiveMessages((prev) => prev.map(m => m.id === botMsgId ? { ...m, text: errMsg } : m));
             }
           }
         }

@@ -2,7 +2,7 @@
 __pycache__/
 *.py[codz]
 *$py.class
-
+issues.md
 eval/
 # C extensions
 *.so
