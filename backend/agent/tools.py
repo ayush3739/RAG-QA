@@ -267,7 +267,7 @@ async def web_search_impl(query: str):
 
 def _history_messages(history: list[dict] | None) -> list[dict]:
     messages = []
-    for item in (history or [])[-6:]:
+    for item in (history or [])[-settings.history_message_limit:]:
         role = item.get("role")
         content = item.get("content")
         if role in {"user", "assistant"} and content:
@@ -275,43 +275,9 @@ def _history_messages(history: list[dict] | None) -> list[dict]:
     return messages
 
 
-async def direct_answer_impl(query: str, history: list[dict] | None = None, document_names: list[str] | None = None):
-    """Tool: Answer directly via LLM (no retrieval)."""
-    llm = LLMProvider()
-    doc_names_str = ""
-    if document_names:
-        doc_names_str = (
-            "\n\nThe following document(s) are linked to this session: "
-            + ", ".join(f'"{n}"' for n in document_names)
-            + ". If the user asks about the document name or title, you MUST state it directly from this list."
-        )
-    answer = await llm.invoke(
-        [
-            {
-                "role": "system",
-                "content": (
-                    "You are DocuMind, a document research and RAG assistant. "
-                    "Answer direct/general questions briefly in that product "
-                    "context. For greetings, introduce yourself as DocuMind and "
-                    "offer help with documents, research, summaries, citations, "
-                    "or general questions. Do not invent document citations."
-                    + doc_names_str
-                ),
-            },
-            *_history_messages(history),
-            {"role": "user", "content": query},
-        ]
-    )
-
-    return {
-        "answer": answer,
-        "confidence": 0.7,
-    }
-
-
 def _history_messages(history: list[dict] | None) -> list[dict]:
     messages = []
-    for item in (history or [])[-6:]:
+    for item in (history or [])[-settings.history_message_limit:]:
         role = item.get("role")
         content = item.get("content")
         if role in {"user", "assistant"} and content:
@@ -358,9 +324,22 @@ async def direct_answer_impl(query: str, history: list[dict] | None = None, docu
     }
     
 
-async def summarize_document_impl(query: str, document_ids: list[int], db: AsyncSession):
+async def summarize_document_impl(
+    query: str,
+    document_ids: list[int],
+    db: AsyncSession,
+    relevant_query: str | None = None,
+):
     """Tool: Generate document summary."""
-    chunks = await _load_document_chunks(document_ids=document_ids, db=db, limit=30)
+    if relevant_query:
+        retrieval = await retrieve_from_document_impl(
+            query=relevant_query,
+            document_ids=document_ids,
+            db=db,
+        )
+        chunks = retrieval.get("chunks", [])
+    else:
+        chunks = await _load_document_chunks(document_ids=document_ids, db=db, limit=30)
     if not chunks:
         return {
             "answer": "No indexed document chunks were found to summarize.",

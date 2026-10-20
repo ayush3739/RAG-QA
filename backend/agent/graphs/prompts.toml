@@ -6,11 +6,16 @@ Return JSON only:
 {
   "goal": "<one-sentence goal>",
   "subqueries": ["<q1>", "<q2>"],
+  "document_query": "<standalone query for uploaded document retrieval>",
+  "web_query": "<standalone query for web search>",
   "need_web": true | false,
   "query_type": "standard" | "comparison"
 }
 
-Set need_web=true only if the question requires live internet data."""
+Use the conversation history supplied by the user message to resolve pronouns
+and vague references. The goal, document_query, and web_query must be
+understandable without the conversation history. Set need_web=true only if the
+question requires live internet data."""
 
 FUSION_SYSTEM = """Merge retrieved document chunks and web results into a
 single clean evidence list. Remove duplicates. Preserve source attribution.

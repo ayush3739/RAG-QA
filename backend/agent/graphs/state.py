@@ -13,6 +13,7 @@ class MainState(TypedDict, total=False):
     db: Any
 
     route: str
+    effective_query: str
     routing_reason: str
 
     retrieved_chunks: list[dict[str, Any]]
@@ -31,6 +32,7 @@ class MainState(TypedDict, total=False):
 
 class ResearchState(TypedDict, total=False):
     research_query: str
+    history: list[dict[str, str]]
     document_ids: list[int]
     db: Any
 
@@ -52,6 +54,7 @@ class ResearchState(TypedDict, total=False):
 
 class RetrieverState(TypedDict, total=False):
     query: str | RetrievalQuery
+    history: list[dict[str, str]]
     document_ids: list[int]
     db: Any
 
@@ -82,6 +85,7 @@ def create_main_state(
         "include_web": include_web,
         "db": db,
         "route": "",
+        "effective_query": query,
         "routing_reason": "",
         "retrieved_chunks": [],
         "web_results": [],
@@ -97,11 +101,13 @@ def create_main_state(
 
 def create_research_state(
     query: str,
+    history: list[dict[str, str]] | None = None,
     document_ids: list[int] | None = None,
     db: Any | None = None,
 ) -> ResearchState:
     return {
         "research_query": query,
+        "history": history or [],
         "document_ids": document_ids or [],
         "db": db,
         "execution_plan": {},
@@ -120,11 +126,13 @@ def create_research_state(
 
 def create_retriever_state(
     query: str,
+    history: list[dict[str, str]] | None = None,
     document_ids: list[int] | None = None,
     db: Any | None = None,
 ) -> RetrieverState:
     return {
         "query": query,
+        "history": history or [],
         "document_ids": document_ids or [],
         "db": db,
         "needs_decomposition": False,

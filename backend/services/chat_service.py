@@ -62,7 +62,6 @@ class ChatService:
         history = await self.session_service.get_recent_history(
             session_id=session_id,
             db=db,
-            limit=6,
         )
 
         # 4. Load attached documents

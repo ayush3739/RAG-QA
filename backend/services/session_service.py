@@ -13,6 +13,7 @@ from backend.models.schemas import (
     DocumentItem,
     DocumentListResponse
 )
+from backend.core.config import settings
 from uuid import UUID
 from datetime import datetime
 
@@ -103,14 +104,21 @@ class SessionService:
             ]
         )
     
-    async def get_recent_history(self, session_id: UUID, db: AsyncSession, limit: int = 10) -> MessageList:
+    async def get_recent_history(
+        self,
+        session_id: UUID,
+        db: AsyncSession,
+        limit: int | None = None,
+    ) -> MessageList:
         """Get latest N messages for LLM context."""
+
+        history_limit = limit if limit is not None else settings.history_message_limit + 1
 
         result = await db.execute(
             select(Message)
             .where(Message.session_id == session_id)
             .order_by(Message.created_at.desc())
-            .limit(limit)
+            .limit(history_limit)
         )
 
         messages = list(reversed(result.scalars().all()))

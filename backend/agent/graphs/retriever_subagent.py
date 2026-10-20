@@ -26,6 +26,7 @@ from langgraph.graph import END, StateGraph
 
 from backend.agent.graphs.state import RetrieverState
 from backend.agent.tools import retrieve_from_document_impl
+from backend.core.config import settings
 from backend.core.retriever import RetrievalQuery
 from backend.services.llm_provider import LLMProvider
 
@@ -49,8 +50,15 @@ def _parse_json_object(text: str) -> dict:
 
 async def check_decomposition(state: RetrieverState) -> dict:
     original_query = state["query"]
+    history_text = "\n".join(
+        f"{item.get('role', '')}: {item.get('content', '')}"
+        for item in state.get("history", [])[-settings.history_message_limit:]
+        if item.get("content")
+    )
     prompt = f"""Decide whether this retrieval query should be split into subqueries.
 Also, optimize each query (or subquery) by creating a 'semantic_query' for vector search and a 'keyword_query' for BM25 search.
+
+Use the conversation history to resolve vague references such as "this topic", "them", "that", or "the PDF". Every returned query must be standalone and understandable without the history.
 
 Rules for Semantic Query:
 - Preserve the exact meaning of the user's question, but convert it into a declarative statement or highly descriptive natural language phrase.
@@ -75,6 +83,9 @@ Return JSON only in this exact format:
 }}
 
 If it's a simple, direct question, use needs_decomposition=false and provide exactly one query object in the list.
+
+Conversation History:
+{history_text or "No previous conversation."}
 
 User Query: {original_query}"""
     response = await llm.invoke([{"role": "user", "content": prompt}])

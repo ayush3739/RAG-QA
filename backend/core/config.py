@@ -64,6 +64,7 @@ class Settings(BaseSettings):
     reranker_input_chunks: int = 25  # Chunks to send to the reranker
     vector_output_chunks: int = 20  # Number of chunks to retrieve from vector DB
     llm_context_chunks: int = 10    # Chunks to give to the LLM
+    history_message_limit: int = 10  # Previous messages sent to agent prompts
     confidence_threshold: float = 0.3
     chunk_size: int = 600
     chunk_overlap: int = 150

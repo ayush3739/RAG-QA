@@ -37,6 +37,7 @@ from langgraph.graph import END, StateGraph
 from backend.agent.graphs.retriever_subagent import retrieval_agent
 from backend.agent.graphs.state import ResearchState, create_retriever_state
 from backend.agent.tools import web_search_impl
+from backend.core.config import settings
 from backend.services.llm_provider import LLMProvider
 
 
@@ -77,10 +78,22 @@ def _parse_json_array(text: str) -> list[dict]:
 
 
 async def research_planner(state: ResearchState) -> dict:
+    history_text = "\n".join(
+        f"{item.get('role', '')}: {item.get('content', '')}"
+        for item in state.get("history", [])[-settings.history_message_limit:]
+        if item.get("content")
+    )
+    planner_input = (
+        f"Conversation history:\n{history_text or 'No previous conversation.'}\n\n"
+        f"Current research request:\n{state['research_query']}\n\n"
+        "Resolve pronouns and vague references using the conversation history. "
+        "Return standalone queries that can be sent directly to document retrieval "
+        "and web search."
+    )
     response = await llm.invoke(
         [
             {"role": "system", "content": prompts["PLANNER_SYSTEM"]},
-            {"role": "user", "content": state["research_query"]},
+            {"role": "user", "content": planner_input},
         ]
     )
     plan = _parse_json_object(response)
@@ -91,10 +104,17 @@ async def research_planner(state: ResearchState) -> dict:
 
 
 async def call_retriever_subagent(state: ResearchState) -> dict:
-    query = state.get("refined_query") or state["research_query"]
+    plan = state.get("execution_plan", {})
+    query = (
+        state.get("refined_query")
+        or plan.get("document_query")
+        or plan.get("goal")
+        or state["research_query"]
+    )
     result = await retrieval_agent.ainvoke(
         create_retriever_state(
             query=query,
+            history=state.get("history", []),
             document_ids=state.get("document_ids", []),
             db=state.get("db"),
         )
@@ -108,7 +128,13 @@ def route_after_retrieval(state: ResearchState) -> str:
 
 
 async def web_search(state: ResearchState) -> dict:
-    query = state.get("refined_query") or state["research_query"]
+    plan = state.get("execution_plan", {})
+    query = (
+        state.get("refined_query")
+        or plan.get("web_query")
+        or plan.get("goal")
+        or state["research_query"]
+    )
     result = await web_search_impl(query=query)
     return {
         "web_results": result.get("results", []),
@@ -151,9 +177,15 @@ async def generator(state: ResearchState) -> dict:
     )
     goal = state.get("execution_plan", {}).get("goal", state["research_query"])
     payload = f"Goal: {goal}\n\nEvidence:\n{evidence_text or 'No evidence found.'}"
+    history_messages = [
+        {"role": item.get("role"), "content": item.get("content")}
+        for item in state.get("history", [])[-settings.history_message_limit:]
+        if item.get("role") in {"user", "assistant"} and item.get("content")
+    ]
     response = await llm.invoke(
         [
             {"role": "system", "content": prompts["GENERATOR_SYSTEM"]},
+            *history_messages,
             {"role": "user", "content": payload},
         ]
     )
@@ -189,12 +221,18 @@ def route_issues(state: ResearchState) -> str:
 
 
 async def query_refiner(state: ResearchState) -> dict:
+    history_text = "\n".join(
+        f"{item.get('role', '')}: {item.get('content', '')}"
+        for item in state.get("history", [])[-settings.history_message_limit:]
+        if item.get("content")
+    )
     response = await llm.invoke(
         [
             {"role": "system", "content": prompts["REFINER_SYSTEM"]},
             {
                 "role": "user",
                 "content": (
+                    f"Conversation history:\n{history_text or 'No previous conversation.'}\n\n"
                     f"Original query: {state['research_query']}\n\n"
                     f"Draft so far:\n{state.get('draft', '')}"
                 ),

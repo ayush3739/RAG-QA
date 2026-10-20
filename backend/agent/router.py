@@ -15,6 +15,7 @@ from backend.agent.tools import (
     summarize_document_impl,
     web_search_impl,
 )
+from backend.core.config import settings
 from backend.services.llm_provider import LLMProvider
 
 
@@ -45,7 +46,7 @@ ROUTER_TOOLS = {
 
 def _history_messages(history: list[dict] | None) -> list[dict]:
     messages = []
-    for item in (history or [])[-6:]:
+    for item in (history or [])[-settings.history_message_limit:]:
         role = item.get("role")
         content = item.get("content")
         if role and content:

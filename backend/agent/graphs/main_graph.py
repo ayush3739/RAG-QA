@@ -9,6 +9,7 @@ from backend.agent.graphs.retriever_subagent import retrieval_agent
 from backend.agent.graphs.state import MainState, create_research_state, create_retriever_state
 from backend.agent.router import _synthesize
 from backend.agent.tools import direct_answer_impl, summarize_document_impl, web_search_impl
+from backend.core.config import settings
 from backend.services.llm_provider import LLMProvider
 
 
@@ -29,7 +30,7 @@ use the previous conversation context to classify it. If the previous assistant
 answer used web sources, classify the follow-up as "web".
 
 Return JSON only:
-{"route": "<general|document|web|research>", "reason": "<short reason>"}"""
+{"route": "<general|document|web|research>", "effective_query": "<standalone query when needed, otherwise the original query>", "reason": "<short reason>"}"""
 
 
 _SOURCE_FOLLOWUP_TERMS = (
@@ -122,7 +123,7 @@ _COMPLEX_ANALYSIS_TERMS = (
 def _history_text(history: list[dict] | None) -> str:
     return "\n".join(
         f"{item.get('role', '')}: {item.get('content', '')}"
-        for item in (history or [])[-4:]
+        for item in (history or [])[-settings.history_message_limit:]
         if item.get("content")
     )
 
@@ -174,6 +175,25 @@ def _is_complex_analysis_query(query: str) -> bool:
     return any(term in normalized for term in _COMPLEX_ANALYSIS_TERMS)
 
 
+def _is_contextual_followup(query: str) -> bool:
+    normalized = query.lower()
+    terms = (
+        " this ",
+        " that ",
+        " it ",
+        " them ",
+        " these ",
+        " those ",
+        " earlier ",
+        " before ",
+        " previous ",
+        " we discussed",
+        " above ",
+    )
+    padded_query = f" {normalized.strip()} "
+    return any(term in padded_query for term in terms)
+
+
 def _parse_json_object(text: str) -> dict:
     try:
         return json.loads(text)
@@ -195,11 +215,12 @@ async def main_router(state: MainState) -> dict:
     if _is_source_followup(query) and previous_web_results:
         return {
             "route": "web",
+            "effective_query": query,
             "routing_reason": "follow-up asks about previous web sources",
             "tool_trace": ["main_router:web_followup"],
         }
 
-    if has_documents and _is_document_query(query):
+    if has_documents and _is_document_query(query) and not _is_contextual_followup(query):
         route = (
             "research"
             if _is_complex_analysis_query(query)
@@ -213,6 +234,7 @@ async def main_router(state: MainState) -> dict:
         )
         return {
             "route": route,
+            "effective_query": query,
             "routing_reason": reason,
             "tool_trace": [f"main_router:{route}:document_override"],
         }
@@ -239,8 +261,14 @@ async def main_router(state: MainState) -> dict:
         route = "general"
     if route == "web" and not state.get("include_web", True):
         route = "general"
+
+    effective_query = result.get("effective_query")
+    if not isinstance(effective_query, str) or not effective_query.strip():
+        effective_query = query
+
     return {
         "route": route,
+        "effective_query": effective_query.strip(),
         "routing_reason": result.get("reason", ""),
         "tool_trace": [f"main_router:{route}"],
     }
@@ -271,11 +299,13 @@ async def direct_llm(state: MainState) -> dict:
 
 
 async def document_qa(state: MainState) -> dict:
-    if _is_summary_query(state["user_query"]):
+    query = state.get("effective_query") or state["user_query"]
+    if _is_summary_query(query):
         result = await summarize_document_impl(
-            query=state["user_query"],
+            query=query,
             document_ids=state.get("document_ids", []),
             db=state.get("db"),
+            relevant_query=query if query != state["user_query"] else None,
         )
         # Normalise chunks into the same shape as retrieval results so Ragas
         # and the frontend both get context data on summary queries.
@@ -301,7 +331,8 @@ async def document_qa(state: MainState) -> dict:
 
     result = await retrieval_agent.ainvoke(
         create_retriever_state(
-            query=state["user_query"],
+            query=query,
+            history=state.get("history", []),
             document_ids=state.get("document_ids", []),
             db=state.get("db"),
         )
@@ -335,7 +366,8 @@ async def web_search(state: MainState) -> dict:
             "tool_trace": ["web_sources_from_history"],
         }
 
-    result = await web_search_impl(query=state["user_query"])
+    query = state.get("effective_query") or state["user_query"]
+    result = await web_search_impl(query=query)
     return {
         "web_results": result.get("results", []),
         "sources": result.get("sources", []),
@@ -348,6 +380,7 @@ async def research_system(state: MainState) -> dict:
     result = await research_graph.ainvoke(
         create_research_state(
             query=state["user_query"],
+            history=state.get("history", []),
             document_ids=state.get("document_ids", []),
             db=state.get("db"),
         )
