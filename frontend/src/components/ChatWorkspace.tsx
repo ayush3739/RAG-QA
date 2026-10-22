@@ -4,7 +4,7 @@ import {
   Sparkles, Send, Paperclip, Mic, FileText, FileSpreadsheet, 
   PanelRightClose, PanelRightOpen, BrainCircuit, LayoutList, Layers, Settings2, 
   CheckCircle2, Search, ArrowRight, ArrowDown, Plus, Loader2, AlertTriangle, X,
-  Copy, ThumbsUp, ThumbsDown, Check, RotateCcw
+  Copy, ThumbsUp, ThumbsDown, Check, RotateCcw, ChevronDown
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../lib/utils";
@@ -50,10 +50,25 @@ function CodeBlock({ code, language }: { code: string; language?: string }) {
   );
 }
 
+export const cleanMessageText = (text: string): string => {
+  if (!text) return "";
+  return text
+    // Strip bracketed hex/hash citations e.g. 【67bb9d91487d4bbe】
+    .replace(/【[a-zA-Z0-9_-]{6,}】/g, "")
+    // Strip [chunk_id=...]
+    .replace(/\[chunk_id=[^\]]+\]/g, "")
+    // Strip raw 32-char hex filenames if output literally in text e.g. 27c46b7e13c349d18a158d7b50e05bc7.pdf
+    .replace(/\b[a-f0-9]{32}\.(?:pdf|docx|txt|md)\b/gi, "")
+    // Clean up spaces before punctuation
+    .replace(/ +([.,;:?!])/g, "$1");
+};
+
 const formatAssistantMarkdown = (text: string) => {
   let inFence = false;
   let sectionIndex = 0;
-  return text
+  const cleanedText = cleanMessageText(text);
+
+  return cleanedText
     .split("\n")
     .map((line) => {
       const trimmed = line.trim();
@@ -130,6 +145,27 @@ export default function ChatWorkspace({
   const [feedbacks, setFeedbacks] = useState<Record<string, 'up' | 'down'>>({});
   const [activeFeedbackMsg, setActiveFeedbackMsg] = useState<{ id: string; dbId: number; rating: number; type: 'up' | 'down' } | null>(null);
   const [showJumpToLatest, setShowJumpToLatest] = useState(false);
+  const [expandedSources, setExpandedSources] = useState<Record<string, boolean>>({});
+
+  const toggleMessageSources = (msgId: string) => {
+    setExpandedSources((prev) => ({
+      ...prev,
+      [msgId]: !prev[msgId],
+    }));
+  };
+
+  const resolveCitationName = (cite: any): string => {
+    if (cite.type === "web") return cite.title || cite.url || "Web Source";
+    const rawName = cite.name || cite.title || "";
+    // If rawName looks like a hash filename (e.g. 27c46b7e13c349d18a158d7b50e05bc7.pdf)
+    if (/^[a-f0-9]{20,}\./i.test(rawName)) {
+      const doc = documents.find((d) => d.id === cite.id || rawName.includes(d.id)) || (documents.length === 1 ? documents[0] : null);
+      if (doc?.name) return doc.name;
+      const allDoc = allDocuments.find((d) => d.id === cite.id || rawName.includes(d.id));
+      if (allDoc?.name) return allDoc.name;
+    }
+    return rawName || "Document";
+  };
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
@@ -202,18 +238,19 @@ export default function ChatWorkspace({
   };
 
   const handleCopy = (id: string, text: string) => {
+    const cleaned = cleanMessageText(text);
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text)
+      navigator.clipboard.writeText(cleaned)
         .then(() => {
           setCopiedId(id);
           setTimeout(() => setCopiedId(null), 1000);
         })
         .catch((err) => {
           console.error("Clipboard copy failed: ", err);
-          fallbackCopyText(id, text);
+          fallbackCopyText(id, cleaned);
         });
     } else {
-      fallbackCopyText(id, text);
+      fallbackCopyText(id, cleaned);
     }
   };
 
@@ -528,39 +565,77 @@ export default function ChatWorkspace({
                             )}
                           </div>
                         
-                        {/* Citations */}
+                        {/* Citations Collapsible */}
                         {msg.citations && msg.citations.length > 0 && (
-                          <div className="mt-4 pt-4 border-t border-border/50">
-                            <div className="flex flex-wrap gap-2">
-                              {msg.citations.map((cite: any, cIdx) => {
-                                const isWeb = cite.type === "web";
-                                const name = cite.name || cite.title || "Source";
-                                const badge = isWeb ? "Web" : cite.page != null ? `Page ${cite.page}` : "Doc";
-                                return (
-                                  <button
-                                    key={cIdx}
-                                    onClick={() => setActiveCitation(cite)}
-                                    className="bg-surface border border-border hover:border-muted-foreground/30 px-2.5 py-1 rounded-md flex items-center space-x-2 transition-all cursor-pointer text-left shadow-sm"
-                                  >
-                                    {isWeb ? (
-                                      <Search className="w-3 h-3 text-sky-500" />
-                                    ) : name.endsWith(".xlsx") || name.endsWith(".csv") ? (
-                                      <FileSpreadsheet className="w-3 h-3 text-emerald-500" />
-                                    ) : name.endsWith(".pdf") ? (
-                                      <FileText className="w-3 h-3 text-rose-500" />
-                                    ) : (
-                                      <FileText className="w-3 h-3 text-amber-500" />
-                                    )}
-                                    <span className="text-xs font-medium text-foreground truncate max-w-[120px]">
-                                      {name}
-                                    </span>
-                                    <span className="text-[10px] bg-primary/10 text-primary px-1 rounded-full font-semibold">
-                                      {badge}
-                                    </span>
-                                  </button>
-                                );
-                              })}
-                            </div>
+                          <div className="mt-3 pt-3 border-t border-border/40">
+                            <button
+                              type="button"
+                              onClick={() => toggleMessageSources(msg.id)}
+                              className={cn(
+                                "inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer shadow-sm border",
+                                expandedSources[msg.id]
+                                  ? "bg-primary/10 text-primary border-primary/30 shadow-primary/5"
+                                  : "bg-surface hover:bg-surface-container text-muted-foreground hover:text-foreground border-border/70 hover:border-border"
+                              )}
+                              title={expandedSources[msg.id] ? "Click to collapse sources" : "Click to view sources"}
+                            >
+                              <Layers className="w-3.5 h-3.5 text-primary" />
+                              <span className="font-semibold text-foreground">
+                                {msg.citations.length} {msg.citations.length === 1 ? "Source" : "Sources"}
+                              </span>
+                              <span className="text-[11px] text-muted-foreground">
+                                {expandedSources[msg.id] ? "• Click to hide" : "• Click to view"}
+                              </span>
+                              <ChevronDown
+                                className={cn(
+                                  "w-3.5 h-3.5 transition-transform duration-200 text-muted-foreground",
+                                  expandedSources[msg.id] && "rotate-180 text-primary"
+                                )}
+                              />
+                            </button>
+
+                            <AnimatePresence>
+                              {expandedSources[msg.id] && (
+                                <motion.div
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: "auto" }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  transition={{ duration: 0.18, ease: "easeOut" }}
+                                  className="overflow-hidden"
+                                >
+                                  <div className="flex flex-wrap gap-2 pt-2.5">
+                                    {msg.citations.map((cite: any, cIdx) => {
+                                      const isWeb = cite.type === "web";
+                                      const name = resolveCitationName(cite);
+                                      const badge = isWeb ? "Web" : cite.page != null ? `Page ${cite.page}` : "Doc";
+                                      return (
+                                        <button
+                                          key={cIdx}
+                                          onClick={() => setActiveCitation({ ...cite, name })}
+                                          className="bg-surface border border-border hover:border-primary/40 hover:bg-surface-container px-2.5 py-1 rounded-md flex items-center space-x-2 transition-all cursor-pointer text-left shadow-sm group"
+                                        >
+                                          {isWeb ? (
+                                            <Search className="w-3 h-3 text-sky-500" />
+                                          ) : name.endsWith(".xlsx") || name.endsWith(".csv") ? (
+                                            <FileSpreadsheet className="w-3 h-3 text-emerald-500" />
+                                          ) : name.endsWith(".pdf") ? (
+                                            <FileText className="w-3 h-3 text-rose-500" />
+                                          ) : (
+                                            <FileText className="w-3 h-3 text-amber-500" />
+                                          )}
+                                          <span className="text-xs font-medium text-foreground truncate max-w-[140px]">
+                                            {name}
+                                          </span>
+                                          <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-semibold">
+                                            {badge}
+                                          </span>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
                           </div>
                         )}
 

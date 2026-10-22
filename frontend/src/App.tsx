@@ -66,7 +66,8 @@ const mapSourcesToCitations = (sources: any): Citation[] => {
     }
 
     const rawSource: string = s.source || '';
-    const fileName = rawSource.split('/').pop()?.split('_').slice(1).join('_') || rawSource.split('/').pop() || s.name || 'Source';
+    const baseName = rawSource.split('/').pop()?.split('_').slice(1).join('_') || rawSource.split('/').pop() || s.name || 'Source';
+    const fileName = s.document_name || baseName;
     return {
       type: 'document',
       name: fileName,
@@ -485,20 +486,18 @@ export default function App() {
     }]);
 
     try {
-      const res = await fetch(api.getChatEndpoint(finalConvId), {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${useStore.getState().accessToken}`
-        },
-        body: JSON.stringify({ question: text })
-      });
+      const res = await api.streamChat(finalConvId, text);
 
       if (!res.ok || !res.body) {
         if (res.status === 429) {
           const rateLimitMsg = "⏳ **Rate Limited** — The AI provider is busy. Please wait a moment and try again.";
           setActiveMessages(prev => prev.map(m => m.id === botMsgId ? { ...m, text: rateLimitMsg } : m));
           toast.warning("Rate limited by AI provider. Try again in a few seconds.", { duration: 6000 });
+          return;
+        }
+        if (res.status === 401) {
+          useStore.getState().logout();
+          toast.error("Session expired. Please log in again.");
           return;
         }
         throw new Error(`Chat failed with status ${res.status}`);

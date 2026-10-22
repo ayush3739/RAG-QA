@@ -97,9 +97,7 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
   const { data: rawHealth, isFetching: isCheckingHealth, refetch, isError } = useQuery({
     queryKey: ['rawHealth'],
     queryFn: async () => {
-      const res = await fetch("/api/health");
-      if (!res.ok) throw new Error("Could not contact API endpoints.");
-      return res.json();
+      return api.getHealth();
     },
     enabled: false,
     retry: false
