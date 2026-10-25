@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useStore, AuthMode } from "../store/useStore";
-import { BrainCircuit, Eye, EyeOff, Loader2, Mail, CheckCircle2, AlertTriangle, ArrowLeft, ShieldCheck } from "lucide-react";
+import { BrainCircuit, Eye, EyeOff, Loader2, Mail, CheckCircle2, AlertTriangle, ArrowLeft, ShieldCheck, Home } from "lucide-react";
 import { LivingIntelligenceShowcase, AsciiHalftoneBackground, FadedBackgroundRibbons } from "./LivingIntelligenceShowcase";
 import { api, ApiError, NetworkError } from "../lib/api";
 
@@ -72,15 +72,17 @@ export default function AuthView() {
       }
     } catch (err: any) {
       if (err instanceof NetworkError) {
-        setError('No internet connection. Please check your network and try again.');
+        setError(err.message);
       } else if (err instanceof ApiError) {
         if (err.status === 403) {
           setUnverifiedNotice(err.message || "Email not verified. Please check your inbox for the verification link.");
+        } else if (err.status >= 500) {
+          setError(err.message || "Server or database error. Please verify the database is running and try again.");
         } else {
           setError(err.message);
         }
       } else {
-        setError(err.message || "An unexpected error occurred.");
+        setError(err.message || "An unexpected error occurred. Please try again.");
       }
     } finally {
       setIsLoading(false);
@@ -96,6 +98,27 @@ export default function AuthView() {
   return (
     <div className="relative min-h-screen w-full flex bg-[#020617] overflow-hidden selection:bg-indigo-500/30 selection:text-white">
       
+      {/* Top Left Floating Home Button (Bubble / Pill) */}
+      <motion.a
+        href="#/"
+        onClick={(e) => {
+          e.preventDefault();
+          window.location.hash = "#/";
+        }}
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: "easeOut" }}
+        className="fixed top-6 left-6 z-50 inline-flex items-center gap-2.5 px-4 py-2 sm:px-5 sm:py-2.5 rounded-full bg-white/[0.04] hover:bg-white/[0.08] active:bg-white/[0.12] border border-white/10 hover:border-white/20 backdrop-blur-xl shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] text-zinc-300 hover:text-white transition-all duration-300 group cursor-pointer select-none pointer-events-auto"
+        title="Return to Home"
+      >
+        <div className="w-6 h-6 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 group-hover:text-white group-hover:bg-white/10 group-hover:border-white/20 transition-all duration-300">
+          <Home className="w-3.5 h-3.5 transition-transform duration-300 group-hover:scale-105" />
+        </div>
+        <span className="text-xs sm:text-sm font-medium tracking-wide">
+          Back to Home
+        </span>
+      </motion.a>
+
       {/* Full Page ASCII Halftone Background (Atmosphere) */}
       <div className={`absolute inset-0 z-0 pointer-events-none transition-all duration-1000 ${isFormFocused ? 'opacity-10 blur-sm' : 'opacity-30'}`}>
         <AsciiHalftoneBackground />

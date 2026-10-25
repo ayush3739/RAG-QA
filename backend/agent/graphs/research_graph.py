@@ -36,6 +36,7 @@ from langgraph.graph import END, StateGraph
 
 from backend.agent.graphs.retriever_subagent import retrieval_agent
 from backend.agent.graphs.state import ResearchState, create_retriever_state
+from backend.agent.graphs.node_logging import log_node
 from backend.agent.tools import web_search_impl
 from backend.core.config import settings
 from backend.services.llm_provider import LLMProvider
@@ -77,6 +78,7 @@ def _parse_json_array(text: str) -> list[dict]:
     return parsed if isinstance(parsed, list) else []
 
 
+@log_node("research", "research_planner")
 async def research_planner(state: ResearchState) -> dict:
     history_text = "\n".join(
         f"{item.get('role', '')}: {item.get('content', '')}"
@@ -103,6 +105,7 @@ async def research_planner(state: ResearchState) -> dict:
     }
 
 
+@log_node("research", "call_retriever_subagent")
 async def call_retriever_subagent(state: ResearchState) -> dict:
     plan = state.get("execution_plan", {})
     query = (
@@ -127,6 +130,7 @@ def route_after_retrieval(state: ResearchState) -> str:
     return "web_search" if state.get("need_web") else "evidence_fusion"
 
 
+@log_node("research", "web_search")
 async def web_search(state: ResearchState) -> dict:
     plan = state.get("execution_plan", {})
     query = (
@@ -141,6 +145,7 @@ async def web_search(state: ResearchState) -> dict:
     }
 
 
+@log_node("research", "evidence_fusion")
 async def evidence_fusion(state: ResearchState) -> dict:
     if not state.get("web_results"):
         fused = [
@@ -170,6 +175,7 @@ async def evidence_fusion(state: ResearchState) -> dict:
     return {"fused_evidence": fused}
 
 
+@log_node("research", "generator")
 async def generator(state: ResearchState) -> dict:
     evidence_text = "\n\n".join(
         f"Source: {e.get('source')}\nContent: {e.get('content')}"
@@ -192,6 +198,7 @@ async def generator(state: ResearchState) -> dict:
     return {"draft": response}
 
 
+@log_node("research", "critic")
 async def critic(state: ResearchState) -> dict:
     evidence_text = "\n\n".join(
         f"Source: {e.get('source')}\nContent: {e.get('content')}"
@@ -220,6 +227,7 @@ def route_issues(state: ResearchState) -> str:
     return "query_refiner"
 
 
+@log_node("research", "query_refiner")
 async def query_refiner(state: ResearchState) -> dict:
     history_text = "\n".join(
         f"{item.get('role', '')}: {item.get('content', '')}"
@@ -248,6 +256,7 @@ async def query_refiner(state: ResearchState) -> dict:
     }
 
 
+@log_node("research", "final_response")
 def final_response(state: ResearchState) -> dict:
     return {"final_response": state.get("draft", "")}
 

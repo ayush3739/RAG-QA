@@ -1,12 +1,16 @@
 from uuid import UUID
 from typing import AsyncGenerator
 import json
+import logging
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.services.session_service import SessionService
 from backend.services.analytics_service import AnalyticsService
 from backend.agent.graph_agent import stream_answer_query_with_graph
+
+
+logger = logging.getLogger(__name__)
 
 
 class ChatService:
@@ -107,6 +111,11 @@ class ChatService:
             if result is None:
                 raise RuntimeError("Graph agent did not return a result")
         except Exception as exc:
+            logger.exception(
+                "[chat:error] session_id=%s user_id=%s",
+                session_id,
+                user_id,
+            )
             exc_str = str(exc).lower()
             is_rate_limited = (
                 "rate limit" in exc_str

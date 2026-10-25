@@ -14,6 +14,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 import time
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 class RetrievalQuery(BaseModel):
     original_query: str
@@ -212,6 +216,10 @@ class Retriever():
                     )
 
             except Exception as e:
+                logger.exception(
+                    "[retriever:vector_search_error] document_count=%s",
+                    len(self.document_ids),
+                )
                 print(f"Vector search failed: {e}")
                 vector_results = []
             print("Vector Search:", time.perf_counter() - t1)
@@ -293,6 +301,13 @@ class Retriever():
                 "debug": debug_info,
                 "confidence": float(max_score) if 'max_score' in locals() else None,
             }
+            logger.info(
+                "[retriever:result] vector_count=%s bm25_count=%s merged_count=%s context_count=%s",
+                len(vector_results),
+                len(bm25_results),
+                len(merged_results),
+                len(structured_chunks),
+            )
             print("Total:", time.perf_counter() - t0)
             return result_payload
         except Exception as e:

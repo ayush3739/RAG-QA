@@ -7,6 +7,7 @@ from langgraph.graph import END, StateGraph
 from backend.agent.graphs.research_graph import research_graph
 from backend.agent.graphs.retriever_subagent import retrieval_agent
 from backend.agent.graphs.state import MainState, create_research_state, create_retriever_state
+from backend.agent.graphs.node_logging import log_node
 from backend.agent.router import _synthesize
 from backend.agent.tools import direct_answer_impl, summarize_document_impl, web_search_impl
 from backend.core.config import settings
@@ -208,6 +209,7 @@ def _parse_json_object(text: str) -> dict:
             return {}
 
 
+@log_node("main", "main_router")
 async def main_router(state: MainState) -> dict:
     has_documents = bool(state.get("document_ids"))
     query = state["user_query"]
@@ -283,6 +285,7 @@ def route_query(state: MainState) -> str:
     }.get(state.get("route", "general"), "direct_llm")
 
 
+@log_node("main", "direct_llm")
 async def direct_llm(state: MainState) -> dict:
     result = await direct_answer_impl(
         query=state["user_query"],
@@ -298,6 +301,7 @@ async def direct_llm(state: MainState) -> dict:
     }
 
 
+@log_node("main", "document_qa")
 async def document_qa(state: MainState) -> dict:
     query = state.get("effective_query") or state["user_query"]
     if _is_summary_query(query):
@@ -347,6 +351,7 @@ async def document_qa(state: MainState) -> dict:
     }
 
 
+@log_node("main", "web_search")
 async def web_search(state: MainState) -> dict:
     previous_web_results = _previous_web_results(state.get("history", []))
     if _is_source_followup(state["user_query"]) and previous_web_results:
@@ -376,6 +381,7 @@ async def web_search(state: MainState) -> dict:
     }
 
 
+@log_node("main", "research_system")
 async def research_system(state: MainState) -> dict:
     result = await research_graph.ainvoke(
         create_research_state(
@@ -393,6 +399,7 @@ async def research_system(state: MainState) -> dict:
     }
 
 
+@log_node("main", "generator")
 async def generator(state: MainState) -> dict:
     if state.get("research_output"):
         return {"generator_output": state["research_output"]}
@@ -410,6 +417,7 @@ async def generator(state: MainState) -> dict:
     return {"generator_output": response}
 
 
+@log_node("main", "final_response")
 def final_response(state: MainState) -> dict:
     return {"final_response": state.get("generator_output", "")}
 

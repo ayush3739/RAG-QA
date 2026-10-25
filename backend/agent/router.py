@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import json
 import math
+import logging
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.agent.tools import (
-    OPENAI_TOOL_SCHEMAS,
     direct_answer_impl,
     generate_quiz_impl,
     retrieve_from_document_impl,
@@ -17,6 +17,9 @@ from backend.agent.tools import (
 )
 from backend.core.config import settings
 from backend.services.llm_provider import LLMProvider
+
+
+logger = logging.getLogger(__name__)
 
 
 CONFIDENCE_ESCALATE_THRESHOLD = 0.4
@@ -54,6 +57,14 @@ def _history_messages(history: list[dict] | None) -> list[dict]:
     return messages
 
 
+def _history_text(history: list[dict] | None) -> str:
+    return "\n".join(
+        f"{item.get('role', '')}: {item.get('content', '')}"
+        for item in (history or [])[-settings.history_message_limit:]
+        if item.get("content")
+    ) or "No previous conversation."
+
+
 def _fallback_select_tools(
     query: str,
     has_documents: bool,
@@ -77,7 +88,7 @@ def _fallback_select_tools(
     if has_documents and any(
         signal in normalized
         for signal in ("document", "pdf", "report", "page", "chapter", "section")
-    ):
+    ) and not tools:
         tools.append("retrieve_from_document")
 
     if include_web and any(
@@ -99,7 +110,12 @@ def _fallback_select_tools(
     return list(dict.fromkeys(tools)) or ["none"]
 
 
-async def _select_tool(query: str, has_documents: bool, include_web: bool) -> dict:
+async def _select_tool(
+    query: str,
+    has_documents: bool,
+    include_web: bool,
+    history: list[dict] | None = None,
+) -> dict:
     llm = LLMProvider()
     messages = [
         {
@@ -119,9 +135,11 @@ Routing rules:
 - For compound questions with a general-knowledge part, call tools only for the document/web parts. The final answer can answer the general part directly.
 - If web_search is disabled, do not choose web_search.
 - If no documents are attached, do not choose document tools.
-- When native tool calling is available, call the selected tool or tools. If no tool is needed, answer the user directly with zero tool calls.
-- If native tool calling is not available, return ONLY valid JSON with this exact shape:
-  {{"tools": ["none"], "reason": "short reason"}}
+- Return ONLY valid JSON with this exact shape:
+    {{"tools": ["<tool names>"], "effective_query": "<standalone query>", "reason": "short reason"}}
+- Use ["none"] when no tool is needed.
+- Resolve vague references using the supplied query. Keep effective_query equal to the original query when rewriting is unnecessary.
+- Never answer the user normally from this router prompt. This call is only for routing.
 
 Examples:
 Q: what is 2+2?
@@ -148,49 +166,22 @@ Q: what is this document about and what is Newton's third law?
             "content": (
                 f"documents_attached={has_documents}\n"
                 f"web_search_enabled={include_web}\n"
+                f"recent_history={_history_text(history)}\n"
                 f"query={query}"
             ),
         },
     ]
 
-    if llm.supports_native_tool_calls():
-        native = await llm.tool_call(messages=messages, tools=OPENAI_TOOL_SCHEMAS)
-        response = native.get("content", "")
-        tool_args = {}
-        tools = []
-
-        for call in native.get("tool_calls", []):
-            tool_name = call.get("name")
-            if tool_name not in ROUTER_TOOLS:
-                continue
-            if tool_name in {"retrieve_from_document", "summarize_document", "generate_quiz"} and not has_documents:
-                continue
-            if tool_name == "web_search" and not include_web:
-                continue
-
-            args = call.get("args") or {}
-            args.setdefault("query", query)
-            tool_args[tool_name] = args
-            if tool_name not in tools:
-                tools.append(tool_name)
-
-        if tools:
-            return {
-                "tools": tools,
-                "tool_args": tool_args,
-                "reason": "native tool call",
-            }
-        if response:
-            return {
-                "tools": ["none"],
-                "tool_args": {"none": {"query": query}},
-                "reason": "model answered with zero tool calls",
-            }
-    else:
-        response = ""
-
-    if not response:
+    try:
         response = await llm.invoke(messages)
+    except Exception:
+        logger.exception("[router:json_error]")
+        tools = _fallback_select_tools(query, has_documents, include_web)
+        return {
+            "tools": tools,
+            "tool_args": {tool: {"query": query} for tool in tools},
+            "reason": "router provider failed; deterministic fallback",
+        }
 
     try:
         parsed = json.loads(response)
@@ -199,6 +190,7 @@ Q: what is this document about and what is Newton's third law?
         end = response.rfind("}")
         if start == -1 or end == -1 or end <= start:
             tools = _fallback_select_tools(query, has_documents, include_web)
+            logger.warning("[router:json_fallback] reason=invalid_json tools=%s", tools)
             return {
                 "tools": tools,
                 "tool_args": {tool: {"query": query} for tool in tools},
@@ -208,6 +200,7 @@ Q: what is this document about and what is Newton's third law?
             parsed = json.loads(response[start : end + 1])
         except json.JSONDecodeError:
             tools = _fallback_select_tools(query, has_documents, include_web)
+            logger.warning("[router:json_fallback] reason=invalid_json tools=%s", tools)
             return {
                 "tools": tools,
                 "tool_args": {tool: {"query": query} for tool in tools},
@@ -238,10 +231,15 @@ Q: what is this document about and what is Newton's third law?
     if len(tools) > 1 and "none" in tools:
         tools = [tool for tool in tools if tool != "none"]
 
+    effective_query = parsed.get("effective_query", query)
+    if not isinstance(effective_query, str) or not effective_query.strip():
+        effective_query = query
+
     return {
         "tools": tools,
-        "tool_args": {tool: {"query": query} for tool in tools},
+        "tool_args": {tool: {"query": effective_query.strip()} for tool in tools},
         "reason": parsed.get("reason", ""),
+        "effective_query": effective_query.strip(),
     }
 
 
@@ -408,6 +406,7 @@ async def answer_query(
         query=query,
         has_documents=bool(document_ids),
         include_web=include_web,
+        history=history,
     )
     selected_tools = route["tools"]
     tool_args = route.get("tool_args", {})

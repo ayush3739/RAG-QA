@@ -1,6 +1,6 @@
 """Pydantic schemas for request/response models."""
 
-from pydantic import BaseModel
+from pydantic import BaseModel,Field,field_validator
 from typing import List, Literal, Optional
 from uuid import UUID
 from datetime import datetime
@@ -11,7 +11,17 @@ class Item(BaseModel):
 
 # Chat Models
 class ChatRequest(BaseModel):
-    question: str
+    question: Field(min_length = 1, max_length = 1000) 
+
+    @field_validator('question')
+    @classmethod
+    def validate_question(cls,v: str) ->str:
+        v = v.strip()
+        if not v:
+            raise ValueError("Question cannot be empty or whitespace.")
+
+        return v
+
 
 
 class ChatResponse(BaseModel):

@@ -1,6 +1,7 @@
 """Research API - structured agent-routed research endpoint."""
 
 from fastapi import APIRouter, Depends, HTTPException, status
+import logging
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,6 +12,7 @@ from backend.models import models
 from backend.models.schemas import ResearchRequest, ResearchResponse
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 def _extract_key_findings(answer: str, max_items: int = 5) -> list[str]:
@@ -72,13 +74,25 @@ async def research(
         db=db,
     )
 
-    result = await answer_query(
-        query=request.topic,
-        document_ids=document_ids,
-        db=db,
-        history=[],
-        include_web=request.include_web,
-    )
+    try:
+        result = await answer_query(
+            query=request.topic,
+            document_ids=document_ids,
+            db=db,
+            history=[],
+            include_web=request.include_web,
+        )
+    except Exception:
+        logger.exception(
+            "[research:error] user_id=%s collection=%s include_web=%s",
+            current_user.id,
+            bool(request.collection),
+            request.include_web,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Research request failed. Check server logs for the request traceback.",
+        )
 
     summary = _format_summary(result["answer"], request.output_format)
 

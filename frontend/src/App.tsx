@@ -17,8 +17,8 @@ import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { api } from "./lib/api";
 import { Toaster, toast } from 'sonner';
 import { motion, AnimatePresence } from "framer-motion";
-import LandingPage from "./landing/page";
-import ArchitecturePage from "./landing/ArchitecturePage";
+const LandingPage = React.lazy(() => import("./landing/page"));
+const ArchitecturePage = React.lazy(() => import("./landing/ArchitecturePage"));
 import NoInternetBanner from "./components/NoInternetBanner";
 import NotFoundView from "./components/NotFoundView";
 import RateLimitView from "./components/RateLimitView";
@@ -861,11 +861,19 @@ export default function App() {
   }
 
   if (isArchitecture) {
-    return <ArchitecturePage />;
+    return (
+      <React.Suspense fallback={<div className="min-h-screen bg-[#020617] flex items-center justify-center" />}>
+        <ArchitecturePage />
+      </React.Suspense>
+    );
   }
 
   if (isLanding) {
-    return <LandingPage />;
+    return (
+      <React.Suspense fallback={<div className="min-h-screen bg-[#020617] flex items-center justify-center" />}>
+        <LandingPage />
+      </React.Suspense>
+    );
   }
 
   if (!isAuthenticated) {

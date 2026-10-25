@@ -15,9 +15,16 @@ export class ApiError extends Error {
 }
 
 export class NetworkError extends Error {
-  constructor() {
-    super('No internet connection. Please check your network and try again.');
+  isOffline: boolean;
+
+  constructor(customMessage?: string) {
+    const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+    const defaultMsg = isOffline
+      ? 'No internet connection. Please check your network and try again.'
+      : 'Unable to connect to the server. The backend API or database service may be offline.';
+    super(customMessage || defaultMsg);
     this.name = 'NetworkError';
+    this.isOffline = isOffline;
   }
 }
 
@@ -135,7 +142,22 @@ async function apiFetch(endpoint: string, options: CustomRequestInit = {}) {
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => null);
-    const msg = errorData?.detail?.[0]?.msg || errorData?.detail || (response.status === 401 ? 'Unauthorized' : 'API Error');
+    let msg = errorData?.detail?.[0]?.msg || errorData?.detail;
+    
+    if (!msg) {
+      if (response.status >= 500) {
+        msg = 'Database or server error. The backend service encountered an issue. Please try again or check server logs.';
+      } else if (response.status === 401) {
+        msg = 'Unauthorized. Please check your credentials or log in again.';
+      } else if (response.status === 403) {
+        msg = 'Access forbidden.';
+      } else if (response.status === 404) {
+        msg = 'Requested resource not found.';
+      } else {
+        msg = 'Request failed. Please try again.';
+      }
+    }
+    
     throw new ApiError(response.status, msg, errorData);
   }
 

@@ -25,6 +25,7 @@ import math
 from langgraph.graph import END, StateGraph
 
 from backend.agent.graphs.state import RetrieverState
+from backend.agent.graphs.node_logging import log_node
 from backend.agent.tools import retrieve_from_document_impl
 from backend.core.config import settings
 from backend.core.retriever import RetrievalQuery
@@ -48,6 +49,7 @@ def _parse_json_object(text: str) -> dict:
             return {}
 
 
+@log_node("retriever", "check_decomposition")
 async def check_decomposition(state: RetrieverState) -> dict:
     original_query = state["query"]
     history_text = "\n".join(
@@ -141,6 +143,7 @@ async def _retrieve(query: str | RetrievalQuery, state: RetrieverState) -> dict:
     )
 
 
+@log_node("retriever", "parallel_retrieval")
 async def parallel_retrieval(state: RetrieverState) -> dict:
     all_chunks: list[dict] = []
     confidence_scores: list[float] = []
@@ -163,6 +166,7 @@ async def parallel_retrieval(state: RetrieverState) -> dict:
     }
 
 
+@log_node("retriever", "simple_retrieval")
 async def simple_retrieval(state: RetrieverState) -> dict:
     queries = state.get("queries")
     query = queries[0] if queries else state["query"]

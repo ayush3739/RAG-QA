@@ -63,12 +63,19 @@ export const cleanMessageText = (text: string): string => {
     .replace(/ +([.,;:?!])/g, "$1");
 };
 
+const markdownCache = new Map<string, string>();
+
 const formatAssistantMarkdown = (text: string) => {
+  if (!text) return "";
+  if (markdownCache.has(text)) {
+    return markdownCache.get(text)!;
+  }
+
   let inFence = false;
   let sectionIndex = 0;
   const cleanedText = cleanMessageText(text);
 
-  return cleanedText
+  const formatted = cleanedText
     .split("\n")
     .map((line) => {
       const trimmed = line.trim();
@@ -100,6 +107,12 @@ const formatAssistantMarkdown = (text: string) => {
       return line;
     })
     .join("\n");
+
+  if (markdownCache.size > 200) {
+    markdownCache.clear();
+  }
+  markdownCache.set(text, formatted);
+  return formatted;
 };
 
 interface ChatWorkspaceProps {
