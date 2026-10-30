@@ -43,7 +43,7 @@ export default function TerminalDemo() {
             Real-time <span className="text-indigo-400">Execution</span>
           </h2>
           <p className="text-zinc-400 max-w-xl mx-auto">
-            Watch how DocuMind routes your query through its optimized retrieval pipeline under the hood.
+            Watch how KnowVex routes your query through its optimized retrieval pipeline under the hood.
           </p>
         </div>
 
@@ -58,7 +58,7 @@ export default function TerminalDemo() {
             </div>
             <div className="mx-auto flex items-center text-xs text-zinc-500 font-mono">
               <Terminal className="w-3.5 h-3.5 mr-2" />
-              documind-agent ~ bash
+              KnowVex-agent ~ bash
             </div>
           </div>
 
@@ -68,7 +68,7 @@ export default function TerminalDemo() {
               <span className="text-emerald-400 mr-2">➜</span>
               <span className="text-indigo-400 mr-2">~</span>
               <span className="typing-animation overflow-hidden whitespace-nowrap border-r-2 border-indigo-500 pr-1 inline-block">
-                documind query "What is the system architecture?"
+                KnowVex query "What is the system architecture?"
               </span>
             </div>
 
@@ -111,7 +111,7 @@ export default function TerminalDemo() {
                 <div className="text-xs uppercase tracking-widest text-indigo-400 mb-2">Final Output [JSON]</div>
                 <pre className="text-xs overflow-x-auto">
 {`{
-  "answer": "DocuMind uses a hybrid retrieval architecture...",
+  "answer": "KnowVex uses a hybrid retrieval architecture...",
   "sources": [
     {"doc": "architecture.pdf", "page": 4, "score": 0.92}
   ],

@@ -30,7 +30,7 @@ export default function Footer() {
         <div className="flex flex-col md:flex-row justify-between items-start gap-12 pb-16">
           {/* Brand & Tagline */}
           <div className="flex flex-col items-start gap-4 max-w-sm">
-            <PixelLogo text="DOCUMIND" className="w-44" />
+            <PixelLogo text="KnowVex" className="w-44" />
             <p className="text-[14px] text-zinc-400 leading-relaxed">
               Upload a document, ask a question. Agentic tool-routing decides the rest with grounded citations.
             </p>
@@ -141,7 +141,7 @@ export default function Footer() {
       <div className="relative z-10 border-t border-white/[0.04] bg-[#030305]/50 backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl items-center justify-center px-6 py-6">
           <p className="font-mono text-[12px] text-zinc-500">
-            DocuMind — Ayush Maurya · {new Date().getFullYear()}
+            KnowVex — Ayush Maurya · {new Date().getFullYear()}
           </p>
         </div>
       </div>

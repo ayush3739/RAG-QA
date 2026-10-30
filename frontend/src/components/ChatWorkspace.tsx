@@ -411,7 +411,7 @@ export default function ChatWorkspace({
                    <BrainCircuit className="w-7 h-7 text-muted-foreground" />
                 </div>
                 <h2 className="text-2xl font-semibold text-foreground tracking-tight mb-2" style={{ letterSpacing: '-0.03em' }}>
-                  Welcome to DocuMind
+                  Welcome to KnowVex
                 </h2>
                 <p className="text-muted-foreground text-sm max-w-sm text-center mb-8 leading-relaxed">
                   Start a new conversation to research your documents.

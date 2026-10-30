@@ -49,7 +49,7 @@ export default function ServerErrorView() {
           Internal Server Error
         </h1>
         <p className="text-sm text-muted-foreground leading-relaxed mb-8 max-w-sm">
-          The DocuMind API server encountered an unexpected error or is temporarily unavailable. Please try reconnecting.
+          The KnowVex API server encountered an unexpected error or is temporarily unavailable. Please try reconnecting.
         </p>
 
         {/* Actions */}

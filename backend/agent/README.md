@@ -1,6 +1,6 @@
 # Agent Layer
 
-This folder contains DocuMind's tool-routed RAG layer. The API routes should not decide how to answer a question directly; they call this agent layer, and the agent chooses the right tool path.
+This folder contains KnowVex's tool-routed RAG layer. The API routes should not decide how to answer a question directly; they call this agent layer, and the agent chooses the right tool path.
 
 ## Files
 

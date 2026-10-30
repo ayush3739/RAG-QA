@@ -71,7 +71,7 @@ export default function ResetPasswordView({ token, onNavigateToLogin }: ResetPas
             <BrainCircuit size={20} className="text-primary-foreground" />
           </div>
           <AnimatedShinyText className="text-xl font-black tracking-tight cursor-default m-0">
-            DocuMind
+            KnowVex
           </AnimatedShinyText>
         </div>
 

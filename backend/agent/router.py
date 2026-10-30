@@ -1,4 +1,4 @@
-"""Agent router for DocuMind tool-routed RAG."""
+"""Agent router for KnowVex tool-routed RAG."""
 
 from __future__ import annotations
 
@@ -120,7 +120,7 @@ async def _select_tool(
     messages = [
         {
             "role": "system",
-            "content": f"""You are DocuMind's routing model. Choose the tool or tools needed for the user's query.
+            "content": f"""You are KnowVex's routing model. Choose the tool or tools needed for the user's query.
 
 Available tools:
 - retrieve_from_document: Use only when the user asks about uploaded/indexed document content, facts likely inside the document, or refers to "this document", "the PDF", "the report", "these notes", pages, sections, clauses, chapters, tables, or document-specific entities.
@@ -342,7 +342,7 @@ CONTEXT:
 {doc_context}"""
 
     return (
-        "You are DocuMind. Use the provided document and web context when the "
+        "You are KnowVex. Use the provided document and web context when the "
         "question asks about those sources. Cite document pages as (Page X) and "
         "web sources by URL/title when used. For clearly separate general-knowledge "
         "parts of a compound question, you may answer directly from your own "

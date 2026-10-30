@@ -1,4 +1,4 @@
-# 📋 DocuMind — Project Master TODO & Implementation Checklist
+# 📋 KnowVex — Project Master TODO & Implementation Checklist
 
 > Grounded directly in [`idea/PRD2.0.md`](file:///c:/Users/Ayush%20Maurya/Desktop/hexon/rag-qa/idea/PRD2.0.md), [`PRD2_0_Updated.md`](file:///c:/Users/Ayush%20Maurya/Desktop/hexon/rag-qa/PRD2_0_Updated.md), [`idea/implementation_plan.md`](file:///c:/Users/Ayush%20Maurya/Desktop/hexon/rag-qa/idea/implementation_plan.md), and [`idea/frontend.md`](file:///c:/Users/Ayush%20Maurya/Desktop/hexon/rag-qa/idea/frontend.md).
 
@@ -62,7 +62,7 @@
   - In [`frontend/src/components/ChatWorkspace.tsx`](file:///c:/Users/Ayush%20Maurya/Desktop/hexon/rag-qa/frontend/src/components/ChatWorkspace.tsx), render clickable follow-up prompt chips below assistant responses that submit the question upon click.
 - [ ] **4.2 1-Click Conversation & Report Export (F4.4 & `frontend.md` §33.6.30)**:
   - Add an "Export Chat" button in [`ChatWorkspace.tsx`](file:///c:/Users/Ayush%20Maurya/Desktop/hexon/rag-qa/frontend/src/components/ChatWorkspace.tsx) and [`SessionsView.tsx`](file:///c:/Users/Ayush%20Maurya/Desktop/hexon/rag-qa/frontend/src/components/SessionsView.tsx).
-  - Download formatted Markdown (`# Research Session: {title}\n- **You:** ...\n- **DocuMind:** ...\n_Sources: Page X_`).
+  - Download formatted Markdown (`# Research Session: {title}\n- **You:** ...\n- **KnowVex:** ...\n_Sources: Page X_`).
 - [ ] **4.3 Dynamic Client-Side Model Selection (F5.1)**:
   - Add `model` / `llm_mode` field to `ChatRequest` in [`backend/models/schemas.py`](file:///c:/Users/Ayush%20Maurya/Desktop/hexon/rag-qa/backend/models/schemas.py).
   - Wire the model selector in `ChatWorkspace.tsx` and `SettingsView.tsx` to send the requested provider with each chat message instead of relying on local browser storage alone.

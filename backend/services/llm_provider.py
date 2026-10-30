@@ -1,7 +1,7 @@
 """
 backend/services/llm_provider.py
 
-Single LLM abstraction for DocuMind.
+Single LLM abstraction for KnowVex.
 
 Active provider is set in backend/core/config.py:
     settings.llm_provider = "bedrock"

@@ -52,7 +52,7 @@ export default function Navbar() {
             className="font-mono text-sm font-medium tracking-tight text-white"
             style={{ fontFamily: "'DM Sans', sans-serif", letterSpacing: '-0.02em' }}
           >
-            DocuMind
+            KnowVex
           </span>
         </a>
 

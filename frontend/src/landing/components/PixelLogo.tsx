@@ -102,7 +102,7 @@ const FONT: Record<string, string[]> = {
   ]
 }
 
-export default function PixelLogo({ text = "DOCUMIND", className = "" }: { text?: string, className?: string }) {
+export default function PixelLogo({ text = "KnowVex", className = "" }: { text?: string, className?: string }) {
   const letters = text.toUpperCase().split('')
   
   // Calculate total width

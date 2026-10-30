@@ -1,6 +1,6 @@
-# DocuMind Architecture
+# KnowVex Architecture
 
-DocuMind is a FastAPI-based, tool-routed RAG backend. It combines document retrieval, web search, direct LLM answers, session memory, source metadata, and SSE streaming behind API endpoints.
+KnowVex is a FastAPI-based, tool-routed RAG backend. It combines document retrieval, web search, direct LLM answers, session memory, source metadata, and SSE streaming behind API endpoints.
 
 ## System Shape
 

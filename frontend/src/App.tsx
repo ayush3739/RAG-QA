@@ -898,7 +898,7 @@ export default function App() {
             className="w-6 h-6 text-primary cursor-pointer active:scale-90 transition-transform"
             onClick={() => setIsMobileSidebarOpen(true)}
           />
-          <h1 className="text-sm font-black text-primary tracking-tight">DocuMind</h1>
+          <h1 className="text-sm font-black text-primary tracking-tight">KnowVex</h1>
         </div>
         <div className="flex items-center space-x-2">
           <Database className="w-4 h-4 text-primary" />
@@ -1015,7 +1015,7 @@ export default function App() {
               </div>
               
               <div className="space-y-2">
-                <h2 className="text-3xl font-extrabold tracking-tight text-white">Welcome to DocuMind</h2>
+                <h2 className="text-3xl font-extrabold tracking-tight text-white">Welcome to KnowVex</h2>
                 <p className="text-sm font-medium text-zinc-400 max-w-xs mx-auto leading-relaxed">
                   Before we begin your workspace experience, what would you like us to call you?
                 </p>

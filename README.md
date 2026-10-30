@@ -1,4 +1,4 @@
-# DocuMind — Production RAG-QA System
+# KnowVex — Production RAG-QA System
 
 > **Status:** Phase 1 ✅ Complete | Phase 2 🚀 In Progress
 > **Current:** Streamlit UI + Hybrid RAG pipeline (BM25 + Vector) with CrossEncoder reranking
@@ -8,7 +8,7 @@
 
 ## 🎯 What This Project Does
 
-DocuMind is a **Retrieval-Augmented Generation (RAG) system** that answers questions by:
+KnowVex is a **Retrieval-Augmented Generation (RAG) system** that answers questions by:
 1. Indexing user-uploaded PDFs into Postgres with the `pgvector` extension
 2. Performing **hybrid search** (BM25 keyword + vector semantic)
 3. **Reranking** results using a CrossEncoder model
@@ -104,9 +104,9 @@ cp .env.example .env
 # Edit `.env`: set `GITHUB_TOKEN` and `DATABASE_URL` (asyncpg URL)
 
 # Example Postgres (docker) — ensure `pgvector` extension is installed in the DB
-docker run -e POSTGRES_PASSWORD=pass -e POSTGRES_USER=user -e POSTGRES_DB=documind -p 5432:5432 postgres:15
+docker run -e POSTGRES_PASSWORD=pass -e POSTGRES_USER=user -e POSTGRES_DB=KnowVex -p 5432:5432 postgres:15
 # After DB starts, create extension (once):
-# psql -h localhost -U user -d documind -c "CREATE EXTENSION IF NOT EXISTS vector;"
+# psql -h localhost -U user -d KnowVex -c "CREATE EXTENSION IF NOT EXISTS vector;"
 
 # Run Streamlit UI
 streamlit run app.py
@@ -244,7 +244,7 @@ Read these in order to understand the project:
 ---
 
 **Last Updated:** May 19, 2026  
-**Author:** DocuMind Team  
+**Author:** KnowVex Team  
 **License:** MIT
 
 app.py  (Streamlit UI)

@@ -61,7 +61,7 @@ export default function SessionsView({
 
   const handleExportMarkdown = (conv: Conversation) => {
     const md = `
-# DocuMind Conversation Log: ${conv.title}
+# KnowVex Conversation Log: ${conv.title}
 Created: ${new Date(conv.timestamp).toLocaleString()}
 
 ${conv.messages.map((msg) => `
@@ -79,7 +79,7 @@ ${msg.citations.map(cit => `- **${cit.name}**${cit.fitScore != null ? ` (${cit.f
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `documind_conversation_${conv.id}.md`;
+    a.download = `KnowVex_conversation_${conv.id}.md`;
     a.click();
     URL.revokeObjectURL(url);
   };

@@ -6,8 +6,8 @@ const ease = [0.23, 1, 0.32, 1] as const
 
 const FAQS = [
   {
-    q: 'What makes DocuMind different from a plain RAG chatbot?',
-    a: 'Most RAG systems blindly retrieve from documents regardless of the question. DocuMind uses an agentic router that first classifies your query — then picks the right tool: document retrieval via hybrid BM25 + vector search, live web search, deep multi-step research, or pure LLM reasoning. Every answer includes grounded citations so you always know where the information came from.',
+    q: 'What makes KnowVex different from a plain RAG chatbot?',
+    a: 'Most RAG systems blindly retrieve from documents regardless of the question. KnowVex uses an agentic router that first classifies your query — then picks the right tool: document retrieval via hybrid BM25 + vector search, live web search, deep multi-step research, or pure LLM reasoning. Every answer includes grounded citations so you always know where the information came from.',
   },
   {
     q: 'What document types are supported?',
@@ -22,8 +22,8 @@ const FAQS = [
     a: 'Yes. All document embeddings and metadata live in your own PostgreSQL instance. Auth uses JWT access tokens stored only in memory (never localStorage) and refresh tokens in HttpOnly, SameSite=Lax cookies — preventing XSS-based token theft. OAuth via GitHub and Google is fully supported.',
   },
   {
-    q: 'Can I self-host DocuMind?',
-    a: 'Absolutely — DocuMind is fully open source under the MIT license. You need Python 3.11+, Node 18+, and a PostgreSQL 15+ database with the pgvector extension. Full setup instructions are in the README on GitHub.',
+    q: 'Can I self-host KnowVex?',
+    a: 'Absolutely — KnowVex is fully open source under the MIT license. You need Python 3.11+, Node 18+, and a PostgreSQL 15+ database with the pgvector extension. Full setup instructions are in the README on GitHub.',
   },
   {
     q: 'Which LLM providers are supported?',
@@ -97,7 +97,7 @@ export default function FAQSection() {
                 Frequently <br className="hidden lg:block" /> asked questions
               </h2>
               <p className="mt-6 text-[15px] text-zinc-400">
-                Everything you need to know about DocuMind.
+                Everything you need to know about KnowVex.
               </p>
             </motion.div>
 

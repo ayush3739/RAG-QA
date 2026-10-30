@@ -108,7 +108,7 @@ export const useStore = create<AppState>()(
       })),
     }),
     {
-      name: 'documind-storage',
+      name: 'KnowVex-storage',
       partialize: (state) => ({ 
         theme: state.theme,
         accessToken: state.accessToken,

@@ -170,7 +170,7 @@ export default function DashboardView({
         className="mb-8"
       >
         <h2 className="text-2xl font-bold text-foreground tracking-tight">
-          DocuMind Workspace
+          KnowVex Workspace
         </h2>
         <p className="text-sm text-muted-foreground mt-1 font-medium">
           High-density analytics and active agentic tool-routing environment.

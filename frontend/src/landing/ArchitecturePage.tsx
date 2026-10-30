@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
-import WhyDocuMind from './components/WhyDocuMind'
+import WhyKnowVex from './components/WhyKnowVex'
 import CoreCapabilities from './components/CoreCapabilities'
 import ArchitectureDiagram from './components/ArchitectureDiagram'
 import FeatureHighlights from './components/FeatureHighlights'
@@ -34,7 +34,7 @@ export default function ArchitecturePage() {
               className="text-4xl md:text-5xl font-bold tracking-tight text-white mb-6"
               style={{ fontFamily: "'DM Sans', sans-serif" }}
             >
-              The DocuMind Architecture
+              The KnowVex Architecture
             </h1>
             <p className="text-zinc-400 text-lg max-w-2xl mx-auto leading-relaxed">
               An in-depth look at the decisions, trade-offs, and technologies powering a low-latency, agentic RAG platform.
@@ -42,7 +42,7 @@ export default function ArchitecturePage() {
           </div>
           
           <div className="bg-transparent">
-            <WhyDocuMind />
+            <WhyKnowVex />
             <CoreCapabilities />
             <ArchitectureDiagram />
             <FeatureHighlights />

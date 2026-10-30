@@ -359,7 +359,7 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
                           </div>
                           <div>
                             <h4 className="text-sm font-bold text-foreground">
-                              {user?.role?.toLowerCase() === "admin" ? "Enterprise Administrator" : user?.role?.toLowerCase() === "pro" ? "DocuMind Pro Access" : "Community Free Plan"}
+                              {user?.role?.toLowerCase() === "admin" ? "Enterprise Administrator" : user?.role?.toLowerCase() === "pro" ? "KnowVex Pro Access" : "Community Free Plan"}
                             </h4>
                             <p className="text-xs text-muted-foreground">
                               {user?.role?.toLowerCase() === "pro" ? "Full model capacity and active tool-routing" : "Standard query routing and vector database"}

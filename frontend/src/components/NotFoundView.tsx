@@ -118,7 +118,7 @@ export default function NotFoundView({ onNavigate }: NotFoundViewProps) {
               onClick={() => { window.location.hash = "#/auth"; }}
               className="w-full py-2.5 px-4 rounded-xl bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center space-x-2 shadow-premium hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer"
             >
-              <span>Sign In to DocuMind</span>
+              <span>Sign In to KnowVex</span>
             </button>
           )}
 
@@ -134,7 +134,7 @@ export default function NotFoundView({ onNavigate }: NotFoundViewProps) {
 
         {/* Brand footer watermark */}
         <div className="mt-12 text-[11px] font-mono text-muted-foreground/60 flex items-center space-x-1.5">
-          <span>DocuMind Intelligence Core</span>
+          <span>KnowVex Intelligence Core</span>
           <span>•</span>
           <span>v2.0</span>
         </div>

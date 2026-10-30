@@ -1,6 +1,6 @@
 # Backend
 
-DocuMind's backend is a FastAPI application that handles auth, document upload/indexing, session chat, SSE streaming, research-style structured answers, and the agent tool-routing layer.
+KnowVex's backend is a FastAPI application that handles auth, document upload/indexing, session chat, SSE streaming, research-style structured answers, and the agent tool-routing layer.
 
 This file intentionally mirrors `../BACKEND.md` so the backend overview is available from both the repository root and the backend folder.
 

@@ -589,7 +589,7 @@ app.post("/api/v1/research", async (req, res) => {
     // Call Gemini to generate a structured synthesis
     const client = getGeminiClient();
     const systemPrompt = `
-You are the elite research synthesizer of DocuMind. You output rigorous, structured summaries based on user topics and ground-truth documents.
+You are the elite research synthesizer of KnowVex. You output rigorous, structured summaries based on user topics and ground-truth documents.
 Your output must conform to strict research guidelines. If web search is allowed, incorporate simulated current events web research naturally.
 `;
 
@@ -708,7 +708,7 @@ Provide a comprehensive research synthesis answering the query. Ensure citations
       model: activeModel,
       contents: promptText,
       config: {
-        systemInstruction: systemInstruction || "You are the Core Intelligence of DocuMind.",
+        systemInstruction: systemInstruction || "You are the Core Intelligence of KnowVex.",
         temperature: parseFloat(temperature) || 0.7
       }
     });

@@ -1,11 +1,11 @@
 import { motion } from 'framer-motion'
 
 const rows = [
-  { feature: 'Dynamic Tool Routing', traditional: 'Retrieve-on-every-query', documind: 'Single-pass intent router' },
-  { feature: 'Multi-Step Research', traditional: 'Single database query search', documind: 'Stateful research subagent loops' },
-  { feature: 'Confidence Thresholds', traditional: 'Outputs hallucinations blindly', documind: 'Measures score; fallback alerts' },
-  { feature: 'Automated Evaluation', traditional: 'Human feedback vibe checks', documind: 'Programmatic RAGAS testing' },
-  { feature: 'Structured REST Access', traditional: 'Locked inside a browser client', documind: 'Structured stream JSON endpoints' }
+  { feature: 'Dynamic Tool Routing', traditional: 'Retrieve-on-every-query', KnowVex: 'Single-pass intent router' },
+  { feature: 'Multi-Step Research', traditional: 'Single database query search', KnowVex: 'Stateful research subagent loops' },
+  { feature: 'Confidence Thresholds', traditional: 'Outputs hallucinations blindly', KnowVex: 'Measures score; fallback alerts' },
+  { feature: 'Automated Evaluation', traditional: 'Human feedback vibe checks', KnowVex: 'Programmatic RAGAS testing' },
+  { feature: 'Structured REST Access', traditional: 'Locked inside a browser client', KnowVex: 'Structured stream JSON endpoints' }
 ]
 
 export default function ComparisonTable() {
@@ -30,7 +30,7 @@ export default function ComparisonTable() {
             What Makes It Different
           </h2>
           <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-zinc-500">
-            Comparing standard Chat-with-PDF implementations side-by-side with DocuMind’s agentic pipeline design.
+            Comparing standard Chat-with-PDF implementations side-by-side with KnowVex’s agentic pipeline design.
           </p>
         </motion.div>
 
@@ -48,7 +48,7 @@ export default function ComparisonTable() {
                 <tr className="border-b border-white/[0.05] bg-[#060608]">
                   <th className="w-1/3 px-6 py-4 font-mono text-[10px] uppercase tracking-wider text-zinc-500">Feature</th>
                   <th className="w-1/3 px-6 py-4 font-mono text-[10px] uppercase tracking-wider text-zinc-500">Typical Chat-with-PDF</th>
-                  <th className="w-1/3 px-6 py-4 font-mono text-[10px] uppercase tracking-wider text-indigo-400">DocuMind RAG</th>
+                  <th className="w-1/3 px-6 py-4 font-mono text-[10px] uppercase tracking-wider text-indigo-400">KnowVex RAG</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.05]">
@@ -66,7 +66,7 @@ export default function ComparisonTable() {
                       <span className="mr-2 text-red-500/50">✕</span> {row.traditional}
                     </td>
                     <td className="px-6 py-4 font-medium text-zinc-300">
-                      <span className="mr-2 text-emerald-500/50">✓</span> {row.documind}
+                      <span className="mr-2 text-emerald-500/50">✓</span> {row.KnowVex}
                     </td>
                   </motion.tr>
                 ))}

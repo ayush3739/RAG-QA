@@ -29,7 +29,7 @@ FRONTEND_DIR = ROOT_DIR / "frontend"
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    logger.info("🚀 Starting DocuMind API...")
+    logger.info("🚀 Starting KnowVex API...")
     try:
         async with engine.begin() as conn:
             await conn.execute(text("SELECT 1"))
@@ -43,10 +43,10 @@ async def lifespan(_app: FastAPI):
         raise
     finally:
         await engine.dispose()
-        logger.info("🛑 Shutting down DocuMind API...")
+        logger.info("🛑 Shutting down KnowVex API...")
 
 
-app = FastAPI(title="DocuMind API", version="2.0.0", lifespan=lifespan)
+app = FastAPI(title="KnowVex API", version="2.0.0", lifespan=lifespan)
 
 app.add_middleware(
     TrustedHostMiddleware,
@@ -112,7 +112,7 @@ app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["Analytic
 
 @app.get("/", tags=["Health"])
 async def root():
-    return {"status": "ok", "message": "DocuMind API server is running"}
+    return {"status": "ok", "message": "KnowVex API server is running"}
 
 
 @app.get("/health")
@@ -125,14 +125,14 @@ async def health_check(db: Annotated[AsyncSession, Depends(get_db)]):
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail={
                 "status": "error",
-                "service": "DocuMind API v2.0",
+                "service": "KnowVex API v2.0",
                 "database": {"healthy": False, "error": "Database unavailable"},
                 "vector_db": {"healthy": False, "error": str(exc) },
             },
         ) from exc
     return {
         "status": "ok",
-        "service": "DocuMind API v2.0",
+        "service": "KnowVex API v2.0",
         "database": {"healthy": True, "error": None},
         "vector_db": {"healthy": True, "error": None},
     }

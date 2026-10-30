@@ -152,7 +152,7 @@ export default function AuthView() {
             {/* Top Company Logo (Mobile Only) */}
             <div className="flex lg:hidden justify-center items-center gap-2 mb-12 text-white">
               <BrainCircuit size={24} />
-              <span className="text-xl font-semibold tracking-tight">DocuMind Inc.</span>
+              <span className="text-xl font-semibold tracking-tight">KnowVex Inc.</span>
             </div>
 
             <div className="relative flex flex-col w-full">
@@ -214,7 +214,7 @@ export default function AuthView() {
                       {authMode === "login"
                         ? "Enter your credentials to access your account"
                         : authMode === "register"
-                        ? "Sign up to start building with DocuMind"
+                        ? "Sign up to start building with KnowVex"
                         : "Enter your email address and we'll send you a reset link"}
                     </p>
                   </div>

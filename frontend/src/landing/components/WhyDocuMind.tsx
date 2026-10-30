@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 
-export default function WhyDocuMind() {
+export default function WhyKnowVex() {
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -36,7 +36,7 @@ export default function WhyDocuMind() {
             className="text-3xl font-medium leading-tight tracking-[-0.03em] text-white md:text-4xl"
             style={{ fontFamily: "'DM Sans', sans-serif" }}
           >
-            Why DocuMind Exists
+            Why KnowVex Exists
           </h2>
           <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-zinc-500">
             Evaluating the trade-offs of modern RAG pipelines and addressing standard architectural limitations.

@@ -7,7 +7,7 @@ from typing import Optional
 ROOT_DIR = Path(__file__).resolve().parents[2]
 
 class Settings(BaseSettings):
-    """Configuration for DocuMind API."""
+    """Configuration for KnowVex API."""
 
     # Qdrant
     qdrant_url: str = "http://localhost:6333"

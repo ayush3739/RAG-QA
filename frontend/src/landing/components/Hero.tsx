@@ -174,7 +174,7 @@ function AppMockup() {
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#5b4fe8]">
             <Database size={13} className="text-white" />
           </div>
-          <span className="text-[12px] font-semibold tracking-tight text-white">DocuMind</span>
+          <span className="text-[12px] font-semibold tracking-tight text-white">KnowVex</span>
         </div>
 
         {/* New Chat button */}
@@ -441,7 +441,7 @@ export default function Hero() {
               <span className="h-3 w-3 rounded-full bg-[#28c840]" />
             </div>
             <div className="mx-auto flex h-5 w-[200px] items-center justify-center gap-1.5 rounded-md border border-white/[0.07] bg-white/[0.03] px-3">
-              <span className="text-[10px] text-zinc-600">app.documind.ai</span>
+              <span className="text-[10px] text-zinc-600">app.KnowVex.ai</span>
             </div>
           </div>
 

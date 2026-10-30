@@ -1,6 +1,6 @@
 # Modules
 
-This document maps the current DocuMind codebase by responsibility. For detailed flow diagrams, see `ARCHITECTURE.md`.
+This document maps the current KnowVex codebase by responsibility. For detailed flow diagrams, see `ARCHITECTURE.md`.
 
 ## Root-Level Areas
 

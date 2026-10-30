@@ -86,7 +86,7 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
             </div>
             <div>
               <h1 className="text-base font-bold text-on-surface tracking-tight leading-tight">
-                DocuMind
+                KnowVex
               </h1>
             </div>
             <button

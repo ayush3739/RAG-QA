@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 
 const testimonials = [
   {
-    content: "The agentic routing is absurdly fast. We dropped DocuMind into our stack and saw a 40% reduction in hallucination rates immediately.",
+    content: "The agentic routing is absurdly fast. We dropped KnowVex into our stack and saw a 40% reduction in hallucination rates immediately.",
     author: "Sarah Chen",
     role: "Staff Engineer",
     company: "DataScale",
@@ -37,7 +37,7 @@ const testimonials = [
     image: "https://i.pravatar.cc/150?u=alex"
   },
   {
-    content: "DocuMind's latency is unmatched. Hitting sub-150ms on complex queries with reciprocal rank fusion is seriously impressive engineering.",
+    content: "KnowVex's latency is unmatched. Hitting sub-150ms on complex queries with reciprocal rank fusion is seriously impressive engineering.",
     author: "James Wilson",
     role: "Backend Engineer",
     company: "Velocity",
