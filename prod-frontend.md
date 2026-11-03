@@ -13,7 +13,7 @@
 - [x] **Task 4:** Implement React `ErrorBoundary` component with recovery UI in `main.tsx`
 - [x] **Task 5:** Add production SEO, OpenGraph metadata, and Favicon to `index.html`
 - [x] **Task 6:** Harden token storage and authentication state management
-- [ ] **Task 7:** *(Deferred)* Decompose monolithic `App.tsx` (~1,000 lines) into modular custom hooks (`useChatStream`, `useDocumentUpload`)
+- [x] **Task 7:** Decompose monolithic `App.tsx` into modular custom hooks (`useChatStream`, `useDocumentUpload`, `AppShell`, `AppWorkspace`)
 
 ---
 

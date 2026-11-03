@@ -272,6 +272,7 @@ export const api = {
   deleteSession: (sessionId: string) => apiFetch(`/sessions/${sessionId}`, { method: 'DELETE' }),
   
   getSessionHistory: (sessionId: string) => apiFetch(`/sessions/${sessionId}/history`),
+  getSessionMessages: (sessionId: string) => apiFetch(`/sessions/${sessionId}/history`),
 
   getSessionDocuments: (sessionId: string) => apiFetch(`/sessions/${sessionId}/documents`),
 
