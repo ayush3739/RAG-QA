@@ -1,15 +1,18 @@
 import { Github, ArrowRight, Twitter } from 'lucide-react'
+import { navigate } from '../../lib/navigation'
 import PixelLogo from './PixelLogo'
 
 export default function Footer() {
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    if (href.startsWith('#/')) {
-      window.location.hash = href
+    if (href.startsWith('/')) {
+      e.preventDefault()
+      navigate(href)
       return
     }
 
-    if (window.location.hash.startsWith('#/architecture')) {
-      window.location.hash = href
+    if (window.location.pathname !== '/') {
+      e.preventDefault()
+      navigate('/' + href)
       return
     }
 
@@ -38,7 +41,7 @@ export default function Footer() {
               <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-400/80 via-purple-400/80 to-blue-400/80 opacity-80 transition-opacity duration-300 group-hover:opacity-100" />
               <button
                 type="button"
-                onClick={() => { window.location.hash = '#/chat/new' }}
+                onClick={() => { navigate('/chat/new') }}
                 className="relative flex items-center gap-2 rounded-full bg-[#050508]/90 px-5 py-2 text-sm font-medium backdrop-blur-md transition-colors hover:bg-[#050508]/70 cursor-pointer"
               >
                 <span className="bg-gradient-to-r from-blue-100 to-purple-200 bg-clip-text text-transparent">
@@ -77,8 +80,8 @@ export default function Footer() {
                 </li>
                 <li>
                   <a
-                    href="#/architecture"
-                    onClick={(e) => handleNavClick(e, '#/architecture')}
+                    href="/architecture"
+                    onClick={(e) => handleNavClick(e, '/architecture')}
                     className="text-[14px] text-zinc-400 transition-colors hover:text-white"
                   >
                     Architecture deep-dive
@@ -87,7 +90,7 @@ export default function Footer() {
                 <li>
                   <a
                     href="#"
-                    onClick={(e) => handleNavClick(e, '#/architecture')}
+                    onClick={(e) => handleNavClick(e, '/architecture')}
                     className="text-[14px] text-zinc-400 transition-colors hover:text-white"
                   >
                     Blog & Articles
@@ -95,8 +98,8 @@ export default function Footer() {
                 </li>
                 <li>
                   <a
-                    href="#/chat/new"
-                    onClick={(e) => handleNavClick(e, '#/chat/new')}
+                    href="/chat/new"
+                    onClick={(e) => handleNavClick(e, '/chat/new')}
                     className="text-[14px] text-zinc-400 transition-colors hover:text-white"
                   >
                     Chat workspace

@@ -1,3 +1,4 @@
+import { navigate } from '../lib/navigation';
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { ServerCrash, RefreshCw, Home } from "lucide-react";
@@ -13,7 +14,7 @@ export default function ServerErrorView() {
     try {
       await api.getHealth();
       setCurrentTab("dashboard");
-      window.location.hash = "#/dashboard";
+      navigate('/dashboard');
     } catch {
       // Still offline
     } finally {
@@ -66,7 +67,11 @@ export default function ServerErrorView() {
 
           <button
             type="button"
-            onClick={() => { window.location.hash = "#/"; }}
+            onClick={() => {
+              window.history.pushState(null, '', '/');
+              window.dispatchEvent(new PopStateEvent('popstate'));
+              window.dispatchEvent(new HashChangeEvent('hashchange'));
+            }}
             className="w-full py-2 text-xs text-muted-foreground hover:text-foreground flex items-center justify-center space-x-1.5 transition-colors cursor-pointer"
           >
             <Home className="w-3.5 h-3.5" />

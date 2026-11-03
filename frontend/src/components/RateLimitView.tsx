@@ -1,3 +1,4 @@
+import { navigate } from '../lib/navigation';
 import React from "react";
 import { motion } from "framer-motion";
 import { Gauge, Home, RotateCcw, AlertOctagon } from "lucide-react";
@@ -8,7 +9,7 @@ export default function RateLimitView() {
 
   const handleReturn = () => {
     setCurrentTab("conversations");
-    window.location.hash = "#/chat/new";
+    navigate('/chat/new');
   };
 
   return (
@@ -68,7 +69,7 @@ export default function RateLimitView() {
 
           <button
             type="button"
-            onClick={() => { setCurrentTab("dashboard"); window.location.hash = "#/dashboard"; }}
+            onClick={() => { setCurrentTab("dashboard"); navigate('/dashboard'); }}
             className="w-full py-2 text-xs text-muted-foreground hover:text-foreground flex items-center justify-center space-x-1.5 transition-colors cursor-pointer"
           >
             <Home className="w-3.5 h-3.5" />

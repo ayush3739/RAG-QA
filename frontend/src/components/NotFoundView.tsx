@@ -1,3 +1,4 @@
+import { navigate } from '../lib/navigation';
 import React from "react";
 import { motion } from "framer-motion";
 import { Home, Plus, FolderOpen, ArrowLeft, Compass } from "lucide-react";
@@ -16,7 +17,7 @@ export default function NotFoundView({ onNavigate }: NotFoundViewProps) {
       onNavigate("dashboard");
     } else {
       setCurrentTab("dashboard");
-      window.location.hash = "#/dashboard";
+      navigate('/dashboard');
     }
   };
 
@@ -26,7 +27,7 @@ export default function NotFoundView({ onNavigate }: NotFoundViewProps) {
     } else {
       useStore.getState().setActiveConvId("");
       setCurrentTab("conversations");
-      window.location.hash = "#/chat/new";
+      navigate('/chat/new');
     }
   };
 
@@ -35,7 +36,7 @@ export default function NotFoundView({ onNavigate }: NotFoundViewProps) {
       onNavigate("documents");
     } else {
       setCurrentTab("documents");
-      window.location.hash = "#/documents";
+      navigate('/documents');
     }
   };
 
@@ -115,7 +116,7 @@ export default function NotFoundView({ onNavigate }: NotFoundViewProps) {
           ) : (
             <button
               type="button"
-              onClick={() => { window.location.hash = "#/auth"; }}
+              onClick={() => { navigate('/login'); }}
               className="w-full py-2.5 px-4 rounded-xl bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center space-x-2 shadow-premium hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer"
             >
               <span>Sign In to KnowVex</span>

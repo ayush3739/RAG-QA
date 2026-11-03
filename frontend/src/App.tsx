@@ -91,24 +91,38 @@ export default function App() {
   const [search, setSearch] = useState(window.location.search);
 
   useEffect(() => {
-    const handleHash = () => {
-      const currentHash = window.location.hash;
+    const handleLocationChange = () => {
+      let currentHash = window.location.hash;
+      let currentPath = window.location.pathname;
+
+      // Cleanly normalize any legacy '#/route' to pure path '/route'
+      if (currentHash.startsWith('#/')) {
+        const cleanPath = currentHash.replace(/^#/, '');
+        window.history.replaceState(null, '', cleanPath);
+        currentPath = cleanPath;
+        currentHash = '';
+      } else if (currentHash === '#' || currentHash === '#/') {
+        window.history.replaceState(null, '', currentPath || '/');
+        currentHash = '';
+      }
+
       setHash(currentHash);
-      setPathname(window.location.pathname);
+      setPathname(currentPath);
       setSearch(window.location.search);
 
-      if (currentHash === '#/signup' || currentHash === '#/register') {
+      if (currentPath === '/signup' || currentPath === '/register') {
         useStore.getState().setAuthMode('register');
-      } else if (currentHash === '#/login') {
+      } else if (currentPath === '/login' || currentPath === '/auth') {
         useStore.getState().setAuthMode('login');
       }
     };
-    handleHash();
-    window.addEventListener("hashchange", handleHash);
-    window.addEventListener("popstate", handleHash);
+
+    handleLocationChange();
+    window.addEventListener("hashchange", handleLocationChange);
+    window.addEventListener("popstate", handleLocationChange);
     return () => {
-      window.removeEventListener("hashchange", handleHash);
-      window.removeEventListener("popstate", handleHash);
+      window.removeEventListener("hashchange", handleLocationChange);
+      window.removeEventListener("popstate", handleLocationChange);
     };
   }, []);
   
@@ -143,12 +157,12 @@ export default function App() {
     if (accessToken) {
       useStore.getState().setAccessToken(accessToken);
       toast.success("Successfully logged in via OAuth!");
-      window.history.replaceState({}, document.title, window.location.pathname + "#/dashboard");
+      window.history.replaceState({}, document.title, "/dashboard");
       useStore.getState().setCurrentTab("dashboard");
     } else if (oauthError) {
       const displayMsg = errorMessage || "OAuth authentication failed. Please try again.";
       toast.error(`Login Error: ${displayMsg}`);
-      window.history.replaceState({}, document.title, window.location.pathname + "#/auth");
+      window.history.replaceState({}, document.title, "/login");
       useStore.getState().setCurrentTab("auth");
     }
   }, []);
@@ -258,34 +272,27 @@ export default function App() {
   const [draftLinkedDocIds, setDraftLinkedDocIds] = useState<string[]>([]);
   const [graphStatuses, setGraphStatuses] = useState<any[]>([]);
 
-  // Sync URL hash to state and vice versa
+  // Sync pure pathname to application state
   useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash;
-      if (!hash) {
-        if (isAuthenticated) {
-          setCurrentTab("dashboard");
-          setActiveConvId(null);
-        }
-        return;
-      }
+    const handleRouteSync = () => {
+      const path = window.location.pathname;
 
-      if (hash === "#/rate-limit") {
+      if (path === "/rate-limit") {
         setCurrentTab("rate_limit");
         return;
       }
-      if (hash === "#/500") {
+      if (path === "/500") {
         setCurrentTab("server_error");
         return;
       }
-      if (hash === "#/404") {
+      if (path === "/404") {
         setCurrentTab("not_found");
         return;
       }
 
       if (!isAuthenticated) return;
 
-      const parts = hash.replace("#/", "").split("/");
+      const parts = path.replace(/^\//, "").split("/");
       const route = parts[0];
       const param = parts[1];
 
@@ -310,48 +317,50 @@ export default function App() {
         } else {
           setActiveConvId("");
         }
-      } else if (route === "auth") {
-        // Handled by AuthView
-      } else if (landingHashes.includes(hash) || hash === "#/architecture") {
-        // Handled by landing / architecture
+      } else if (route === "" || route === "architecture" || route === "login" || route === "signup") {
+        // Root / public routes
       } else {
-        // Unknown route -> 404
         setCurrentTab("not_found");
       }
     };
 
-    window.addEventListener("hashchange", handleHashChange);
-    handleHashChange();
-    return () => window.removeEventListener("hashchange", handleHashChange);
+    window.addEventListener("popstate", handleRouteSync);
+    window.addEventListener("hashchange", handleRouteSync);
+    handleRouteSync();
+    return () => {
+      window.removeEventListener("popstate", handleRouteSync);
+      window.removeEventListener("hashchange", handleRouteSync);
+    };
   }, [setCurrentTab, setActiveConvId, isAuthenticated]);
 
-  // Sync state to URL hash
+  // Sync state to pure URL pathname
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    let targetHash = "";
+    let targetPath = "";
     if (currentTab === "dashboard") {
-      targetHash = "#/dashboard";
+      targetPath = "/dashboard";
     } else if (currentTab === "documents") {
-      targetHash = "#/documents";
+      targetPath = "/documents";
     } else if (currentTab === "document_details") {
-      targetHash = "#/documents/details";
+      targetPath = "/documents/details";
     } else if (currentTab === "chats") {
-      targetHash = "#/chats";
+      targetPath = "/chats";
     } else if (currentTab === "settings") {
-      targetHash = "#/settings";
+      targetPath = "/settings";
     } else if (currentTab === "conversations") {
       if (activeConvId === "") {
-        targetHash = "#/chat/new";
+        targetPath = "/chat/new";
       } else if (activeConvId) {
-        targetHash = `#/chat/${activeConvId}`;
+        targetPath = `/chat/${activeConvId}`;
       } else {
-        targetHash = "#/chat/new";
+        targetPath = "/chat/new";
       }
     }
 
-    if (targetHash && window.location.hash !== targetHash) {
-      window.history.pushState(null, "", targetHash);
+    if (targetPath && window.location.pathname !== targetPath) {
+      window.history.pushState(null, "", targetPath);
+      setPathname(targetPath);
     }
   }, [currentTab, activeConvId, isAuthenticated]);
 
@@ -834,7 +843,7 @@ export default function App() {
     return (
       <VerifyEmailView
         token={token || ''}
-        onNavigateToLogin={() => window.location.replace('/#/app')}
+        onNavigateToLogin={() => window.location.replace('/login')}
       />
     );
   }
@@ -844,17 +853,16 @@ export default function App() {
     return (
       <ResetPasswordView
         token={token || ''}
-        onNavigateToLogin={() => window.location.replace('/#/app')}
+        onNavigateToLogin={() => window.location.replace('/login')}
       />
     );
   }
 
-  const landingHashes = ["", "#", "#/", "#hero", "#how-it-works", "#metrics", "#system-features", "#faq"];
-  const isLanding = landingHashes.includes(hash);
-  const isArchitecture = hash === "#/architecture";
-  const isRateLimit = hash === "#/rate-limit" || currentTab === "rate_limit";
-  const isServerError = hash === "#/500" || currentTab === "server_error";
-  const isNotFound = hash === "#/404" || currentTab === "not_found";
+  const isArchitecture = pathname === "/architecture" || hash === "#/architecture";
+  const isRateLimit = pathname === "/rate-limit" || hash === "#/rate-limit" || currentTab === "rate_limit";
+  const isServerError = pathname === "/500" || hash === "#/500" || currentTab === "server_error";
+  const isNotFound = pathname === "/404" || hash === "#/404" || currentTab === "not_found";
+  const isLanding = pathname === "/" && !isArchitecture && !isRateLimit && !isServerError && !isNotFound;
 
   if (isRateLimit) {
     return <RateLimitView />;

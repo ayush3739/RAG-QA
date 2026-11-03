@@ -2,6 +2,7 @@ import { Check, X } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { useStore } from '../../store/useStore';
+import { navigate } from '../../lib/navigation';
 
 const tiers = [
   {
@@ -41,10 +42,10 @@ export default function PricingSection() {
 
   const handleAction = () => {
     if (isAuthenticated) {
-      window.location.hash = '#/dashboard';
+      navigate('/dashboard');
     } else {
       setAuthMode('register');
-      window.location.hash = '#/signup';
+      navigate('/signup');
     }
   };
   return (

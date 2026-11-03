@@ -1,3 +1,4 @@
+import { navigate } from '../../lib/navigation'
 import { motion, useReducedMotion } from 'framer-motion'
 import {
   ArrowRight, Github, FileText, Globe, Brain, Zap,
@@ -372,7 +373,7 @@ export default function Hero() {
           <div className="group relative rounded-full p-[1px] shadow-[0_0_20px_rgba(99,102,241,0.2)] transition-all duration-300 hover:shadow-[0_0_30px_rgba(99,102,241,0.35)] hover:scale-[1.02] active:scale-[0.98]">
             <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-400/80 via-purple-400/80 to-blue-400/80 opacity-80 transition-opacity duration-300 group-hover:opacity-100" />
             <button
-              onClick={() => { window.location.hash = '#/chat/new' }}
+              onClick={() => { navigate('/chat/new') }}
               className="relative flex items-center gap-2 rounded-full bg-[#060608]/90 px-6 py-2.5 text-sm font-medium backdrop-blur-md transition-colors hover:bg-[#060608]/70"
             >
               <span className="bg-gradient-to-r from-blue-100 to-purple-200 bg-clip-text text-transparent">

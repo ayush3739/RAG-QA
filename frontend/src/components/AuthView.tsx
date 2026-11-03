@@ -100,10 +100,12 @@ export default function AuthView() {
       
       {/* Top Left Floating Home Button (Bubble / Pill) */}
       <motion.a
-        href="#/"
+        href="/"
         onClick={(e) => {
           e.preventDefault();
-          window.location.hash = "#/";
+          window.history.pushState(null, '', '/');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+          window.dispatchEvent(new HashChangeEvent('hashchange'));
         }}
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
