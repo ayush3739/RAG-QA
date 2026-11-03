@@ -14,7 +14,7 @@ import { Message, Conversation, DocType, SourceDocument, Citation } from "./type
 import { Menu, Database, Sparkles } from "lucide-react";
 import { useStore } from "./store/useStore";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
-import { api } from "./lib/api";
+import { api, API_BASE } from "./lib/api";
 import { Toaster, toast } from 'sonner';
 import { motion, AnimatePresence } from "framer-motion";
 const LandingPage = React.lazy(() => import("./landing/page"));
@@ -679,7 +679,7 @@ export default function App() {
     mutationFn: async ({ file, sessionId }: { file: File, sessionId?: string }) => {
       const res = await api.uploadDocument(file, sessionId);
       if (res.job_id) {
-        const es = new EventSource(`http://localhost:8000/api/v1/documents/status/${res.job_id}`);
+        const es = new EventSource(`${API_BASE}/documents/status/${res.job_id}`);
         es.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);

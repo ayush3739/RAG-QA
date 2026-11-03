@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useStore, AuthMode } from "../store/useStore";
 import { BrainCircuit, Eye, EyeOff, Loader2, Mail, CheckCircle2, AlertTriangle, ArrowLeft, ShieldCheck, Home } from "lucide-react";
 import { LivingIntelligenceShowcase, AsciiHalftoneBackground, FadedBackgroundRibbons } from "./LivingIntelligenceShowcase";
-import { api, ApiError, NetworkError } from "../lib/api";
+import { api, ApiError, NetworkError, API_BASE } from "../lib/api";
 
 // Password strength helper
 function getPasswordStrength(pw: string): { score: number; label: string; color: string } {
@@ -38,7 +38,7 @@ export default function AuthView() {
 
   const handleSocialLogin = (provider: 'github' | 'google') => {
     setOauthLoadingProvider(provider);
-    window.location.href = `http://localhost:8000/api/v1/auth/${provider}/login`;
+    window.location.href = `${API_BASE}/auth/${provider}/login`;
   };
 
   const passwordStrength = useMemo(() => getPasswordStrength(password), [password]);

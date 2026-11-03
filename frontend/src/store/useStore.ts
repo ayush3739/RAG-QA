@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { SourceDocument, Conversation, ModelParams, DocType } from '../types';
-import { INITIAL_DOCUMENTS } from '../data';
 
 export type AuthMode = 'login' | 'register' | 'forgot-password' | 'verification-sent' | 'forgot-password-sent';
 
@@ -72,15 +71,21 @@ export const useStore = create<AppState>()(
         accessToken: null,
         refreshToken: null,
         isAuthenticated: false,
-        activeConvId: null,
         user: null,
         authMode: 'login',
+        activeConvId: null,
+        activeDocumentId: null,
+        documents: [],
+        conversations: [],
+        isProcessing: false,
+        isMobileSidebarOpen: false,
+        currentTab: 'dashboard',
       }),
 
       currentTab: 'dashboard',
       isMobileSidebarOpen: false,
       activeDocumentId: null,
-      documents: INITIAL_DOCUMENTS,
+      documents: [],
       conversations: [],
       activeConvId: null,
       params: {
@@ -112,11 +117,13 @@ export const useStore = create<AppState>()(
       partialize: (state) => ({ 
         theme: state.theme,
         accessToken: state.accessToken,
+        user: state.user,
         params: state.params
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {
-           state.isAuthenticated = !!state.accessToken;
+          state.isAuthenticated = !!state.accessToken;
+          state.isProcessing = false;
         }
       }
     }

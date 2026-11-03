@@ -206,23 +206,31 @@ export function DocumentsView({
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            className="col-span-2 flex flex-col items-center justify-center py-24 px-8 bg-surface-container-lowest/40 rounded-2xl border border-dashed border-border"
+            className="col-span-2 flex flex-col items-center justify-center py-20 px-8 bg-surface-container-lowest/40 rounded-2xl border border-dashed border-border text-center"
           >
             {/* Animated illustration */}
-            <div className="relative mb-8">
+            <div className="relative mb-6">
               <motion.div
-                className="w-20 h-20 rounded-xl bg-surface-container border border-border flex items-center justify-center"
-                animate={{ y: [0, -8, 0] }}
+                className="w-16 h-16 rounded-2xl bg-surface-container border border-border flex items-center justify-center shadow-inner"
+                animate={{ y: [0, -6, 0] }}
                 transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
               >
-                <UploadCloud className="w-9 h-9 text-muted-foreground" />
+                <UploadCloud className="w-8 h-8 text-primary" />
               </motion.div>
             </div>
 
-            <h3 className="text-lg font-semibold text-foreground tracking-tight mb-2">Your library is empty</h3>
-            <p className="text-sm text-muted-foreground text-center max-w-xs leading-relaxed">
-              Upload your first document to get started. The RAG router will index it and make it instantly queryable.
+            <h3 className="text-lg font-semibold text-foreground tracking-tight mb-2">No documents uploaded yet</h3>
+            <p className="text-sm text-muted-foreground text-center max-w-sm leading-relaxed mb-6">
+              Upload a PDF to start research. The RAG router will index it and make it instantly queryable.
             </p>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
+            >
+              <UploadCloud className="w-4 h-4" />
+              <span>Upload Document</span>
+            </button>
           </motion.div>
         ) : (
           <motion.div
