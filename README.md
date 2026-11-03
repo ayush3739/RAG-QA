@@ -1,304 +1,271 @@
-# KnowVex — Production RAG-QA System
+# KnowVex ⚡
+### Production-Grade Agentic RAG & Knowledge Intelligence Engine
 
-> **Status:** Phase 1 ✅ Complete | Phase 2 🚀 In Progress
-> **Current:** Streamlit UI + Hybrid RAG pipeline (BM25 + Vector) with CrossEncoder reranking
-> **Goal:** Build an autonomous research agent (Phase 3) on top of production-grade RAG
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![React](https://img.shields.io/badge/React-19.0-61DAFB.svg?style=flat&logo=react&logoColor=black)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6.svg?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-pgvector-4169E1.svg?style=flat&logo=postgresql&logoColor=white)](https://github.com/pgvector/pgvector)
+[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-v4-38B2AC.svg?style=flat&logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
----
-
-## 🎯 What This Project Does
-
-KnowVex is a **Retrieval-Augmented Generation (RAG) system** that answers questions by:
-1. Indexing user-uploaded PDFs into Postgres with the `pgvector` extension
-2. Performing **hybrid search** (BM25 keyword + vector semantic)
-3. **Reranking** results using a CrossEncoder model
-4. Grounding LLM answers strictly to retrieved document chunks
-5. Returning structured JSON with citations, sources, and confidence scores
-
-### Key Features
-- ✅ **Hybrid retrieval** — BM25 + vector search → RRF fusion
-- ✅ **Deterministic chunk IDs** — stable cross-store identification
-- ✅ **CrossEncoder reranking** — improved relevance ranking
-- ✅ **Query sanitization** — prompt injection prevention
--- ✅ **pgvector fallback** — graceful degradation to BM25-only mode when vectordata unavailable
-- ✅ **Structured output** — machine-readable JSON with metadata
-- ✅ **Citation tracking** — every answer cites source page + excerpt
-- ✅ **Confidence scores** — helps UI decide answer reliability
+**KnowVex** is an open-source, production-ready **Agentic Retrieval-Augmented Generation (RAG)** system designed to move beyond naive vector search. Instead of blindly embedding queries and hoping for the best, KnowVex employs an **intelligent tool-routing agent** that classifies intent, selects the optimal tool (Document RAG, Live Web Search, or Direct Reasoning), executes hybrid retrieval with CrossEncoder reranking, and streams grounded answers with verifiable citations.
 
 ---
 
-## 📦 Project Structure
+## 🌟 Why KnowVex?
+
+Most RAG tutorials build a simple script that dumps PDFs into a vector database, performs cosine similarity, and stuffs the prompt into an LLM. In production, this fails because:
+- Greetings and general reasoning waste vector queries.
+- Comparative or exact-keyword queries fail dense vector search alone.
+- Answers lack provenance, leaving users unable to verify truth from hallucination.
+
+**KnowVex solves this by combining:**
+1. **Agentic Tool Routing:** Uses an intent router to intelligently choose between Document Retrieval, Real-Time Web Search, or Direct LLM Reasoning.
+2. **Hybrid Search + RRF:** Merges BM25 keyword matching with dense vector embeddings using Reciprocal Rank Fusion (RRF).
+3. **CrossEncoder Reranking:** Computes cross-attention relevance scores on candidate chunks to isolate the highest-signal context.
+4. **Verifiable Citations:** Returns exact document names, page numbers, excerpt snippets, and confidence scores with every response.
+5. **Full Production App Shell:** Features a React 19 frontend with JWT auth, OAuth (GitHub & Google), document workspace, session export, and real-time SSE streaming.
+
+---
+
+## 🏗️ System Architecture
+
+```mermaid
+flowchart TD
+    User([User Query]) --> Auth[FastAPI Auth & Rate Limiting]
+    Auth --> Router{Agent Intent Router}
+    
+    Router -->|Document Question| RAG[Hybrid RAG Pipeline]
+    Router -->|Real-time / Current Event| Web[Web Search Tool / Tavily]
+    Router -->|Greeting / General Reasoning| Direct[Direct LLM Synthesis]
+    
+    subgraph Hybrid RAG Engine
+        RAG --> Dense[Dense Vector Search \n pgvector]
+        RAG --> Sparse[Sparse Keyword Search \n BM25]
+        Dense & Sparse --> RRF[Reciprocal Rank Fusion]
+        RRF --> Rerank[CrossEncoder Reranker]
+        Rerank --> Context[Top Context Chunks]
+    end
+    
+    Context --> Synthesizer[Response Synthesizer & Citation Builder]
+    Web --> Synthesizer
+    Direct --> Synthesizer
+    
+    Synthesizer --> Stream[SSE Token Streaming]
+    Stream --> Client([React Frontend Workspace])
+```
+
+---
+
+## ✨ Core Features
+
+### 🧠 Agentic Retrieval Layer
+- **Intent Router:** Classifies user prompts into actionable tool paths (`retrieve_doc`, `web_search`, `direct_answer`).
+- **LangChain / LLM Provider Abstraction:** Seamlessly switch between Groq, Gemini, OpenRouter, NVIDIA NIM, AWS Bedrock, or local Ollama models.
+- **Query Sanitization:** Defends against prompt injection and jailbreak payloads before reaching the model.
+
+### 🔍 Advanced Hybrid Search
+- **pgvector & Qdrant Support:** Scalable vector similarity search over chunk embeddings.
+- **BM25 Keyword Matching:** Catches acronyms, exact IDs, and domain-specific terminology that vector embeddings miss.
+- **CrossEncoder Reranking:** Re-scores top candidates with fine-grained cross-attention to filter noise.
+- **Deterministic Chunk IDs:** Consistent hashing across document updates and sessions.
+
+### 🛡️ Enterprise Security & Multi-Tenancy
+- **JWT Authentication:** Dual-token strategy with short-lived access tokens and secure refresh token rotation.
+- **Social OAuth:** One-click authentication with GitHub and Google OAuth 2.0.
+- **Email Verification & Password Reset:** Built-in email token flows with secure expiration checks.
+- **Isolated Document Namespaces:** Multi-tenant document storage and collection isolation.
+
+### 💻 Modern Frontend Experience
+- **React 19 + TypeScript + Vite:** High-performance single-page app with instant HMR.
+- **Cyberpunk Dark Aesthetic:** Custom Tailwind styles, living animated ribbon veils, and interactive ASCII / pixel typography.
+- **Server-Sent Events (SSE):** Token-by-token streaming responses with live status feedback.
+- **Workspace Views:**
+  - 💬 **Chat Workspace:** Interactive chat with citation inspection, token efficiency metrics, and tool badges.
+  - 📁 **Document Manager:** Drag-and-drop PDF ingestion, chunk inspector, and indexing status.
+  - 🕒 **Session History:** Searchable conversation log with one-click Markdown session export.
+  - ⚙️ **Settings:** Configurable temperature, token efficiency, and custom system instructions.
+
+---
+
+## 📁 Repository Structure
 
 ```
 rag-qa/
-├── README.md                 ← High-level overview (this file)
-├── ARCHITECTURE.md           ← System design & data flow
-├── .agent.md                 ← Agent quick reference & guidelines
-├── requirements.txt          ← Python dependencies
-├── .env                      ← Secrets (GITHUB_TOKEN, QDRANT_URL)
-│
-├── app.py                    ← Streamlit UI entry point
-├── indexing.py               ← PDF → chunks → Qdrant indexer
-├── retrieving.py             ← Legacy retriever (DEPRECATED)
-├── test.py                   ← Legacy test runner
-│
-├── backend/                  ← Production code (Phase 2+)
-│   ├── BACKEND.md            ← Backend structure & setup
-│   ├── main.py               ← FastAPI app (WIP)
-│   ├── core/
-│   │   ├── MODULES.md        ← Core modules breakdown
-│   │   ├── config.py         ← Settings & env vars
-│   │   ├── indexer.py        ← PDF indexing logic
-│   │   ├── retriever.py      ← RAG retrieval & generation
-│   │   └── utils.py          ← Tokenizers, helpers
-│   ├── api/
+├── backend/                  # Production FastAPI Application
+│   ├── main.py               # Application entry point & lifespan
+│   ├── agent/                # Agent layer: router, tools, graph
+│   │   ├── router.py         # Intent classification & routing
+│   │   └── tools.py          # RAG, web search, and direct tools
+│   ├── api/                  # API routes & schemas
 │   │   ├── routes/
-│   │   │   ├── collections.py
-│   │   │   ├── chat.py
-│   │   │   └── health.py
-│   │   ├── deps.py
-│   │   └── models.py         ← Pydantic schemas
-│   ├── agent/                ← Phase 3: LangGraph
-│   └── services/
+│   │   │   ├── auth.py       # Login, register, OAuth, refresh
+│   │   │   ├── chat.py       # SSE streaming chat endpoints
+│   │   │   ├── documents.py  # PDF upload, ingestion, deletion
+│   │   │   ├── sessions.py   # Conversation history & export
+│   │   │   ├── user.py       # Profile & account settings
+│   │   │   └── analytics.py  # Usage and token tracking
+│   │   └── models.py         # Pydantic request/response schemas
+│   ├── core/                 # Core utilities & configuration
+│   │   ├── config.py         # Pydantic settings & environment vars
+│   │   ├── indexer.py        # PDF chunking & vector indexing
+│   │   └── retriever.py      # Hybrid search & CrossEncoder pipeline
+│   └── services/             # LLM provider & database clients
 │
-├── data/
-│   ├── bm25/                 ← Pickled BM25 models
-│   └── *.pdf                 ← Uploaded documents
+├── frontend/                 # React 19 + TypeScript + Vite SPA
+│   ├── src/
+│   │   ├── components/       # Workspace UI, Auth, Modals, Chat
+│   │   ├── landing/          # Modern landing page & architecture deep dive
+│   │   ├── store/            # Zustand global state management
+│   │   ├── lib/              # API client & error handling
+│   │   └── App.tsx           # Main application routing
+│   ├── index.html            # App shell
+│   └── vite.config.ts        # Vite configuration
 │
-├── tests/
-│   ├── test_unit_rag.py      ← Unit tests (mocked)
-│   └── rag_output.py         ← Query runner with pretty printer
-│
-└── docs/
-    └── (user-uploaded PDFs)
+├── tests/                    # Unit tests & verification scripts
+├── requirements.txt          # Python backend dependencies
+└── README.md                 # Project documentation
 ```
 
 ---
 
-## 🔄 Phase Roadmap
+## 🚀 Quick Start Guide
 
-| Phase | Goal | Status |
-|-------|------|--------|
-| **1** | RAG core quality fixes (chunking, hybrid search, reranking, citations) | ✅ DONE |
-| **2** | FastAPI backend migration (decouple logic from Streamlit UI) | 🚀 WIP |
-| **3** | LangGraph agent layer (intelligent tool routing: doc/web/direct) | 📋 PLANNED |
-| **4** | UX & conversation features (sessions, follow-ups, export) | 📋 PLANNED |
-| **5** | Intelligence add-ons (quiz generation, feedback loop) | 📋 PLANNED |
+### Prerequisites
+- **Python 3.10+**
+- **Node.js 18+ & npm**
+- **PostgreSQL with pgvector** (or Docker)
 
 ---
 
-## 🚀 Quick Start
+### 1. Database Setup (Docker)
 
-### Install & Run
+Run PostgreSQL with the `pgvector` extension:
 
 ```bash
-# Setup Python environment
+docker run -d \
+  --name knowvex-db \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=knowvex \
+  -p 5432:5432 \
+  pgvector/pgvector:pg16
+```
+
+---
+
+### 2. Backend Setup
+
+```bash
+# Navigate to the project root
+cd rag-qa
+
+# Create and activate a virtual environment
 python -m venv .venv
-source .venv/Scripts/activate  # Windows: .venv\Scripts\activate
+# Windows:
+.venv\Scripts\activate
+# Linux/macOS:
+# source .venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
 
-
+# Configure environment variables
 cp .env.example .env
-# Edit `.env`: set `GITHUB_TOKEN` and `DATABASE_URL` (asyncpg URL)
-
-# Example Postgres (docker) — ensure `pgvector` extension is installed in the DB
-docker run -e POSTGRES_PASSWORD=pass -e POSTGRES_USER=user -e POSTGRES_DB=KnowVex -p 5432:5432 postgres:15
-# After DB starts, create extension (once):
-# psql -h localhost -U user -d KnowVex -c "CREATE EXTENSION IF NOT EXISTS vector;"
-
-# Run Streamlit UI
-streamlit run app.py
-
-# Or test RAG directly
-python tests/rag_output.py
 ```
 
-### Test the RAG Pipeline
+Edit `.env` with your API keys and configuration:
 
-```bash
-python tests/rag_output.py
-```
-
-Output shows:
-- **[Model-produced answer]** — what the LLM generated
-- **[Sources & metadata added by retriever]** — citations, pages, scores
-
----
-
-## 🔑 Key Components
-
-### Phase 1 — Production RAG (✅ Complete)
-
-| Component | File | Purpose |
-|-----------|------|---------|
-| **Indexer** | `backend/core/indexer.py` | Parse PDF → chunks with deterministic IDs → Qdrant + BM25 |
-| **Retriever** | `backend/core/retriever.py` | Hybrid search, RRF fusion, reranking, generation, sanitization |
-| **Utils** | `backend/core/utils.py` | Tokenizer, helpers |
-
-### Phase 2 — FastAPI Backend (🚀 In Progress)
-
-| Component | File | Purpose |
-|-----------|------|---------|
-| **Config** | `backend/core/config.py` | Pydantic settings from `.env` |
-| **API App** | `backend/main.py` | FastAPI with lifespan, route registration |
-| **Routes** | `backend/api/routes/*.py` | `/collections`, `/chat`, `/health`, `/research` |
-| **Models** | `backend/api/models.py` | Request/response schemas |
-| **Services** | `backend/services/` | Session DB, background tasks |
-
-### Phase 3 — LangGraph Agent (📋 Planned)
-
-| Component | File | Purpose |
-|-----------|------|---------|
-| **State** | `backend/agent/graph.py` | AgentState TypedDict + graph definition |
-| **Intent** | `backend/agent/intent.py` | Classify: factual / summarize / web / direct / quiz |
-| **Tools** | `backend/agent/tools.py` | Registered tools: retrieve_doc, web_search, summarize, direct |
-
----
-
-## 📊 Data Flow
-
-```
-User Query
-    ↓
-[Query Sanitization]
-    ↓
-[Hybrid Search]
-  ├─ Vector search (Qdrant) → 15 results
-  └─ BM25 search (pickle) → 15 results
-    ↓
-[Reciprocal Rank Fusion] — merge by chunk_id
-    ↓
-[CrossEncoder Reranking] — top 10
-    ↓
-[Context Building] — format for LLM
-    ↓
-[LLM Generation] — gpt-4o-mini or Ollama
-    ↓
-[JSON Assembly] — Python builds citations + metadata
-    ↓
-Structured Response:
-{
-  "answer": "...",
-  "citations": [...],
-  "chunks": [...],
-  "confidence": 0.82,
-  "debug": {...}
-}
-```
-
----
-
-## 🔐 Security & Configuration
-
-### Environment Variables
-```
-GITHUB_TOKEN=ghp_xxx           # For OpenAI embeddings via GitHub
-QDRANT_URL=http://localhost:6333
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=qwen3:4b
-```
-
-### Query Sanitization
-- Max 1000 chars
-- Blocks injection patterns: "ignore all instructions", "ignore previous", etc.
-- Raises `ValueError` if malicious detected
-
----
-
-## 📚 For Agents: Quick Reference
-
-Read these in order to understand the project:
-1. **README.md** (this file) — overview
-2. **ARCHITECTURE.md** — data flow & design decisions
-3. **BACKEND.md** — backend structure
-4. **MODULES.md** — module breakdown
-5. **.agent.md** — agent-specific guidelines
-
----
-
-## ✅ Phase 1 Completion Checklist
-
-- [x] Chunk size fixed (600/150)
-- [x] Duplicate removal on re-index
-- [x] Hybrid BM25 + vector retrieval
-- [x] RRF fusion keyed by `chunk_id`
-- [x] CrossEncoder reranker integrated
-- [x] Query sanitization (prompt injection defense)
-- [x] Qdrant fallback to BM25-only
-- [x] Structured JSON output with citations
-- [x] Confidence scoring
-- [x] Pretty-print client parser (shows LLM vs app-added metadata)
-
----
-
-## 🎯 Next Steps (Phase 2)
-
-1. Install FastAPI deps: `pip install fastapi uvicorn pydantic-settings sse-starlette`
-2. Scaffold `backend/main.py` with lifespan & routers
-3. Add `backend/core/config.py` with Pydantic settings
-4. Create `/api/v1/health`, `/api/v1/chat/{collection}`, `/api/v1/collections` endpoints
-5. Test with Swagger UI at `http://localhost:8000/docs`
-
----
-
-**Last Updated:** May 19, 2026  
-**Author:** KnowVex Team  
-**License:** MIT
-
-app.py  (Streamlit UI)
-   ├── Tab 1 — Upload new PDF → index → chat
-   └── Tab 2 — Pick existing collection → chat instantly
-```
-
----
-
-## 🛠️ Tech Stack
-
-| Layer | Tool |
-|---|---|
-| UI | Streamlit |
-| Vector DB | Postgres + `pgvector` |
-| Embeddings | `text-embedding-3-large` via GitHub Models |
-| LLM | `gpt-4o-mini` via GitHub Models |
-| PDF Loader | LangChain `PyPDFLoader` |
-| Chunking | LangChain `RecursiveCharacterTextSplitter` |
-
----
-
-## 🚀 Setup
-
-### 1. Start Qdrant
-```bash
-docker run -p 6333:6333 qdrant/qdrant
-```
-
-### 2. Install dependencies
-```bash
-pip install -r requirements.txt
-```
-
-### 3. Create `.env`
 ```env
-GITHUB_TOKEN=your_github_models_token
+# Database
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/knowvex
+
+# LLM Providers (Pick at least one)
+GROQ_API_KEY=gsk_...
+GEMINI_API_KEY=AIza...
+TAVILY_API_KEY=tvly-...
+
+# Security & JWT
+SECRET_KEY=generate-a-strong-random-key-for-jwt
+FRONTEND_URL=http://localhost:3000
+
+# OAuth (Optional)
+GITHUB_CLIENT_ID=...
+GITHUB_CLIENT_SECRET=...
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
 ```
 
-### 4. Run
+Start the FastAPI development server:
+
 ```bash
-streamlit run app.py
+uvicorn backend.main:app --reload --port 8000
+```
+
+Interactive API documentation will be available at:
+- **Swagger UI:** `http://localhost:8000/docs`
+- **ReDoc:** `http://localhost:8000/redoc`
+
+---
+
+### 3. Frontend Setup
+
+In a new terminal:
+
+```bash
+cd rag-qa/frontend
+
+# Install dependencies
+npm install
+
+# Start the Vite development server
+npm run dev
+```
+
+Open your browser at **`http://localhost:3000`**.
+
+---
+
+## ⚙️ Configuration Reference
+
+| Variable | Description | Default |
+|:---|:---|:---|
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql+asyncpg://...` |
+| `LLM_PROVIDER` | Active LLM provider (`groq`, `gemini`, `ollama`) | `groq` |
+| `LLM_MODEL` | Active model identifier | `openai/gpt-oss-120b` |
+| `TAVILY_API_KEY` | API key for Tavily live web search | `""` |
+| `ENABLE_WEB_SEARCH`| Enable/disable web search fallback tool | `true` |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | JWT Access Token lifetime | `60` |
+| `REFRESH_TOKEN_EXPIRE_DAYS` | Refresh Token lifetime | `7` |
+| `CHUNK_SIZE` | Chunk character length for document splitting | `600` |
+| `CHUNK_OVERLAP` | Overlapping characters between chunks | `150` |
+| `RERANKER_INPUT_CHUNKS` | Number of candidate chunks passed to reranker | `25` |
+| `LLM_CONTEXT_CHUNKS` | Final top chunks injected into LLM prompt | `10` |
+
+---
+
+## 🧪 Testing
+
+Run unit tests and verification scripts:
+
+```bash
+# Run backend test suite
+pytest tests/
+
+# Test RAG retrieval directly in terminal
+python tests/rag_output.py
 ```
 
 ---
 
-## 📁 Project Structure
+## 📜 License
 
-```
-rag-qa/
-├── app.py          # Streamlit UI — tabs, caching, streaming
-├── indexing.py     # Indexer class — load → chunk → embed → store
-├── retrieving.py   # Retriver class — search → stream answer
-├── docs/           # Uploaded PDFs saved here automatically
-├── src/            # Screenshots
-└── .env            # API keys (not committed)
-```
+This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
+
+---
+
+## 👨‍💻 Author & Acknowledgments
+
+Built by **[Ayush Maurya](https://github.com/ayush3739)**.
+
+If you find KnowVex useful, please consider giving it a ⭐ on [GitHub](https://github.com/ayush3739/RAG-QA)!

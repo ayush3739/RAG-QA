@@ -1,6 +1,7 @@
 import { Check, X } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
+import { useStore } from '../../store/useStore';
 
 const tiers = [
   {
@@ -35,6 +36,17 @@ const tiers = [
 ];
 
 export default function PricingSection() {
+  const setAuthMode = useStore((s) => s.setAuthMode);
+  const isAuthenticated = useStore((s) => s.isAuthenticated);
+
+  const handleAction = () => {
+    if (isAuthenticated) {
+      window.location.hash = '#/dashboard';
+    } else {
+      setAuthMode('register');
+      window.location.hash = '#/signup';
+    }
+  };
   return (
     <section id="pricing" className="py-28 bg-[#09090b] relative border-t border-white/[0.05]">
       {/* Background Glow */}
@@ -98,7 +110,8 @@ export default function PricingSection() {
               {tier.buttonText && (
                 <CardFooter className="p-8 pt-0 mt-auto">
                   <Button 
-                    className={`w-full ${
+                    onClick={handleAction}
+                    className={`w-full cursor-pointer ${
                       tier.popular 
                         ? 'bg-indigo-500 hover:bg-indigo-600 text-white' 
                         : 'bg-white/5 hover:bg-white/10 text-white border border-white/10'

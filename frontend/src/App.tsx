@@ -92,10 +92,18 @@ export default function App() {
 
   useEffect(() => {
     const handleHash = () => {
-      setHash(window.location.hash);
+      const currentHash = window.location.hash;
+      setHash(currentHash);
       setPathname(window.location.pathname);
       setSearch(window.location.search);
+
+      if (currentHash === '#/signup' || currentHash === '#/register') {
+        useStore.getState().setAuthMode('register');
+      } else if (currentHash === '#/login') {
+        useStore.getState().setAuthMode('login');
+      }
     };
+    handleHash();
     window.addEventListener("hashchange", handleHash);
     window.addEventListener("popstate", handleHash);
     return () => {
