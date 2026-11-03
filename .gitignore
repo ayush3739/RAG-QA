@@ -234,7 +234,11 @@ docs/
 plan.md 
 learn.md 
 frontend/dev-config.json
-.agents/
+# Tracked for custom project skills & agent playbooks
+frontend/.agents/
+.agents/skills/*
+!.agents/skills/fastapi-endpoint/
+!.agents/skills/rag-eval/
 .impeccable/
 .codex/
 evals/
