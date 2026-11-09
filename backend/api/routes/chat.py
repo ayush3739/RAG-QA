@@ -8,7 +8,7 @@ from backend.db.base import get_db
 from backend.services.chat_service import ChatService
 from backend.services.session_service import SessionService
 from backend.models.schemas import ChatRequest
-from backend.api.deps import get_current_user
+from backend.api.deps import get_current_user, require_query_quota
 
 router = APIRouter(prefix="/chat",)
 
@@ -21,6 +21,7 @@ async def chat(
     request: ChatRequest,
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
+    _= Depends(require_query_quota),
 ):
 
     async def event_generator():
@@ -40,4 +41,4 @@ async def chat(
     return EventSourceResponse(
         event_generator()
     )
-
+

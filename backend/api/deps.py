@@ -16,6 +16,7 @@ from backend.services.security import decode_token
 from backend.db.base import get_db
 from backend.models.models import User
 from backend.core.config import settings
+from backend.services.quota_service import QuotaService
 
 # Tells FastAPI where clients send their token.
 # tokenUrl is used only for the OpenAPI docs "Authorize" button.
@@ -51,6 +52,17 @@ async def get_current_user(
         raise credentials_exception
 
     return user
+
+
+quota_service = QuotaService()
+async def require_query_quota(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    """Pre-flight guard: blocks if daily quota is exceeded."""
+    await quota_service.check_and_consume_quota(user=current_user, db=db)
+
+
 
 # Re-export get_db so routes only need to import from deps
 __all__ = ["get_db", "get_current_user", "oauth2_scheme"]
