@@ -5,7 +5,7 @@ from fastapi import APIRouter, UploadFile, File, BackgroundTasks, Form, HTTPExce
 from pathlib import Path
 from typing import Annotated
 from uuid import UUID, uuid4
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.responses import StreamingResponse
 import docx
@@ -26,7 +26,7 @@ from backend.models.schemas import (
 )
 from backend.models import models
 from backend.services.session_service import SessionService
-from backend.services.quota_service import validate_document_pages
+from backend.services.quota_service import validate_document_pages, ROLE_DOCUMENT_LIMITS
 
 router = APIRouter()
 
@@ -201,7 +201,6 @@ async def upload_document(
     public_id = uuid4().hex
     saved_path = upload_dir / f"{public_id}{ext}"
     saved_path.write_bytes(contents)
-    validate_document_pages(num_pages=total_pages, role=current_user.role)
 
     # 8. Dry-run parser check to identify unreadable/corrupted files upfront
     if ext == ".docx":
@@ -218,8 +217,7 @@ async def upload_document(
     elif ext == ".pdf":
         try:
             reader = PdfReader(saved_path)
-            # Ensure we can read pages metadata without error
-            _ = len(reader.pages)
+            total_pages = len(reader.pages)
         except Exception as e:
             if saved_path.exists():
                 saved_path.unlink()
@@ -227,6 +225,13 @@ async def upload_document(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Corrupted or unreadable PDF file. Please make sure it is valid. Error: {e}"
             )
+
+        try:
+            validate_document_pages(num_pages=total_pages, role=current_user.role)
+        except HTTPException:
+            if saved_path.exists():
+                saved_path.unlink()
+            raise
 
     # Create Document row first so Chunk FK constraint is satisfied
     doc = models.Document(
@@ -274,6 +279,32 @@ async def upload_document(
         "job_id": job_id,
         "document_id": doc.public_id,
         "filename": safe_name,
+    }
+
+
+@router.get("/documents/quota", summary="Check document upload quota status")
+async def get_document_quota(
+    current_user: models.User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Returns the user's active document count, limit, and whether they can upload more."""
+    result = await db.execute(
+        select(func.count(models.Document.id)).where(
+            models.Document.user_id == current_user.id,
+            models.Document.deleted_at.is_(None),
+        )
+    )
+    current_count = result.scalar() or 0
+    limit = ROLE_DOCUMENT_LIMITS.get(current_user.role)
+    remaining = max(0, limit - current_count) if limit is not None else None
+    can_upload = limit is None or current_count < limit
+
+    return {
+        "role": current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role),
+        "documents_count": current_count,
+        "limit": limit,
+        "remaining": remaining,
+        "can_upload": can_upload,
     }
 
 

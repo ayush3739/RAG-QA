@@ -11,7 +11,7 @@ class Item(BaseModel):
 
 # Chat Models
 class ChatRequest(BaseModel):
-    question: Field(min_length = 1, max_length = 1000) 
+    question:str =  Field(min_length= 1, max_length = 1000) 
 
     @field_validator('question')
     @classmethod
@@ -113,6 +113,7 @@ class MessageItem(BaseModel):
     used_vector_db : Optional[bool]
     debug : Optional[dict] = None
     created_at : datetime
+
 class MessageList(BaseModel) :
     messages : list[MessageItem]
 class MessageCreateResponse(BaseModel):

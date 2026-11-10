@@ -84,4 +84,7 @@ class UserQuotaResponse(BaseModel):
     queries_used: int
     query_limit: Optional[int] = None
     queries_remaining: Optional[int] = None
+    research_used: int = 0
+    research_limit: Optional[int] = None
+    research_remaining: Optional[int] = None
     reset_at: datetime

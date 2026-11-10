@@ -57,7 +57,11 @@ class AnalyticsService:
         records = result.scalars().all()
 
         usage_map = {
-            r.date.date().isoformat(): r.query_count for r in records if r.date
+            r.date.date().isoformat(): {
+                "queries": r.query_count or 0,
+                "research": getattr(r, "research_count", 0) or 0,
+            }
+            for r in records if r.date
         }
 
         activity = []
@@ -65,11 +69,13 @@ class AnalyticsService:
             current_day = start_date + timedelta(days=i)
             iso_day = current_day.isoformat()
             day_label = current_day.strftime("%a")  # e.g., 'Mon', 'Tue'
+            day_data = usage_map.get(iso_day, {"queries": 0, "research": 0})
             activity.append(
                 {
                     "name": day_label,
                     "date": iso_day,
-                    "queries": usage_map.get(iso_day, 0),
+                    "queries": day_data["queries"],
+                    "research": day_data["research"],
                 }
             )
 

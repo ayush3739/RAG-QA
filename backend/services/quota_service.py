@@ -51,16 +51,31 @@ async def get_usage(user_id: int, db: AsyncSession) -> int:
 
 async def get_user_quota_info(user: User, db: AsyncSession) -> dict:
     today_start = get_today_bucket()
-    queries_used = await get_usage(user_id=user.id, db=db)
-    limit = ROLE_QUOTA.get(user.role)
-    remaining = max(0, limit - queries_used) if limit is not None else None
+    result = await db.execute(
+        select(DataUsage).where(
+            DataUsage.user_id == user.id,
+            DataUsage.date == today_start,
+        )
+    )
+    usage = result.scalars().first()
+    queries_used = usage.query_count if usage else 0
+    research_used = getattr(usage, "research_count", 0) if usage else 0
+
+    query_limit = ROLE_QUOTA.get(user.role)
+    research_limit = ROLE_RESEARCH_LIMITS.get(user.role)
+
+    query_remaining = max(0, query_limit - queries_used) if query_limit is not None else None
+    research_remaining = max(0, research_limit - research_used) if research_limit is not None else None
     reset_at = today_start + timedelta(days=1)
 
     return {
         "role": user.role.value if hasattr(user.role, "value") else str(user.role),
         "queries_used": queries_used,
-        "query_limit": limit,
-        "queries_remaining": remaining,
+        "query_limit": query_limit,
+        "queries_remaining": query_remaining,
+        "research_used": research_used,
+        "research_limit": research_limit,
+        "research_remaining": research_remaining,
         "reset_at": reset_at,
     }
 

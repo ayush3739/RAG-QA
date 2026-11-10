@@ -56,6 +56,9 @@ export interface UserQuota {
   queries_used: number;
   query_limit: number | null;
   queries_remaining: number | null;
+  research_used?: number;
+  research_limit?: number | null;
+  research_remaining?: number | null;
   reset_at: string;
 }
 

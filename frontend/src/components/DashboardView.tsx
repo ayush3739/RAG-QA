@@ -40,13 +40,13 @@ const itemVariants = {
 };
 
 const mockActivityData = [
-  { name: '08:00', queries: 12 },
-  { name: '10:00', queries: 25 },
-  { name: '12:00', queries: 15 },
-  { name: '14:00', queries: 32 },
-  { name: '16:00', queries: 18 },
-  { name: '18:00', queries: 45 },
-  { name: '20:00', queries: 22 },
+  { name: '08:00', queries: 12, research: 2 },
+  { name: '10:00', queries: 25, research: 5 },
+  { name: '12:00', queries: 15, research: 1 },
+  { name: '14:00', queries: 32, research: 7 },
+  { name: '16:00', queries: 18, research: 3 },
+  { name: '18:00', queries: 45, research: 8 },
+  { name: '20:00', queries: 22, research: 4 },
 ];
 
 function AnimatedCounter({ value, duration = 1.2 }: { value: number; duration?: number }) {
@@ -140,13 +140,13 @@ export default function DashboardView({
   const chartData = activityResponse?.activity && activityResponse.activity.length > 0
     ? activityResponse.activity
     : [
-        { name: 'Mon', queries: 0 },
-        { name: 'Tue', queries: 0 },
-        { name: 'Wed', queries: 0 },
-        { name: 'Thu', queries: 0 },
-        { name: 'Fri', queries: 0 },
-        { name: 'Sat', queries: 0 },
-        { name: 'Sun', queries: 0 },
+        { name: 'Mon', queries: 0, research: 0 },
+        { name: 'Tue', queries: 0, research: 0 },
+        { name: 'Wed', queries: 0, research: 0 },
+        { name: 'Thu', queries: 0, research: 0 },
+        { name: 'Fri', queries: 0, research: 0 },
+        { name: 'Sat', queries: 0, research: 0 },
+        { name: 'Sun', queries: 0, research: 0 },
       ];
 
   const totalQueriesPast7Days = activityResponse?.activity 
@@ -194,16 +194,30 @@ export default function DashboardView({
               <Activity className="w-4 h-4 mr-2 text-primary animate-pulse" />
               Real-time Query Ticker
             </h4>
-            <span className="text-[10px] font-mono font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-sm">LIVE</span>
+            <div className="flex items-center space-x-3 text-xs font-mono">
+              <div className="flex items-center space-x-1.5">
+                <span className="w-2.5 h-2.5 rounded-sm bg-primary inline-block" />
+                <span className="text-[11px] text-muted-foreground">Queries</span>
+              </div>
+              <div className="flex items-center space-x-1.5">
+                <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500 inline-block" />
+                <span className="text-[11px] text-muted-foreground">Deep Research</span>
+              </div>
+              <span className="text-[10px] font-mono font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-sm ml-1">LIVE</span>
+            </div>
           </div>
           
           <div className="flex-1 w-full min-h-0 relative z-10">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+              <BarChart data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }} barGap={4}>
                 <defs>
                   <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="var(--primary)" stopOpacity={1} />
                     <stop offset="100%" stopColor="var(--primary)" stopOpacity={0.4} />
+                  </linearGradient>
+                  <linearGradient id="researchBarGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#10b981" stopOpacity={1} />
+                    <stop offset="100%" stopColor="#10b981" stopOpacity={0.4} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" strokeOpacity={0.5} />
@@ -211,19 +225,31 @@ export default function DashboardView({
                 <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--muted-foreground)', fontFamily: 'JetBrains Mono' }} />
                 <Tooltip 
                   cursor={{ fill: 'var(--surface-container-high)', opacity: 0.4 }}
-                  formatter={(value: any) => [`${value} queries`, 'Activity']}
+                  formatter={(value: any, name: string) => [
+                    `${value} ${name === 'research' ? 'research queries' : 'queries'}`,
+                    name === 'research' ? 'Deep Research' : 'Chat Queries'
+                  ]}
                   labelFormatter={(label, payload) => {
                     const item = payload?.[0]?.payload;
                     return item?.date ? `${label} (${item.date})` : label;
                   }}
                   contentStyle={{ backgroundColor: 'var(--surface-container-lowest)', borderColor: 'var(--border)', borderRadius: '6px', fontSize: '12px', fontFamily: 'JetBrains Mono', color: 'var(--foreground)' }}
-                  itemStyle={{ color: 'var(--primary)', fontWeight: 600 }}
+                  itemStyle={{ fontWeight: 600 }}
                 />
                 <Bar 
                   dataKey="queries" 
+                  name="queries"
                   fill="url(#barGradient)" 
                   radius={[4, 4, 0, 0]}
-                  barSize={24}
+                  barSize={16}
+                  animationDuration={1500}
+                />
+                <Bar 
+                  dataKey="research" 
+                  name="research"
+                  fill="url(#researchBarGradient)" 
+                  radius={[4, 4, 0, 0]}
+                  barSize={12}
                   animationDuration={1500}
                 />
               </BarChart>

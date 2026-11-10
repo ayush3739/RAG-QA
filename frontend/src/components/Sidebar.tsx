@@ -272,6 +272,37 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
               )}
             </div>
 
+            {/* Deep Research Quota Progress */}
+            <div className="px-3.5 py-2.5 bg-surface/30 border-b border-border/60">
+              <div className="flex items-center justify-between text-[11px] mb-1.5">
+                <span className="text-muted-foreground flex items-center gap-1.5 font-medium">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Deep Research
+                </span>
+                <span className="font-mono font-semibold text-foreground text-[10px]">
+                  {quota ? (quota.research_limit === null ? "Unlimited" : `${quota.research_used ?? 0} / ${quota.research_limit}`) : "..."}
+                </span>
+              </div>
+              {quota && quota.research_limit !== null ? (
+                <div className="w-full h-1.5 bg-surface-container rounded-full overflow-hidden">
+                  <div 
+                    className={cn(
+                      "h-full rounded-full transition-all duration-300",
+                      (quota.research_used ?? 0) >= quota.research_limit
+                        ? "bg-red-500"
+                        : (quota.research_used ?? 0) / quota.research_limit >= 0.8
+                        ? "bg-amber-500"
+                        : "bg-emerald-500"
+                    )}
+                    style={{ width: `${Math.min(100, ((quota.research_used ?? 0) / quota.research_limit) * 100)}%` }}
+                  />
+                </div>
+              ) : (
+                <div className="text-[10px] text-emerald-500/80 font-mono">
+                  Full unmetered research
+                </div>
+              )}
+            </div>
+
             <div className="p-1.5 space-y-1">
               <button 
                 onClick={() => { setCurrentTab("settings"); setShowUserMenu(false); }}
