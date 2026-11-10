@@ -250,6 +250,12 @@ export const api = {
     body: JSON.stringify(body),
   }),
 
+  changePassword: (payload: { current_password: string; new_password: string }) =>
+    apiFetch('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
   deleteMe: () => apiFetch('/user/me', { method: 'DELETE' }),
 
   // Documents

@@ -3,6 +3,7 @@ import Sidebar from "../Sidebar";
 import { Menu, Database } from "lucide-react";
 import { Toaster } from "sonner";
 import NoInternetBanner from "../NoInternetBanner";
+import { useStore } from "../../store/useStore";
 
 interface AppShellProps {
   currentTab: string;
@@ -23,9 +24,21 @@ export function AppShell({
   conversationsCount,
   children,
 }: AppShellProps) {
+  const theme = useStore((s) => s.theme);
+
   return (
     <div className="bg-background text-foreground flex h-screen overflow-hidden font-sans relative">
-      <Toaster position="top-right" richColors />
+      <Toaster 
+        theme={theme} 
+        position="top-right" 
+        toastOptions={{
+          style: {
+            backgroundColor: "var(--surface-container)",
+            borderColor: "var(--border)",
+            color: "var(--foreground)",
+          }
+        }}
+      />
       <NoInternetBanner />
 
       {/* Background Ambient Moving Orbs */}

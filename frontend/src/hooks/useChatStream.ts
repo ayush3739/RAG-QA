@@ -173,10 +173,10 @@ export function useChatStream({
           const isResearchQuota = errorData?.detail?.error === "RESEARCH_QUOTA_EXCEEDED" || errorData?.detail?.code === "RESEARCH_QUOTA_EXCEEDED" || errorData?.error === "RESEARCH_QUOTA_EXCEEDED";
           const isDailyQuota = errorData?.detail?.error === "QUOTA_EXCEEDED" || errorData?.error === "QUOTA_EXCEEDED";
           const rateLimitMsg = isResearchQuota
-            ? `🛑 **Deep Research Quota Exceeded** — ${errorData?.detail?.message || "You have reached your daily research allowance."} Please upgrade to Pro for higher limits.`
+            ? `**Deep Research Quota Exceeded** — ${errorData?.detail?.message || "You have reached your daily research allowance."} Please upgrade to Pro for higher limits.`
             : isDailyQuota
-            ? `🛑 **Daily Query Quota Exceeded** — ${errorData?.detail?.message || "You have reached your daily query allowance."} Please upgrade to Pro for 500 queries/day.`
-            : "⏳ **Rate Limited** — The AI provider is busy. Please wait a moment and try again.";
+            ? `**Daily Query Quota Exceeded** — ${errorData?.detail?.message || "You have reached your daily query allowance."} Please upgrade to Pro for 500 queries/day.`
+            : "**Rate Limited** — The AI provider is busy. Please wait a moment and try again.";
           setActiveMessages((prev) => prev.map((m) => (m.id === botMsgId ? { ...m, text: rateLimitMsg } : m)));
           toast.warning(errorData?.detail?.message || "Quota limit reached.", { duration: 7000 });
           api.getQuota().then((q) => useStore.getState().setQuota(q)).catch(() => {});
@@ -333,7 +333,7 @@ export function useChatStream({
     );
   };
 
-  const handleRetryMessage = async (messageId: string) => {
+  const handleRetryMessage = async (messageId: string, currentChatMode?: "auto" | "research") => {
     if (isProcessing) return;
     const msgIdx = activeMessages.findIndex((m) => m.id === messageId);
     if (msgIdx === -1) return;
@@ -347,8 +347,12 @@ export function useChatStream({
     }
     if (userMsgIdx === -1) return;
 
+    const targetMsg = activeMessages[msgIdx];
+    const isResearchQuota = targetMsg?.text?.includes("Deep Research Quota Exceeded");
+    const retryMode: "auto" | "research" = isResearchQuota ? "research" : (currentChatMode || "auto");
+
     const userQuery = activeMessages[userMsgIdx].text;
-    handleSendMessage(userQuery);
+    handleSendMessage(userQuery, retryMode);
   };
 
   const deleteSessionMutation = useMutation({

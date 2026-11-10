@@ -125,7 +125,7 @@ interface ChatWorkspaceProps {
   onAddDocument: (file: File) => void;
   onLinkDocument?: (documentId: string) => void;
   onUnlinkDocument?: (documentId: string) => void;
-  onRetryMessage?: (messageId: string) => void;
+  onRetryMessage?: (messageId: string, mode?: "auto" | "research") => void;
   selectedModel: string;
   sessionTitle?: string;
   graphStatuses?: any[];
@@ -374,7 +374,7 @@ export default function ChatWorkspace({
         )}
       >
         {/* Header */}
-        <header className="h-14 shrink-0 flex justify-between items-center px-6 pt-1 bg-background z-20 shadow-[0_1px_0_0_rgba(255,255,255,0.04)]">
+        <header className="h-14 shrink-0 flex justify-between items-center px-6 pt-1 bg-background z-20 border-b border-border/80">
           <div className="flex items-center space-x-3">
             <span className="text-sm font-medium text-foreground tracking-tight leading-none">{sessionTitle}</span>
             <span className="text-xs text-muted-foreground flex items-center leading-none">
@@ -448,7 +448,7 @@ export default function ChatWorkspace({
                     <button
                       key={idx}
                       onClick={() => setInputText(item.prompt)}
-                      className="flex items-start p-4 rounded-xl border border-border bg-surface hover:border-border/80 hover:bg-surface-container transition-all text-left group cursor-pointer"
+                      className="flex items-start p-4 rounded-xl border border-border bg-surface-container-lowest dark:bg-surface hover:border-primary/40 hover:bg-surface-container/80 transition-all text-left group cursor-pointer shadow-xs"
                     >
                       {/* Single neutral icon — no per-card hue */}
                       <div className="w-8 h-8 rounded-lg bg-surface-container border border-border flex items-center justify-center flex-shrink-0 mr-3.5 group-hover:border-border/80 transition-colors">
@@ -557,7 +557,7 @@ export default function ChatWorkspace({
                                         return <CodeBlock code={code} language={language} />;
                                       }
                                       return (
-                                        <code className="rounded-md bg-surface px-1.5 py-0.5 text-[14px] font-semibold text-foreground" {...props}>
+                                        <code className="rounded-md bg-surface border border-border/70 px-1.5 py-0.5 text-[13px] font-mono font-medium text-foreground" {...props}>
                                           {children}
                                         </code>
                                       );
@@ -684,7 +684,7 @@ export default function ChatWorkspace({
                             </button>
                             {onRetryMessage && (
                               <button
-                                onClick={() => onRetryMessage(msg.id)}
+                                onClick={() => onRetryMessage(msg.id, chatMode)}
                                 className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface transition-colors btn-press"
                                 title="Regenerate response"
                               >
@@ -775,8 +775,8 @@ export default function ChatWorkspace({
             <form 
               onSubmit={handleSubmit} 
               className={cn(
-                "w-full bg-surface border border-border rounded-xl p-2 flex flex-col transition-colors duration-200",
-                "focus-within:border-border/70"
+                "w-full bg-surface-container-lowest dark:bg-surface border border-border rounded-xl p-2 flex flex-col transition-all duration-200 shadow-xs",
+                "focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/15"
               )}
             >
             <textarea
@@ -794,21 +794,35 @@ export default function ChatWorkspace({
               </div>
               
               <div className="flex items-center space-x-2">
-                {/* Mode toggle */}
-                <button
-                  type="button"
-                  onClick={() => setChatMode(prev => prev === "auto" ? "research" : "auto")}
-                  className={cn(
-                    "px-2.5 py-1 text-[11px] font-mono font-medium rounded-md transition-all flex items-center gap-1.5 cursor-pointer",
-                    chatMode === "auto" 
-                      ? "text-muted-foreground hover:text-foreground hover:bg-surface-container" 
-                      : "text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 shadow-[0_0_8px_rgba(16,185,129,0.15)]"
-                  )}
-                  title="Toggle Mode (Auto / Deep Research)"
-                >
-                  {chatMode === "research" && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />}
-                  {chatMode === "auto" ? "Auto" : "Deep Research"}
-                </button>
+                {/* Mode toggle — refined segmented pill switch with crisp borders */}
+                <div className="flex items-center bg-zinc-200/60 dark:bg-zinc-900/90 border border-zinc-300/80 dark:border-zinc-700/80 rounded-lg p-0.5 text-[11px] font-mono select-none gap-0.5 shadow-inner">
+                  <button
+                    type="button"
+                    onClick={() => setChatMode("auto")}
+                    className={cn(
+                      "px-3 py-1 rounded-md transition-all duration-150 cursor-pointer font-medium flex items-center justify-center",
+                      chatMode === "auto"
+                        ? "bg-white text-zinc-900 border-zinc-300/90 shadow-xs dark:bg-zinc-700/90 dark:text-zinc-100 dark:border-zinc-500/80 font-semibold border"
+                        : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-100 hover:bg-white/60 dark:hover:bg-zinc-800/60 border border-transparent"
+                    )}
+                    title="Auto: Dynamic tool routing (Direct, Documents, Web)"
+                  >
+                    Auto
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setChatMode("research")}
+                    className={cn(
+                      "px-3 py-1 rounded-md transition-all duration-150 cursor-pointer font-medium flex items-center justify-center",
+                      chatMode === "research"
+                        ? "bg-white text-zinc-900 border-zinc-300/90 shadow-xs dark:bg-zinc-700/90 dark:text-zinc-100 dark:border-zinc-500/80 font-semibold border"
+                        : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-100 hover:bg-white/60 dark:hover:bg-zinc-800/60 border border-transparent"
+                    )}
+                    title="Research: Multi-step evidence synthesis & deep research"
+                  >
+                    Research
+                  </button>
+                </div>
 
                 {/* Send button — outlined accent, not filled */}
                 <button

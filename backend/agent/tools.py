@@ -236,10 +236,19 @@ async def web_search_impl(query: str):
         "include_answer": True,
     }
 
-    async with httpx.AsyncClient(timeout=8.0) as client:
-        response = await client.post("https://api.tavily.com/search", json=payload)
-        response.raise_for_status()
-        data = response.json()
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.post("https://api.tavily.com/search", json=payload)
+            response.raise_for_status()
+            data = response.json()
+    except Exception as exc:
+        return {
+            "answer": None,
+            "results": [],
+            "sources": [],
+            "confidence": 0.0,
+            "error": f"Web search failed: {exc}",
+        }
 
     return {
         "answer": data.get("answer"),

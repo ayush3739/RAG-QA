@@ -25,6 +25,7 @@ from backend.models.auth_schemas import (
     UserResponse,
     ForgotPasswordRequest,
     ResetPasswordRequest,
+    ChangePasswordRequest,
     RefreshTokenRequest,
     VerifyEmailRequest,
 )
@@ -309,6 +310,24 @@ async def reset_password(
         await db.rollback()
         raise
     return {"message": "Password successfully reset. Please log in with your new password."}
+
+
+@router.post("/change-password", response_model=MessageResponse)
+async def change_password(
+    body: ChangePasswordRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    """Change password for an authenticated user."""
+    if not current_user.password_hash or not verify_password(body.current_password, current_user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect.",
+        )
+    current_user.password_hash = hash_password(body.new_password)
+    db.add(current_user)
+    await db.commit()
+    return {"message": "Password successfully changed."}
 
 
 @router.post("/refresh-token", response_model=TokenResponse)

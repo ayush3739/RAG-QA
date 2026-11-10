@@ -121,18 +121,19 @@ class ChatService:
                 or "quota" in exc_str
                 or "429" in exc_str
                 or "too many requests" in exc_str
+                or "exhausted" in exc_str
             )
 
             if is_rate_limited:
                 error_message = (
-                    "The AI provider is currently rate-limited. "
+                    "The AI provider is currently busy or rate-limited. "
                     "Please wait a moment and try again."
                 )
                 event_type_to_yield = "rate_limit"
             else:
                 error_message = (
                     "Sorry, I couldn't complete this response because the agent "
-                    
+                    f"encountered an error: {exc}"
                 )
                 event_type_to_yield = "error"
 

@@ -232,8 +232,7 @@ async def main_router(state: MainState) -> dict:
     if has_documents and _is_document_query(query) and not _is_contextual_followup(query):
         route = (
             "research"
-            if _is_complex_analysis_query(query)
-            or (state.get("include_web", True) and _needs_live_web(query))
+            if state.get("mode") == "research" and (_is_complex_analysis_query(query) or (state.get("include_web", True) and _needs_live_web(query)))
             else "document"
         )
         reason = (
@@ -266,6 +265,8 @@ async def main_router(state: MainState) -> dict:
     route = result.get("route", "general")
     if route not in {"general", "document", "web", "research"}:
         route = "general"
+    if route == "research" and state.get("mode") != "research":
+        route = "web" if (state.get("include_web", True) and not state.get("document_ids")) else ("document" if state.get("document_ids") else "general")
     if route == "document" and not state.get("document_ids"):
         route = "general"
     if route == "web" and not state.get("include_web", True):

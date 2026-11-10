@@ -29,7 +29,7 @@ interface AppWorkspaceProps {
   handleAddDocument: (file: File, sessionId?: string) => void;
   handleLinkDocument: (sessionId: string, documentId: string) => void;
   handleUnlinkDocument: (sessionId: string, documentId: string) => void;
-  handleRetryMessage: (messageId: string) => void;
+  handleRetryMessage: (messageId: string, mode?: "auto" | "research") => void;
   toggleDocumentActive: (id: string) => void;
   handleDeleteDocument: (id: string) => void;
   handleDeleteSession: (id: string) => void;

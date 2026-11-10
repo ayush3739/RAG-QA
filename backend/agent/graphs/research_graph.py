@@ -172,6 +172,24 @@ async def evidence_fusion(state: ResearchState) -> dict:
         ]
     )
     fused = _parse_json_array(response)
+    if not fused:
+        fused = [
+            {
+                "id": f"ev_{i + 1}",
+                "content": chunk.get("text") or chunk.get("content", ""),
+                "source": "retriever",
+                "url": chunk.get("source", ""),
+            }
+            for i, chunk in enumerate(state.get("retrieved_chunks", []))
+        ] + [
+            {
+                "id": f"web_{i + 1}",
+                "content": item.get("content", ""),
+                "source": "web",
+                "url": item.get("url", ""),
+            }
+            for i, item in enumerate(state.get("web_results", []))
+        ]
     return {"fused_evidence": fused}
 
 

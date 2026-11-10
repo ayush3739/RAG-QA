@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { 
   Cpu, Sliders, User, Shield, RefreshCw, Moon, Sun, LogOut, Trash2, Save, Check,
-  Server, Palette, AlertTriangle, Crown, CheckCircle2, Sparkles
+  Server, Palette, AlertTriangle, Crown, CheckCircle2, Sparkles, Lock, Eye, EyeOff
 } from "lucide-react";
+import { toast } from "sonner";
 import { ModelParams } from "../types";
 import { cn } from "../lib/utils";
 import { useQuery } from "@tanstack/react-query";
@@ -85,6 +86,41 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
   const [nameSaved, setNameSaved] = useState(false);
   const [isSavingName, setIsSavingName] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleChangePassword = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!currentPassword || !newPassword || isChangingPassword) return;
+    if (newPassword.length < 8) {
+      toast.error("New password must be at least 8 characters.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("New passwords do not match.");
+      return;
+    }
+    setIsChangingPassword(true);
+    try {
+      await api.changePassword({
+        current_password: currentPassword,
+        new_password: newPassword,
+      });
+      toast.success("Password changed successfully.");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to change password. Please check your current password.");
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
 
   useEffect(() => { if (user?.name) setDisplayName(user.name); }, [user]);
 
@@ -340,6 +376,73 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
                         />
                       </div>
                     </div>
+                  </SettingsSection>
+                </div>
+
+                {/* Security / Password Change */}
+                <div className="premium-card p-6 space-y-4">
+                  <SettingsSection title="Security & Authentication">
+                    <form onSubmit={handleChangePassword} className="space-y-4 pt-1">
+                      <div>
+                        <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground block mb-1.5">
+                          Current Password
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showPassword ? "text" : "password"}
+                            value={currentPassword}
+                            onChange={(e) => setCurrentPassword(e.target.value)}
+                            placeholder="Enter current password"
+                            className="w-full text-sm font-medium bg-background border border-border rounded-lg pl-3 pr-10 py-2.5 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all font-mono"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                          >
+                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground block mb-1.5">
+                            New Password
+                          </label>
+                          <input
+                            type={showPassword ? "text" : "password"}
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            placeholder="At least 8 characters"
+                            className="w-full text-sm font-medium bg-background border border-border rounded-lg px-3 py-2.5 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all font-mono"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground block mb-1.5">
+                            Confirm New Password
+                          </label>
+                          <input
+                            type={showPassword ? "text" : "password"}
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            placeholder="Re-type new password"
+                            className="w-full text-sm font-medium bg-background border border-border rounded-lg px-3 py-2.5 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all font-mono"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end pt-1">
+                        <button
+                          type="submit"
+                          disabled={isChangingPassword || !currentPassword || !newPassword || !confirmPassword}
+                          className="px-4 py-2.5 rounded-lg bg-surface border border-border hover:bg-surface-container text-foreground transition-all cursor-pointer disabled:opacity-40 flex items-center gap-2 text-sm font-semibold"
+                        >
+                          <Lock className="w-4 h-4" />
+                          {isChangingPassword ? "Updating..." : "Update Password"}
+                        </button>
+                      </div>
+                    </form>
                   </SettingsSection>
                 </div>
 

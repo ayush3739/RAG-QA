@@ -231,12 +231,12 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
               <span className={cn(
                 "text-[9px] font-mono font-extrabold uppercase px-1.5 py-0.5 rounded tracking-wider flex items-center gap-1",
                 user?.role?.toLowerCase() === "pro"
-                  ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                  ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30"
                   : user?.role?.toLowerCase() === "admin"
-                  ? "bg-purple-500/15 text-purple-400 border border-purple-500/30"
+                  ? "bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30"
                   : "bg-surface-container text-muted-foreground border border-border"
               )}>
-                {user?.role?.toLowerCase() === "pro" && <Crown className="w-2.5 h-2.5 text-amber-400" />}
+                {user?.role?.toLowerCase() === "pro" && <Crown className="w-2.5 h-2.5 text-amber-600 dark:text-amber-400" />}
                 {user?.role?.toLowerCase() === "admin" ? "ADMIN" : user?.role?.toLowerCase() === "pro" ? "PRO" : "FREE"}
               </span>
             </div>
@@ -275,8 +275,8 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
             {/* Deep Research Quota Progress */}
             <div className="px-3.5 py-2.5 bg-surface/30 border-b border-border/60">
               <div className="flex items-center justify-between text-[11px] mb-1.5">
-                <span className="text-muted-foreground flex items-center gap-1.5 font-medium">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Deep Research
+                <span className="text-muted-foreground font-medium">
+                  Deep Research
                 </span>
                 <span className="font-mono font-semibold text-foreground text-[10px]">
                   {quota ? (quota.research_limit === null ? "Unlimited" : `${quota.research_used ?? 0} / ${quota.research_limit}`) : "..."}
@@ -348,9 +348,9 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
                 <span className={cn(
                   "text-[9px] font-mono font-extrabold uppercase px-1.5 py-0.2 rounded tracking-wider flex items-center gap-0.5 shrink-0",
                   user?.role?.toLowerCase() === "pro"
-                    ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                    ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30"
                     : user?.role?.toLowerCase() === "admin"
-                    ? "bg-purple-500/15 text-purple-400 border border-purple-500/30"
+                    ? "bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30"
                     : "bg-surface-container-high text-muted-foreground border border-border/60"
                 )}>
                   {user?.role?.toLowerCase() === "admin" ? "ADMIN" : user?.role?.toLowerCase() === "pro" ? "PRO" : "FREE"}
