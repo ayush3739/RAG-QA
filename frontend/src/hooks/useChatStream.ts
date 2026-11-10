@@ -4,7 +4,7 @@ import { api } from "../lib/api";
 import { toast } from "sonner";
 import { useStore } from "../store/useStore";
 import { Message, Citation, SourceDocument, Conversation } from "../types";
-import { mapSourcesToCitations } from "../lib/formatters";
+import { mapSourcesToCitations, formatResetTime } from "../lib/formatters";
 
 interface UseChatStreamProps {
   activeConvId: string | null;
@@ -172,10 +172,11 @@ export function useChatStream({
           const errorData = await res.json().catch(() => null);
           const isResearchQuota = errorData?.detail?.error === "RESEARCH_QUOTA_EXCEEDED" || errorData?.detail?.code === "RESEARCH_QUOTA_EXCEEDED" || errorData?.error === "RESEARCH_QUOTA_EXCEEDED";
           const isDailyQuota = errorData?.detail?.error === "QUOTA_EXCEEDED" || errorData?.error === "QUOTA_EXCEEDED";
+          const resetInfo = formatResetTime();
           const rateLimitMsg = isResearchQuota
-            ? `**Deep Research Quota Exceeded** — ${errorData?.detail?.message || "You have reached your daily research allowance."} Please upgrade to Pro for higher limits.`
+            ? `**Deep Research Quota Exceeded** — ${errorData?.detail?.message || "You have reached your daily research allowance."} ${resetInfo.summary}. Please upgrade to Pro for higher limits.`
             : isDailyQuota
-            ? `**Daily Query Quota Exceeded** — ${errorData?.detail?.message || "You have reached your daily query allowance."} Please upgrade to Pro for 500 queries/day.`
+            ? `**Daily Query Quota Exceeded** — ${errorData?.detail?.message || "You have reached your daily query allowance."} ${resetInfo.summary}. Please upgrade to Pro for 500 queries/day.`
             : "**Rate Limited** — The AI provider is busy. Please wait a moment and try again.";
           setActiveMessages((prev) => prev.map((m) => (m.id === botMsgId ? { ...m, text: rateLimitMsg } : m)));
           toast.warning(errorData?.detail?.message || "Quota limit reached.", { duration: 7000 });

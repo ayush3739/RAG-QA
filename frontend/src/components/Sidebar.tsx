@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from "react";
 import { 
   Database, Plus, FolderOpen, MessageSquare, 
-  LayoutDashboard, Settings, LogOut, Sun, Moon, PanelLeftClose, PanelLeftOpen, Sparkles, Crown
+  LayoutDashboard, Settings, LogOut, Sun, Moon, PanelLeftClose, PanelLeftOpen, Sparkles, Crown, Clock, CreditCard
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "../lib/utils";
 import { useStore } from "../store/useStore";
 import { api } from "../lib/api";
+import { formatResetTime } from "../lib/formatters";
 interface SidebarProps {
   currentTab: string;
   setCurrentTab: (tab: string) => void;
@@ -221,11 +222,18 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
         {showUserMenu && !isCollapsed && (
           <div className="absolute bottom-full left-2 right-2 mb-2 bg-surface border border-border rounded-xl shadow-xl overflow-hidden z-50">
             {/* Plan Info Strip */}
-            <div className="px-3.5 py-2.5 bg-surface-container/50 border-b border-border/60 flex items-center justify-between">
+            <div 
+              onClick={() => {
+                localStorage.setItem("settings_active_section", "subscription");
+                setCurrentTab("settings");
+                setShowUserMenu(false);
+              }}
+              className="px-3.5 py-2.5 bg-surface-container/50 border-b border-border/60 flex items-center justify-between cursor-pointer hover:bg-surface-container transition-colors group"
+            >
               <div>
-                <p className="text-[11px] font-semibold text-foreground">Current Plan</p>
+                <p className="text-[11px] font-semibold text-foreground group-hover:text-primary transition-colors">Current Plan</p>
                 <p className="text-[10px] text-muted-foreground">
-                  {user?.role?.toLowerCase() === "admin" ? "System Administrator" : user?.role?.toLowerCase() === "pro" ? "Pro Plan (Full Access)" : "Free Plan"}
+                  {user?.role?.toLowerCase() === "admin" ? "System Administrator" : user?.role?.toLowerCase() === "pro" ? "Pro Plan (Full Access)" : "Community Free"}
                 </p>
               </div>
               <span className={cn(
@@ -303,9 +311,34 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
               )}
             </div>
 
+            {/* Daily Reset Time — Pure frontend calculation */}
+            <div className="px-3.5 py-1.5 bg-surface/20 border-b border-border/60 flex items-center justify-between text-[10px]">
+              <span className="text-muted-foreground flex items-center gap-1 font-mono">
+                <Clock className="w-3 h-3 text-muted-foreground/80" /> Daily Reset
+              </span>
+              <span className="font-mono text-muted-foreground">
+                {formatResetTime().summary}
+              </span>
+            </div>
+
             <div className="p-1.5 space-y-1">
               <button 
-                onClick={() => { setCurrentTab("settings"); setShowUserMenu(false); }}
+                onClick={() => { 
+                  localStorage.setItem("settings_active_section", "subscription");
+                  setCurrentTab("settings"); 
+                  setShowUserMenu(false); 
+                }}
+                className="w-full flex items-center px-3 py-2 text-xs text-foreground font-medium hover:bg-surface-container rounded-lg transition-colors cursor-pointer"
+              >
+                <CreditCard className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                Subscription & Quota
+              </button>
+              <button 
+                onClick={() => { 
+                  localStorage.setItem("settings_active_section", "account");
+                  setCurrentTab("settings"); 
+                  setShowUserMenu(false); 
+                }}
                 className="w-full flex items-center px-3 py-2 text-xs text-foreground font-medium hover:bg-surface-container rounded-lg transition-colors cursor-pointer"
               >
                 <Settings className="w-3.5 h-3.5 mr-2 text-muted-foreground" />

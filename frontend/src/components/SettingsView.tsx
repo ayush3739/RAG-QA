@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { 
   Cpu, Sliders, User, Shield, RefreshCw, Moon, Sun, LogOut, Trash2, Save, Check,
-  Server, Palette, AlertTriangle, Crown, CheckCircle2, Sparkles, Lock, Eye, EyeOff
+  Server, Palette, AlertTriangle, Crown, Sparkles, Lock, Eye, EyeOff, Clock,
+  CreditCard, ArrowUpRight, CheckCircle2, FileText, Zap, ChevronRight
 } from "lucide-react";
 import { toast } from "sonner";
 import { ModelParams } from "../types";
@@ -9,6 +10,7 @@ import { cn } from "../lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { useStore } from "../store/useStore";
 import { api } from "../lib/api";
+import { formatResetTime } from "../lib/formatters";
 import { motion, AnimatePresence } from "framer-motion";
 import ConfirmDialog from "./ConfirmDialog";
 
@@ -68,19 +70,33 @@ const SECTIONS = [
   { id: "appearance", label: "Appearance", icon: Palette },
   { id: "developer", label: "Developer", icon: Sliders },
   { id: "account", label: "Account", icon: User },
+  { id: "subscription", label: "Subscription", icon: CreditCard },
   { id: "health", label: "System Health", icon: Shield },
 ];
 
 export default function SettingsView({ params, onParamChange }: SettingsViewProps) {
-  const [activeSection, setActiveSection] = useState("llm");
+  const [activeSection, setActiveSection] = useState(() => {
+    return localStorage.getItem("settings_active_section") || "account";
+  });
   const [useOllama, setUseOllama] = useState(() => localStorage.getItem("setting_use_ollama") === "true");
   const [showChunks, setShowChunks] = useState(() => localStorage.getItem("setting_show_chunks") === "true");
   const [inspectorOpen, setInspectorOpen] = useState(() => localStorage.getItem("setting_inspector_open") !== "false");
 
   const user = useStore(s => s.user);
+  const quota = useStore(s => s.quota);
+  const documents = useStore(s => s.documents);
   const logout = () => { api.logout(); };
   const theme = useStore(s => s.theme);
   const setTheme = useStore(s => s.setTheme);
+
+  const role = (user?.role || "user").toLowerCase();
+  const isAdmin = role === "admin";
+  const isPro = role === "pro";
+  const isFree = !isAdmin && !isPro;
+
+  const docLimit = isAdmin ? null : isPro ? 50 : 3;
+  const pageLimit = isAdmin ? null : isPro ? 300 : 15;
+  const resetInfo = formatResetTime(quota?.reset_at);
 
   const [displayName, setDisplayName] = useState(user?.name || "");
   const [nameSaved, setNameSaved] = useState(false);
@@ -93,6 +109,23 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Sync activeSection with external changes
+  useEffect(() => {
+    const handleStorage = () => {
+      const saved = localStorage.getItem("settings_active_section");
+      if (saved && saved !== activeSection) {
+        setActiveSection(saved);
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [activeSection]);
+
+  const handleTabChange = (sectionId: string) => {
+    setActiveSection(sectionId);
+    localStorage.setItem("settings_active_section", sectionId);
+  };
 
   const handleChangePassword = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -170,7 +203,7 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
             return (
               <button
                 key={s.id}
-                onClick={() => setActiveSection(s.id)}
+                onClick={() => handleTabChange(s.id)}
                 className={cn(
                   "relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors cursor-pointer rounded-t-lg",
                   isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground"
@@ -200,7 +233,7 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.18, ease: "easeOut" }}
-            className="max-w-2xl space-y-8"
+            className="max-w-2xl md:max-w-3xl space-y-8"
           >
 
             {/* LLM Provider */}
@@ -375,6 +408,23 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
                           className="w-full text-sm font-medium bg-surface border border-border rounded-lg px-3 py-2.5 text-muted-foreground cursor-not-allowed focus:outline-none"
                         />
                       </div>
+
+                      <div className="pt-2 border-t border-border/50 flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">Assigned Plan</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-semibold text-foreground">
+                            {isAdmin ? "Enterprise Admin" : isPro ? "KnowVex Pro" : "Community Free"}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleTabChange("subscription")}
+                            className="text-primary hover:underline font-medium inline-flex items-center gap-0.5 cursor-pointer ml-1"
+                          >
+                            <span>Manage Plan & Limits</span>
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </SettingsSection>
                 </div>
@@ -446,56 +496,6 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
                   </SettingsSection>
                 </div>
 
-                {/* Plan & Subscription Card */}
-                <div className="premium-card p-6 space-y-4">
-                  <SettingsSection title="Subscription & Plan">
-                    <div className="p-4 rounded-xl bg-surface-container/40 border border-border/70 space-y-3 mt-1">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2.5">
-                          <div className={cn(
-                            "p-2 rounded-lg",
-                            user?.role?.toLowerCase() === "pro"
-                              ? "bg-amber-500/15 text-amber-400"
-                              : "bg-surface-container text-primary"
-                          )}>
-                            {user?.role?.toLowerCase() === "pro" ? <Crown className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
-                          </div>
-                          <div>
-                            <h4 className="text-sm font-bold text-foreground">
-                              {user?.role?.toLowerCase() === "admin" ? "Enterprise Administrator" : user?.role?.toLowerCase() === "pro" ? "KnowVex Pro Access" : "Community Free Plan"}
-                            </h4>
-                            <p className="text-xs text-muted-foreground">
-                              {user?.role?.toLowerCase() === "pro" ? "Full model capacity and active tool-routing" : "Standard query routing and vector database"}
-                            </p>
-                          </div>
-                        </div>
-                        <span className="text-[10px] font-mono font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full">
-                          ACTIVE
-                        </span>
-                      </div>
-
-                      <div className="pt-2 border-t border-border/50 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-muted-foreground">
-                        <div className="flex items-center space-x-2">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                          <span>Hybrid Vector + BM25 RAG</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                          <span>Groq 120B Model Inference</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                          <span>Grounded Source Citations</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                          <span>Unlimited Document Storage</span>
-                        </div>
-                      </div>
-                    </div>
-                  </SettingsSection>
-                </div>
-
                 {/* Danger Zone */}
                 <div className="p-5 rounded-2xl border border-red-500/20 bg-red-500/[0.03] space-y-3">
                   <div className="flex items-center gap-2 mb-3">
@@ -533,6 +533,277 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
                   onConfirm={handleDeleteAccount}
                   onCancel={() => setShowDeleteAccount(false)}
                 />
+              </div>
+            )}
+
+            {/* Subscription */}
+            {activeSection === "subscription" && (
+              <div className="space-y-6">
+                {/* Active Plan Overview */}
+                <div className="premium-card p-6 space-y-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2.5">
+                        <h3 className="text-base font-bold text-foreground tracking-tight">
+                          {isAdmin ? "Enterprise Administrator" : isPro ? "KnowVex Pro Tier" : "Community Free Tier"}
+                        </h3>
+                        <span className={cn(
+                          "text-[10px] font-mono font-bold tracking-wider px-2 py-0.5 rounded border uppercase",
+                          isAdmin 
+                            ? "bg-purple-500/10 text-purple-400 border-purple-500/20"
+                            : isPro 
+                            ? "bg-primary/10 text-primary border-primary/20" 
+                            : "bg-surface-container text-muted-foreground border-border"
+                        )}>
+                          {isAdmin ? "SYSTEM ADMIN" : "ACTIVE"}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed max-w-xl">
+                        {isAdmin
+                          ? "Unmetered infrastructure access with uncapped agent routing, deep research, and storage."
+                          : isPro
+                          ? "Professional tier with 500 daily agent queries, 25 deep research executions, and 50 document slots."
+                          : "Standard metered tier with 10 daily agent queries, 1 deep research execution, and 3 document storage slots."}
+                      </p>
+                    </div>
+
+                    {isFree && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          toast.info("Pro plan includes 500 queries/day, 25 deep research runs, and 50 document slots.", {
+                            description: "To upgrade your organization account, reach out to your team admin or email admin@knowvex.ai"
+                          });
+                        }}
+                        className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 border border-primary/20 rounded-lg transition-colors cursor-pointer"
+                      >
+                        <span>Upgrade to Pro</span>
+                        <ArrowUpRight className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Telemetry metadata strip */}
+                  <div className="pt-4 border-t border-border grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                    <div className="p-3 rounded-lg bg-surface-container/30 border border-border/50">
+                      <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Allocation Cycle</div>
+                      <div className="text-xs font-semibold text-foreground mt-0.5">Daily Midnight UTC</div>
+                    </div>
+                    <div className="p-3 rounded-lg bg-surface-container/30 border border-border/50">
+                      <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Local Reset Window</div>
+                      <div className="text-xs font-semibold text-foreground mt-0.5">{resetInfo.localTime}</div>
+                    </div>
+                    <div className="p-3 rounded-lg bg-surface-container/30 border border-border/50">
+                      <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Cycle Status</div>
+                      <div className="text-xs font-mono font-semibold text-foreground mt-0.5">{resetInfo.timeRemaining} remaining</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Metered Resource Usage */}
+                <div className="premium-card p-6 space-y-5">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      Metered Resource Usage
+                    </h4>
+                    <div className="flex items-center gap-1.5 text-[11px] font-mono text-muted-foreground">
+                      <Clock className="w-3.5 h-3.5 text-primary" />
+                      <span>{resetInfo.summary}</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 pt-1">
+                    {/* Daily Queries */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-semibold text-foreground">Daily Agent Queries</span>
+                        <span className="font-mono font-medium text-foreground">
+                          {quota ? (quota.query_limit === null ? "Unlimited" : `${quota.queries_used} / ${quota.query_limit}`) : "..."}
+                        </span>
+                      </div>
+                      <div className="w-full h-2 bg-surface-container rounded-full overflow-hidden">
+                        <div 
+                          className={cn(
+                            "h-full rounded-full transition-all duration-300",
+                            quota && quota.query_limit !== null && quota.queries_used >= quota.query_limit
+                              ? "bg-red-500"
+                              : quota && quota.query_limit !== null && quota.queries_used / quota.query_limit >= 0.8
+                              ? "bg-amber-500"
+                              : "bg-primary"
+                          )}
+                          style={{ 
+                            width: `${quota && quota.query_limit ? Math.min(100, (quota.queries_used / quota.query_limit) * 100) : (quota?.query_limit === null ? 100 : 0)}%` 
+                          }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-[11px] text-muted-foreground font-mono">
+                        <span>Resets daily at 00:00 UTC</span>
+                        <span>
+                          {quota?.query_limit !== null && quota
+                            ? `${Math.max(0, (quota.query_limit ?? 0) - quota.queries_used)} queries remaining`
+                            : "Unmetered inference"}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Deep Research Executions */}
+                    <div className="space-y-2 pt-3 border-t border-border/50">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-semibold text-foreground">Deep Research Runs</span>
+                        <span className="font-mono font-medium text-foreground">
+                          {quota ? (quota.research_limit === null ? "Unlimited" : `${quota.research_used ?? 0} / ${quota.research_limit}`) : "..."}
+                        </span>
+                      </div>
+                      <div className="w-full h-2 bg-surface-container rounded-full overflow-hidden">
+                        <div 
+                          className={cn(
+                            "h-full rounded-full transition-all duration-300",
+                            quota && quota.research_limit !== null && (quota.research_used ?? 0) >= quota.research_limit
+                              ? "bg-red-500"
+                              : quota && quota.research_limit !== null && (quota.research_used ?? 0) / quota.research_limit >= 0.8
+                              ? "bg-amber-500"
+                              : "bg-primary"
+                          )}
+                          style={{ 
+                            width: `${quota && quota.research_limit ? Math.min(100, ((quota.research_used ?? 0) / quota.research_limit) * 100) : (quota?.research_limit === null ? 100 : 0)}%` 
+                          }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-[11px] text-muted-foreground font-mono">
+                        <span>Autonomous multi-agent research runs</span>
+                        <span>
+                          {quota?.research_limit !== null && quota
+                            ? `${Math.max(0, (quota.research_limit ?? 0) - (quota.research_used ?? 0))} runs remaining`
+                            : "Unmetered runs"}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Document Library Slots */}
+                    <div className="space-y-2 pt-3 border-t border-border/50">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-semibold text-foreground">Document Library Capacity</span>
+                        <span className="font-mono font-medium text-foreground">
+                          {docLimit === null ? `${documents.length} / Unlimited` : `${documents.length} / ${docLimit} files`}
+                        </span>
+                      </div>
+                      <div className="w-full h-2 bg-surface-container rounded-full overflow-hidden">
+                        <div 
+                          className={cn(
+                            "h-full rounded-full transition-all duration-300",
+                            docLimit !== null && documents.length >= docLimit
+                              ? "bg-red-500"
+                              : docLimit !== null && documents.length / docLimit >= 0.8
+                              ? "bg-amber-500"
+                              : "bg-primary"
+                          )}
+                          style={{ 
+                            width: `${docLimit ? Math.min(100, (documents.length / docLimit) * 100) : 100}%` 
+                          }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-[11px] text-muted-foreground font-mono">
+                        <span>Max {pageLimit ?? "unlimited"} pages per document</span>
+                        <span>
+                          {docLimit !== null
+                            ? `${Math.max(0, docLimit - documents.length)} file slots available`
+                            : "Uncapped document store"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-border/50 text-[11px] text-muted-foreground font-mono flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-primary shrink-0" />
+                    <span>Next allocation cycle begins at {resetInfo.localTime} ({resetInfo.timeRemaining} remaining). All daily meters reset to zero.</span>
+                  </div>
+                </div>
+
+                {/* Tier Specifications Table */}
+                <div className="premium-card p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                        Plan Resource Specifications
+                      </h4>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Deterministic constraints enforced across application runtime
+                      </p>
+                    </div>
+                    <span className="text-[11px] font-mono text-muted-foreground">
+                      RBAC Engine
+                    </span>
+                  </div>
+
+                  <div className="overflow-x-auto -mx-2">
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead>
+                        <tr className="border-b border-border text-[11px] text-muted-foreground uppercase tracking-wider font-mono">
+                          <th className="py-2.5 px-3 font-semibold">Resource / Capability</th>
+                          <th className={cn("py-2.5 px-3 font-semibold", isFree && "text-primary")}>
+                            Community {isFree && "(Current)"}
+                          </th>
+                          <th className={cn("py-2.5 px-3 font-semibold", isPro && "text-primary")}>
+                            KnowVex Pro {isPro && "(Current)"}
+                          </th>
+                          <th className={cn("py-2.5 px-3 font-semibold", isAdmin && "text-primary")}>
+                            Enterprise {isAdmin && "(Current)"}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border/40 font-mono text-[11px]">
+                        <tr className="hover:bg-surface-container/20 transition-colors">
+                          <td className="py-2.5 px-3 font-sans text-foreground font-medium text-xs">Daily Agent Inferences</td>
+                          <td className={cn("py-2.5 px-3", isFree && "font-semibold text-foreground")}>10 / day</td>
+                          <td className={cn("py-2.5 px-3", isPro && "font-semibold text-foreground")}>500 / day</td>
+                          <td className={cn("py-2.5 px-3", isAdmin && "font-semibold text-foreground")}>Unlimited</td>
+                        </tr>
+                        <tr className="hover:bg-surface-container/20 transition-colors">
+                          <td className="py-2.5 px-3 font-sans text-foreground font-medium text-xs">Deep Research Runs</td>
+                          <td className={cn("py-2.5 px-3", isFree && "font-semibold text-foreground")}>1 / day</td>
+                          <td className={cn("py-2.5 px-3", isPro && "font-semibold text-foreground")}>25 / day</td>
+                          <td className={cn("py-2.5 px-3", isAdmin && "font-semibold text-foreground")}>Unlimited</td>
+                        </tr>
+                        <tr className="hover:bg-surface-container/20 transition-colors">
+                          <td className="py-2.5 px-3 font-sans text-foreground font-medium text-xs">Document Library Capacity</td>
+                          <td className={cn("py-2.5 px-3", isFree && "font-semibold text-foreground")}>3 documents</td>
+                          <td className={cn("py-2.5 px-3", isPro && "font-semibold text-foreground")}>50 documents</td>
+                          <td className={cn("py-2.5 px-3", isAdmin && "font-semibold text-foreground")}>Unlimited</td>
+                        </tr>
+                        <tr className="hover:bg-surface-container/20 transition-colors">
+                          <td className="py-2.5 px-3 font-sans text-foreground font-medium text-xs">Max Pages Per Document</td>
+                          <td className={cn("py-2.5 px-3", isFree && "font-semibold text-foreground")}>15 pages</td>
+                          <td className={cn("py-2.5 px-3", isPro && "font-semibold text-foreground")}>300 pages</td>
+                          <td className={cn("py-2.5 px-3", isAdmin && "font-semibold text-foreground")}>Unlimited</td>
+                        </tr>
+                        <tr className="hover:bg-surface-container/20 transition-colors">
+                          <td className="py-2.5 px-3 font-sans text-foreground font-medium text-xs">Real-Time Web Grounding</td>
+                          <td className={cn("py-2.5 px-3", isFree && "font-semibold text-foreground")}>Standard (Tavily)</td>
+                          <td className={cn("py-2.5 px-3", isPro && "font-semibold text-foreground")}>Standard (Tavily)</td>
+                          <td className={cn("py-2.5 px-3", isAdmin && "font-semibold text-foreground")}>High-Throughput</td>
+                        </tr>
+                        <tr className="hover:bg-surface-container/20 transition-colors">
+                          <td className="py-2.5 px-3 font-sans text-foreground font-medium text-xs">RAG Retrieval Pipeline</td>
+                          <td className={cn("py-2.5 px-3", isFree && "font-semibold text-foreground")}>Hybrid Vector + BM25</td>
+                          <td className={cn("py-2.5 px-3", isPro && "font-semibold text-foreground")}>Hybrid Vector + BM25</td>
+                          <td className={cn("py-2.5 px-3", isAdmin && "font-semibold text-foreground")}>Hybrid Vector + BM25</td>
+                        </tr>
+                        <tr className="hover:bg-surface-container/20 transition-colors">
+                          <td className="py-2.5 px-3 font-sans text-foreground font-medium text-xs">Cross-Encoder Reranking</td>
+                          <td className={cn("py-2.5 px-3", isFree && "font-semibold text-foreground")}>CrossEncoder (bge)</td>
+                          <td className={cn("py-2.5 px-3", isPro && "font-semibold text-foreground")}>CrossEncoder (bge)</td>
+                          <td className={cn("py-2.5 px-3", isAdmin && "font-semibold text-foreground")}>CrossEncoder (bge)</td>
+                        </tr>
+                        <tr className="hover:bg-surface-container/20 transition-colors">
+                          <td className="py-2.5 px-3 font-sans text-foreground font-medium text-xs">Execution Timeout</td>
+                          <td className={cn("py-2.5 px-3", isFree && "font-semibold text-foreground")}>120s max</td>
+                          <td className={cn("py-2.5 px-3", isPro && "font-semibold text-foreground")}>300s max</td>
+                          <td className={cn("py-2.5 px-3", isAdmin && "font-semibold text-foreground")}>Uncapped</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             )}
 
