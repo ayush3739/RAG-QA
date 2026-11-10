@@ -244,3 +244,4 @@ frontend/.agents/
 .codex/
 evals/
 .vscode/
+.hallmark/salt

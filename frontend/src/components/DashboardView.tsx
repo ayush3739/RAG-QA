@@ -86,13 +86,16 @@ function GlowCard({ children, className, onClick, variants }: GlowCardProps) {
   return (
     <motion.div
       variants={variants}
-      whileHover={{ y: -4, scale: 1.01 }}
+      whileHover={{ y: -2 }}
       onMouseMove={handleMouseMove}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onClick?.()}
       className={cn(
-        "group relative p-6 premium-card cursor-pointer overflow-hidden transition-all duration-300 hover:border-primary/45 hover:shadow-premium-hover",
+        "group relative p-6 premium-card cursor-pointer overflow-hidden transition-colors duration-200 hover:border-primary/45 hover:shadow-premium-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none motion-reduce:transition-none motion-reduce:transform-none",
         className
       )}
     >
@@ -191,19 +194,19 @@ export default function DashboardView({
         >
           <div className="flex items-center justify-between mb-4">
             <h4 className="font-semibold text-sm text-foreground flex items-center tracking-tight">
-              <Activity className="w-4 h-4 mr-2 text-primary animate-pulse" />
+              <Activity className="w-4 h-4 mr-2 text-primary animate-pulse motion-reduce:animate-none" />
               Real-time Query Ticker
             </h4>
-            <div className="flex items-center space-x-3 text-xs font-mono">
+            <div className="flex items-center space-x-3 text-xs">
               <div className="flex items-center space-x-1.5">
                 <span className="w-2.5 h-2.5 rounded-sm bg-primary inline-block" />
                 <span className="text-[11px] text-muted-foreground">Queries</span>
               </div>
               <div className="flex items-center space-x-1.5">
-                <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500 inline-block" />
+                <span className="w-2.5 h-2.5 rounded-sm bg-success inline-block" />
                 <span className="text-[11px] text-muted-foreground">Deep Research</span>
               </div>
-              <span className="text-[10px] font-mono font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-sm ml-1">LIVE</span>
+              <span className="text-[10px] font-semibold text-success bg-success-subtle px-2 py-0.5 rounded-sm ml-1">Live</span>
             </div>
           </div>
           
@@ -259,22 +262,22 @@ export default function DashboardView({
 
         {/* Quick Action: New Chat (Spans 4 cols, 1 row) */}
         <GlowCard variants={itemVariants} onClick={onNewResearch} className="col-span-1 md:col-span-4 row-span-1 flex flex-row items-center p-5">
-          <div className="w-12 h-12 rounded-lg bg-surface-container border border-border flex items-center justify-center text-foreground mr-4 group-hover:bg-primary/20 group-hover:text-primary transition-all">
+          <div className="w-12 h-12 rounded-lg bg-surface-container border border-border flex items-center justify-center text-foreground mr-4 group-hover:bg-primary/20 group-hover:text-primary transition-colors duration-200">
             <MessageSquare className="w-6 h-6" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-sm text-foreground tracking-tight group-hover:text-primary transition-colors">Start Research <span className="font-mono text-[9px] ml-2 text-muted-foreground border border-border px-1 py-0.5 rounded">⌘K</span></h3>
+            <h3 className="font-semibold text-sm text-foreground tracking-tight group-hover:text-primary transition-colors">Start Research <kbd className="text-[10px] font-sans font-medium ml-2 text-muted-foreground border border-border px-1.5 py-0.5 rounded">⌘K</kbd></h3>
             <p className="text-[11px] text-muted-foreground leading-snug mt-1 line-clamp-2">Initialize a streaming conversational session with RAG tools.</p>
           </div>
         </GlowCard>
 
         {/* Quick Action: Upload (Spans 4 cols, 1 row) */}
         <GlowCard variants={itemVariants} onClick={onTriggerUploadModal} className="col-span-1 md:col-span-4 row-span-1 flex flex-row items-center p-5">
-          <div className="w-12 h-12 rounded-lg bg-surface-container border border-border flex items-center justify-center text-foreground mr-4 group-hover:bg-secondary/20 group-hover:text-secondary transition-all">
+          <div className="w-12 h-12 rounded-lg bg-surface-container border border-border flex items-center justify-center text-foreground mr-4 group-hover:bg-secondary/20 group-hover:text-secondary transition-colors duration-200">
             <Upload className="w-6 h-6" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-sm text-foreground tracking-tight group-hover:text-secondary transition-colors">Upload Knowledge <span className="font-mono text-[9px] ml-2 text-muted-foreground border border-border px-1 py-0.5 rounded">U</span></h3>
+            <h3 className="font-semibold text-sm text-foreground tracking-tight group-hover:text-secondary transition-colors">Upload Knowledge <kbd className="text-[10px] font-sans font-medium ml-2 text-muted-foreground border border-border px-1.5 py-0.5 rounded">U</kbd></h3>
             <p className="text-[11px] text-muted-foreground leading-snug mt-1 line-clamp-2">Ingest new PDFs and datasets into the dense vector database.</p>
           </div>
         </GlowCard>
@@ -283,10 +286,10 @@ export default function DashboardView({
         <motion.div variants={itemVariants} className="col-span-1 md:col-span-3 row-span-1 premium-card p-5 flex flex-col justify-between">
           <div className="flex items-start justify-between">
             <FileText className="w-4 h-4 text-muted-foreground" />
-            <span className="text-[10px] font-mono text-muted-foreground">DOCS</span>
+            <span className="text-[10px] font-semibold text-muted-foreground">Docs</span>
           </div>
           <div>
-            <p className="text-3xl font-extrabold text-foreground tracking-tight font-mono"><AnimatedCounter value={documents.length} /></p>
+            <p className="text-3xl font-bold text-foreground tracking-tight font-mono tabular-nums"><AnimatedCounter value={documents.length} /></p>
             <p className="text-[11px] text-muted-foreground mt-0.5 font-medium">Total Indexed Files</p>
           </div>
         </motion.div>
@@ -295,10 +298,10 @@ export default function DashboardView({
         <motion.div variants={itemVariants} className="col-span-1 md:col-span-3 row-span-1 premium-card p-5 flex flex-col justify-between">
           <div className="flex items-start justify-between">
             <Database className="w-4 h-4 text-muted-foreground" />
-            <span className="text-[10px] font-mono text-muted-foreground">CHUNKS</span>
+            <span className="text-[10px] font-semibold text-muted-foreground">Chunks</span>
           </div>
           <div>
-            <p className="text-3xl font-extrabold text-foreground tracking-tight font-mono"><AnimatedCounter value={totalChunks} /></p>
+            <p className="text-3xl font-bold text-foreground tracking-tight font-mono tabular-nums"><AnimatedCounter value={totalChunks} /></p>
             <p className="text-[11px] text-muted-foreground mt-0.5 font-medium">Vector Embeddings</p>
           </div>
         </motion.div>
@@ -307,10 +310,10 @@ export default function DashboardView({
         <motion.div variants={itemVariants} className="col-span-1 md:col-span-3 row-span-1 premium-card p-5 flex flex-col justify-between">
           <div className="flex items-start justify-between">
             <MessageSquare className="w-4 h-4 text-muted-foreground" />
-            <span className="text-[10px] font-mono text-muted-foreground">SESSIONS</span>
+            <span className="text-[10px] font-semibold text-muted-foreground">Sessions</span>
           </div>
           <div>
-            <p className="text-3xl font-extrabold text-foreground tracking-tight font-mono"><AnimatedCounter value={conversations.length} /></p>
+            <p className="text-3xl font-bold text-foreground tracking-tight font-mono tabular-nums"><AnimatedCounter value={conversations.length} /></p>
             <p className="text-[11px] text-muted-foreground mt-0.5 font-medium">Active Chats</p>
           </div>
         </motion.div>
@@ -319,10 +322,10 @@ export default function DashboardView({
         <motion.div variants={itemVariants} className="col-span-1 md:col-span-3 row-span-1 premium-card p-5 flex flex-col justify-between">
           <div className="flex items-start justify-between">
             <CheckCircle2 className="w-4 h-4 text-muted-foreground" />
-            <span className="text-[10px] font-mono text-muted-foreground">COVERAGE</span>
+            <span className="text-[10px] font-semibold text-muted-foreground">Coverage</span>
           </div>
           <div>
-            <p className="text-3xl font-extrabold text-foreground tracking-tight font-mono"><AnimatedCounter value={activeDocsCount} /></p>
+            <p className="text-3xl font-bold text-foreground tracking-tight font-mono tabular-nums"><AnimatedCounter value={activeDocsCount} /></p>
             <p className="text-[11px] text-muted-foreground mt-0.5 font-medium">Active in Context</p>
           </div>
         </motion.div>
@@ -330,22 +333,22 @@ export default function DashboardView({
         {/* Recent Chats (Spans 6 cols, 2 rows) */}
         <motion.div variants={itemVariants} className="col-span-1 md:col-span-6 row-span-2 premium-card flex flex-col overflow-hidden">
           <div className="p-4 border-b border-border/50 flex items-center justify-between">
-             <h4 className="font-semibold text-[11px] text-foreground flex items-center tracking-widest uppercase font-mono">
+             <h4 className="font-semibold text-xs text-foreground flex items-center">
                 <Clock className="w-3.5 h-3.5 mr-2 text-primary" />
                 Session Log
               </h4>
-              <button onClick={() => setCurrentTab("chats")} className="text-[10px] font-mono text-muted-foreground hover:text-foreground">VIEW ALL</button>
+              <button type="button" onClick={() => setCurrentTab("chats")} className="text-[11px] font-medium text-muted-foreground hover:text-foreground active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40">View all</button>
           </div>
           <div className="flex-1 overflow-y-auto no-scrollbar p-2 space-y-1">
              {conversations.slice(0, 5).map((conv) => (
                 <button
                   key={conv.id}
                   onClick={() => onSelectSession(conv.id)}
-                  className="w-full px-3 py-2.5 bg-transparent hover:bg-surface-container-lowest rounded-lg transition-colors cursor-pointer flex items-center group text-left"
+                  className="w-full px-3 py-2.5 bg-transparent hover:bg-surface-container-lowest rounded-lg transition-colors cursor-pointer flex items-center group text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none motion-reduce:transform-none"
                 >
                   <div className="min-w-0 flex-1 pr-4">
                     <h5 className="text-[13px] font-medium text-foreground truncate">{conv.title || "Untitled Research"}</h5>
-                    <p className="text-[11px] text-muted-foreground truncate mt-0.5 font-mono">
+                    <p className="text-[11px] text-muted-foreground truncate mt-0.5">
                       {conv.messages[conv.messages.length - 1]?.text || "No queries executed."}
                     </p>
                   </div>
@@ -354,7 +357,7 @@ export default function DashboardView({
               ))}
               {conversations.length === 0 && (
                 <div className="h-full flex items-center justify-center p-4">
-                  <p className="text-[11px] text-muted-foreground font-mono">No active sessions.</p>
+                  <p className="text-xs text-muted-foreground">No active sessions.</p>
                 </div>
               )}
           </div>
@@ -363,18 +366,18 @@ export default function DashboardView({
         {/* Recent Documents (Spans 6 cols, 2 rows) */}
         <motion.div variants={itemVariants} className="col-span-1 md:col-span-6 row-span-2 premium-card flex flex-col overflow-hidden">
           <div className="p-4 border-b border-border/50 flex items-center justify-between">
-             <h4 className="font-semibold text-[11px] text-foreground flex items-center tracking-widest uppercase font-mono">
+             <h4 className="font-semibold text-xs text-foreground flex items-center">
                 <Database className="w-3.5 h-3.5 mr-2 text-secondary" />
                 Knowledge Base Index
               </h4>
-              <button onClick={() => setCurrentTab("documents")} className="text-[10px] font-mono text-muted-foreground hover:text-foreground">MANAGE</button>
+              <button type="button" onClick={() => setCurrentTab("documents")} className="text-[11px] font-medium text-muted-foreground hover:text-foreground active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40">Manage</button>
           </div>
           <div className="flex-1 overflow-y-auto no-scrollbar p-2 space-y-1">
              {documents.slice(0, 5).map((doc) => (
                 <button
                   key={doc.id}
                   onClick={() => setCurrentTab("documents")}
-                  className="w-full px-3 py-2.5 bg-transparent hover:bg-surface-container-lowest rounded-lg transition-colors cursor-pointer flex items-center group text-left"
+                  className="w-full px-3 py-2.5 bg-transparent hover:bg-surface-container-lowest rounded-lg transition-colors cursor-pointer flex items-center group text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none motion-reduce:transform-none"
                 >
                   <div className="min-w-0 flex-1 flex items-center">
                     {/* Single neutral doc-type icon — type communicated by shape, not hue */}
@@ -385,17 +388,17 @@ export default function DashboardView({
                     </div>
                     <div className="min-w-0">
                       <h6 className="text-[13px] font-medium text-foreground truncate">{doc.name}</h6>
-                      <p className="text-[10px] text-muted-foreground font-mono mt-0.5">
-                        {doc.size} • {doc.chunkCount || 0} chunks
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        <span className="font-mono tabular-nums">{doc.size}</span> · <span className="font-mono tabular-nums">{doc.chunkCount || 0}</span> chunks
                       </p>
                     </div>
                   </div>
-                  <span className={cn("w-1.5 h-1.5 rounded-full shadow-sm ml-4 flex-shrink-0", doc.active ? "bg-emerald-500 shadow-emerald-500/50" : "bg-border")} />
+                  <span className={cn("w-1.5 h-1.5 rounded-full ml-4 flex-shrink-0", doc.active ? "bg-success" : "bg-border")} />
                 </button>
               ))}
               {documents.length === 0 && (
                 <div className="h-full flex items-center justify-center p-4">
-                  <p className="text-[11px] text-muted-foreground font-mono">No documents indexed.</p>
+                  <p className="text-xs text-muted-foreground">No documents indexed.</p>
                 </div>
               )}
           </div>
@@ -406,15 +409,15 @@ export default function DashboardView({
       {/* Bottom Health Strip */}
       <motion.div 
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
-        className="mt-8 flex items-center justify-between text-[11px] text-muted-foreground font-mono"
+        className="mt-8 flex items-center justify-between text-xs text-muted-foreground"
       >
         <div className="flex items-center space-x-2">
           <Activity className="w-3.5 h-3.5" />
-          <span>Core RAG Node: <strong className="font-medium text-foreground">monolith-v4.2.0</strong></span>
+          <span>Core RAG Node: <strong className="font-medium text-foreground font-mono">monolith-v4.2.0</strong></span>
         </div>
-        <div className="flex items-center space-x-2 bg-surface-container px-2 py-1 rounded border border-border">
-          <span className={cn("w-1.5 h-1.5 rounded-full pulse-online", healthStatus === "online" ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" : "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]")} />
-          <span className="font-medium">
+        <div className="flex items-center space-x-2 bg-surface-container px-2.5 py-1 rounded-md border border-border">
+          <span className={cn("w-1.5 h-1.5 rounded-full", healthStatus === "online" ? "bg-success" : "bg-danger")} />
+          <span className="font-medium text-[11px]">
             {healthStatus === "online" ? `Online (${healthTime})` : "Disconnected"}
           </span>
         </div>

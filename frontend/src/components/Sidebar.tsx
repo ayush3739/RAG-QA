@@ -66,7 +66,7 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
       onMouseEnter={() => isCollapsed && setIsEdgeHovering(true)}
       onMouseLeave={() => setIsEdgeHovering(false)}
       className={cn(
-        "group/sidebar relative hidden md:flex h-full flex-col border-r border-border select-none overflow-visible bg-surface-container-lowest dark:bg-transparent transition-[width,padding] duration-200",
+        "group/sidebar relative hidden md:flex h-full flex-col border-r border-border select-none overflow-visible bg-surface-container-lowest dark:bg-transparent transition-colors duration-200",
         isCollapsed ? "w-16 px-2 py-4 space-y-5" : "w-[260px] p-5 space-y-6"
       )}
     >
@@ -77,7 +77,7 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
             type="button"
             onClick={() => setIsCollapsed(false)}
             className={cn(
-              "group/sidebar-toggle relative flex h-10 w-10 items-center justify-center rounded-xl border shadow-premium transition-colors",
+              "group/sidebar-toggle relative flex h-10 w-10 items-center justify-center rounded-xl border shadow-premium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
               isEdgeHovering
                 ? "border-border bg-surface text-muted-foreground"
                 : "border-transparent bg-primary text-on-primary-container hover:bg-surface-container-high hover:text-foreground"
@@ -87,13 +87,13 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
           >
             <Database
               className={cn(
-                "absolute h-4 w-4 transition-all duration-150 group-hover/sidebar-toggle:scale-75 group-hover/sidebar-toggle:opacity-0",
+                "absolute h-4 w-4 transition-opacity transition-transform duration-150 motion-reduce:transition-none group-hover/sidebar-toggle:scale-75 group-hover/sidebar-toggle:opacity-0",
                 isEdgeHovering && "scale-75 opacity-0"
               )}
             />
             <PanelLeftOpen
               className={cn(
-                "absolute h-4 w-4 scale-75 opacity-0 transition-all duration-150 group-hover/sidebar-toggle:scale-100 group-hover/sidebar-toggle:opacity-100",
+                "absolute h-4 w-4 scale-75 opacity-0 transition-opacity transition-transform duration-150 motion-reduce:transition-none group-hover/sidebar-toggle:scale-100 group-hover/sidebar-toggle:opacity-100",
                 isEdgeHovering && "scale-100 opacity-100"
               )}
             />
@@ -111,7 +111,7 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
             <button
               type="button"
               onClick={() => setIsCollapsed(true)}
-              className="ml-auto rounded-md p-1.5 text-muted-foreground transition-all duration-200 hover:bg-surface-container-high hover:text-foreground active:scale-95"
+              className="ml-auto rounded-md p-1.5 text-muted-foreground transition-colors duration-200 hover:bg-surface-container-high hover:text-foreground active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               title="Collapse sidebar"
               aria-label="Collapse sidebar"
             >
@@ -127,7 +127,7 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
         id="btn-new-research"
         onClick={onNewResearch}
         className={cn(
-          "bg-surface border border-border hover:bg-surface-container-high text-on-surface font-medium text-sm flex items-center cursor-pointer shadow-premium hover:shadow-premium-hover transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]",
+          "bg-surface border border-border hover:bg-surface-container-high text-on-surface font-medium text-sm flex items-center cursor-pointer shadow-premium transition-colors duration-200 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
           isCollapsed ? "h-10 w-10 justify-center self-center rounded-xl p-0" : "w-full rounded-lg py-2 px-3 justify-between"
         )}
         title="New Chat"
@@ -150,9 +150,9 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
               type="button"
               onClick={() => setCurrentTab(item.id)}
               className={cn(
-                "relative flex items-center text-sm tracking-tight transition-all duration-200 ease-out cursor-pointer group",
+                "relative flex items-center text-sm tracking-tight transition-colors duration-200 cursor-pointer group focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
                 isCollapsed ? "mx-auto h-10 w-10 justify-center rounded-xl px-0" : "w-full rounded-md px-3 py-2",
-                isActive ? "text-foreground font-semibold" : cn("text-muted-foreground hover:text-foreground font-medium", !isCollapsed && "hover:translate-x-1")
+                isActive ? "text-foreground font-semibold" : "text-muted-foreground hover:text-foreground font-medium"
               )}
               title={item.label}
               aria-label={item.label}
@@ -170,7 +170,7 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
                 <div className="relative z-10 ml-auto flex items-center justify-end h-5 w-8">
                   {item.shortcut && (
                     <span className={cn(
-                      "absolute right-0 text-[10px] font-mono text-muted-foreground border border-border rounded px-1.5 py-0.5 transition-all duration-200",
+                      "absolute right-0 text-[10px] font-mono text-muted-foreground border border-border rounded px-1.5 py-0.5 transition-opacity transition-transform duration-200 motion-reduce:transition-none",
                       "opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100"
                     )}>
                       {item.shortcut}
@@ -178,9 +178,9 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
                   )}
                   {item.count !== undefined && (
                     <span className={cn(
-                      "absolute right-0 text-[10px] font-bold px-1.5 py-0.5 rounded-md transition-all duration-200",
+                      "absolute right-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-md transition-colors duration-200 tabular-nums",
                       isActive ? "bg-background text-foreground shadow-sm" : "bg-transparent text-muted-foreground group-hover:bg-surface-container-high",
-                      item.shortcut && "group-hover:opacity-0 group-hover:scale-95"
+                      item.shortcut && "group-hover:opacity-0"
                     )}>
                       {item.count}
                     </span>
@@ -210,7 +210,7 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
             </button>
             <button
               onClick={logout}
-              className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground hover:bg-red-500/10 hover:text-red-500 transition-colors cursor-pointer"
+              className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground hover:bg-danger-subtle hover:text-danger transition-colors cursor-pointer"
               title="Log Out"
             >
               <LogOut className="w-4 h-4" />
@@ -220,7 +220,7 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
 
         {/* Dropdown Menu (expanded mode) */}
         {showUserMenu && !isCollapsed && (
-          <div className="absolute bottom-full left-2 right-2 mb-2 bg-surface border border-border rounded-xl shadow-xl overflow-hidden z-50">
+          <div className="absolute bottom-full left-2 right-2 mb-2 bg-surface border border-border rounded-xl overflow-hidden z-50">
             {/* Plan Info Strip */}
             <div 
               onClick={() => {
@@ -231,31 +231,31 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
               className="px-3.5 py-2.5 bg-surface-container/50 border-b border-border/60 flex items-center justify-between cursor-pointer hover:bg-surface-container transition-colors group"
             >
               <div>
-                <p className="text-[11px] font-semibold text-foreground group-hover:text-primary transition-colors">Current Plan</p>
-                <p className="text-[10px] text-muted-foreground">
-                  {user?.role?.toLowerCase() === "admin" ? "System Administrator" : user?.role?.toLowerCase() === "pro" ? "Pro Plan (Full Access)" : "Community Free"}
+                <p className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors">Current plan</p>
+                <p className="text-[11px] text-muted-foreground">
+                  {user?.role?.toLowerCase() === "admin" ? "System Administrator" : user?.role?.toLowerCase() === "pro" ? "Pro tier (full access)" : "Community Free"}
                 </p>
               </div>
               <span className={cn(
-                "text-[9px] font-mono font-extrabold uppercase px-1.5 py-0.5 rounded tracking-wider flex items-center gap-1",
+                "text-[10px] font-semibold px-2 py-0.5 rounded border inline-flex items-center gap-1",
                 user?.role?.toLowerCase() === "pro"
-                  ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30"
+                  ? "bg-primary/10 text-primary border-primary/20"
                   : user?.role?.toLowerCase() === "admin"
-                  ? "bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30"
-                  : "bg-surface-container text-muted-foreground border border-border"
+                  ? "bg-primary/10 text-primary border-primary/20"
+                  : "bg-surface-container text-muted-foreground border-border"
               )}>
-                {user?.role?.toLowerCase() === "pro" && <Crown className="w-2.5 h-2.5 text-amber-600 dark:text-amber-400" />}
-                {user?.role?.toLowerCase() === "admin" ? "ADMIN" : user?.role?.toLowerCase() === "pro" ? "PRO" : "FREE"}
+                {user?.role?.toLowerCase() === "pro" && <Crown className="w-2.5 h-2.5 text-primary" />}
+                {user?.role?.toLowerCase() === "admin" ? "Admin" : user?.role?.toLowerCase() === "pro" ? "Pro" : "Free"}
               </span>
             </div>
 
             {/* Daily Quota Progress */}
             <div className="px-3.5 py-2.5 bg-surface/50 border-b border-border/60">
-              <div className="flex items-center justify-between text-[11px] mb-1.5">
+              <div className="flex items-center justify-between text-xs mb-1.5">
                 <span className="text-muted-foreground flex items-center gap-1.5 font-medium">
-                  <Sparkles className="w-3 h-3 text-primary" /> Daily Queries
+                  <Sparkles className="w-3 h-3 text-primary" /> Daily queries
                 </span>
-                <span className="font-mono font-semibold text-foreground text-[10px]">
+                <span className="tabular-nums font-medium text-foreground text-xs">
                   {quota ? (quota.query_limit === null ? "Unlimited" : `${quota.queries_used} / ${quota.query_limit}`) : "..."}
                 </span>
               </div>
@@ -263,18 +263,18 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
                 <div className="w-full h-1.5 bg-surface-container rounded-full overflow-hidden">
                   <div 
                     className={cn(
-                      "h-full rounded-full transition-all duration-300",
+                      "h-full rounded-full origin-left transition-transform duration-300 motion-reduce:transition-none",
                       quota.queries_used >= quota.query_limit
-                        ? "bg-red-500"
+                        ? "bg-danger"
                         : quota.queries_used / quota.query_limit > 0.8
-                        ? "bg-amber-500"
+                        ? "bg-warning"
                         : "bg-primary"
                     )}
-                    style={{ width: `${Math.min(100, (quota.queries_used / quota.query_limit) * 100)}%` }}
+                    style={{ transform: `scaleX(${Math.min(1, quota.queries_used / quota.query_limit)})`, width: "100%" }}
                   />
                 </div>
               ) : (
-                <div className="text-[10px] text-primary/80 font-mono">
+                <div className="text-xs text-primary/80">
                   Full unmetered access
                 </div>
               )}
@@ -282,11 +282,11 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
 
             {/* Deep Research Quota Progress */}
             <div className="px-3.5 py-2.5 bg-surface/30 border-b border-border/60">
-              <div className="flex items-center justify-between text-[11px] mb-1.5">
+              <div className="flex items-center justify-between text-xs mb-1.5">
                 <span className="text-muted-foreground font-medium">
-                  Deep Research
+                  Deep research
                 </span>
-                <span className="font-mono font-semibold text-foreground text-[10px]">
+                <span className="tabular-nums font-medium text-foreground text-xs">
                   {quota ? (quota.research_limit === null ? "Unlimited" : `${quota.research_used ?? 0} / ${quota.research_limit}`) : "..."}
                 </span>
               </div>
@@ -294,59 +294,62 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
                 <div className="w-full h-1.5 bg-surface-container rounded-full overflow-hidden">
                   <div 
                     className={cn(
-                      "h-full rounded-full transition-all duration-300",
+                      "h-full rounded-full origin-left transition-transform duration-300 motion-reduce:transition-none",
                       (quota.research_used ?? 0) >= quota.research_limit
-                        ? "bg-red-500"
+                        ? "bg-danger"
                         : (quota.research_used ?? 0) / quota.research_limit >= 0.8
-                        ? "bg-amber-500"
-                        : "bg-emerald-500"
+                        ? "bg-warning"
+                        : "bg-success"
                     )}
-                    style={{ width: `${Math.min(100, ((quota.research_used ?? 0) / quota.research_limit) * 100)}%` }}
+                    style={{ transform: `scaleX(${Math.min(1, (quota.research_used ?? 0) / quota.research_limit)})`, width: "100%" }}
                   />
                 </div>
               ) : (
-                <div className="text-[10px] text-emerald-500/80 font-mono">
+                <div className="text-xs text-success">
                   Full unmetered research
                 </div>
               )}
             </div>
 
             {/* Daily Reset Time — Pure frontend calculation */}
-            <div className="px-3.5 py-1.5 bg-surface/20 border-b border-border/60 flex items-center justify-between text-[10px]">
-              <span className="text-muted-foreground flex items-center gap-1 font-mono">
-                <Clock className="w-3 h-3 text-muted-foreground/80" /> Daily Reset
+            <div className="px-3.5 py-1.5 bg-surface/20 border-b border-border/60 flex items-center justify-between text-[11px]">
+              <span className="text-muted-foreground flex items-center gap-1">
+                <Clock className="w-3 h-3 text-muted-foreground/80" /> Daily reset
               </span>
-              <span className="font-mono text-muted-foreground">
+              <span className="tabular-nums text-muted-foreground">
                 {formatResetTime().summary}
               </span>
             </div>
 
             <div className="p-1.5 space-y-1">
               <button 
+                type="button"
                 onClick={() => { 
                   localStorage.setItem("settings_active_section", "subscription");
                   setCurrentTab("settings"); 
                   setShowUserMenu(false); 
                 }}
-                className="w-full flex items-center px-3 py-2 text-xs text-foreground font-medium hover:bg-surface-container rounded-lg transition-colors cursor-pointer"
+                className="w-full flex items-center px-3 py-2 text-xs text-foreground font-medium hover:bg-surface-container rounded-lg transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               >
                 <CreditCard className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
                 Subscription & Quota
               </button>
               <button 
+                type="button"
                 onClick={() => { 
                   localStorage.setItem("settings_active_section", "account");
                   setCurrentTab("settings"); 
                   setShowUserMenu(false); 
                 }}
-                className="w-full flex items-center px-3 py-2 text-xs text-foreground font-medium hover:bg-surface-container rounded-lg transition-colors cursor-pointer"
+                className="w-full flex items-center px-3 py-2 text-xs text-foreground font-medium hover:bg-surface-container rounded-lg transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               >
                 <Settings className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
                 Account Settings
               </button>
               <button 
+                type="button"
                 onClick={logout}
-                className="w-full flex items-center px-3 py-2 text-xs text-red-500 font-medium hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
+                className="w-full flex items-center px-3 py-2 text-xs text-danger font-medium hover:bg-danger-subtle rounded-lg transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
               >
                 <LogOut className="w-3.5 h-3.5 mr-2" />
                 Log Out
@@ -362,7 +365,7 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
             aria-expanded={showUserMenu}
             aria-label="User menu"
             className={cn(
-              "flex items-center rounded-lg hover:bg-surface-container-low transition-colors cursor-pointer border border-transparent hover:border-border/50 px-1 py-1 min-w-0 text-left",
+              "flex items-center rounded-lg hover:bg-surface-container-low transition-colors cursor-pointer border border-transparent hover:border-border/50 px-1 py-1 min-w-0 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
               isCollapsed ? "justify-center" : "space-x-3 flex-1"
             )}
           >
@@ -371,7 +374,7 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
                 {user?.name?.charAt(0)?.toUpperCase() || 'U'}
               </div>
               {isCollapsed && (user?.role?.toLowerCase() === "pro" || user?.role?.toLowerCase() === "admin") && (
-                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-amber-400 ring-2 ring-background" />
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-warning ring-2 ring-background" />
               )}
             </div>
             {!isCollapsed && (
@@ -379,14 +382,14 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
               <div className="flex items-center gap-1.5">
                 <p className="text-sm font-semibold text-on-surface truncate leading-tight tracking-tight">{user?.name || "User"}</p>
                 <span className={cn(
-                  "text-[9px] font-mono font-extrabold uppercase px-1.5 py-0.2 rounded tracking-wider flex items-center gap-0.5 shrink-0",
+                  "text-[10px] font-semibold px-1.5 py-0.5 rounded border inline-flex items-center gap-0.5 shrink-0",
                   user?.role?.toLowerCase() === "pro"
-                    ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30"
+                    ? "bg-primary/10 text-primary border-primary/20"
                     : user?.role?.toLowerCase() === "admin"
-                    ? "bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30"
-                    : "bg-surface-container-high text-muted-foreground border border-border/60"
+                    ? "bg-primary/10 text-primary border-primary/20"
+                    : "bg-surface-container-high text-muted-foreground border-border/60"
                 )}>
-                  {user?.role?.toLowerCase() === "admin" ? "ADMIN" : user?.role?.toLowerCase() === "pro" ? "PRO" : "FREE"}
+                  {user?.role?.toLowerCase() === "admin" ? "Admin" : user?.role?.toLowerCase() === "pro" ? "Pro" : "Free"}
                 </span>
               </div>
               <span className="text-[10px] text-muted-foreground truncate block">{user?.email || "No email"}</span>

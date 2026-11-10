@@ -109,8 +109,8 @@ ${msg.citations.map(cit => `- **${cit.name}**${cit.fitScore != null ? ` (${cit.f
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search conversations..."
-              className="w-full text-sm font-medium bg-background border border-border rounded-lg pl-9 pr-4 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 shadow-sm"
+              placeholder="Search conversations\u2026"
+              className="w-full text-sm font-medium bg-background border border-border rounded-lg pl-9 pr-4 py-2 text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 shadow-sm transition-colors"
             />
           </div>
         </div>
@@ -119,17 +119,17 @@ ${msg.citations.map(cit => `- **${cit.name}**${cit.fitScore != null ? ` (${cit.f
         <div className="bg-surface-container-lowest border border-border rounded-xl overflow-hidden shadow-sm">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-border bg-surface text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">
-                <th className="p-3 pl-5">Research Title</th>
+              <tr className="border-b border-border bg-surface text-xs font-medium text-muted-foreground">
+                <th className="p-3 pl-5">Research title</th>
                 <th className="p-3">Created</th>
-                <th className="p-3">Last Active</th>
+                <th className="p-3">Last active</th>
                 <th className="p-3 pr-5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {showSkeleton ? (
                 Array.from({ length: 3 }).map((_, i) => (
-                  <tr key={i} className="animate-pulse bg-background">
+                  <tr key={i} className="animate-pulse motion-reduce:animate-none bg-background">
                     <td className="p-4 pl-5">
                       <div className="flex items-center space-x-2">
                         <div className="w-4 h-4 bg-surface-container rounded" />
@@ -169,7 +169,7 @@ ${msg.citations.map(cit => `- **${cit.name}**${cit.fitScore != null ? ` (${cit.f
                             value={tempName}
                             onChange={(e) => setTempName(e.target.value)}
                             onKeyDown={(e) => e.key === "Enter" && handleSaveRename(conv.id)}
-                            className="bg-background border border-border px-2 py-1 rounded-md text-xs text-foreground font-medium focus:outline-none"
+                            className="bg-background border border-border px-2 py-1 rounded-md text-xs text-foreground font-medium focus:outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
                           />
                           <button 
                             onClick={() => handleSaveRename(conv.id)}
@@ -185,7 +185,7 @@ ${msg.citations.map(cit => `- **${cit.name}**${cit.fitScore != null ? ` (${cit.f
                         >
                           <MessageSquare className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                           <span>{conv.title}</span>
-                          <span className="text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+                          <span className="text-[10px] font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded">
                             Auto
                           </span>
                         </div>

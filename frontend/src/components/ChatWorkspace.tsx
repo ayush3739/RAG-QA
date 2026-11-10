@@ -28,22 +28,23 @@ function CodeBlock({ code, language }: { code: string; language?: string }) {
   };
 
   return (
-    <div className="my-5 w-full max-w-full overflow-hidden rounded-2xl border border-border bg-surface-container-lowest shadow-sm dark:border-[#2a2f3a] dark:bg-[#11141a] dark:shadow-[0_18px_48px_rgba(0,0,0,0.35)]">
-      <div className="flex items-center justify-between border-b border-border px-4 py-2 dark:border-[#2a2f3a] dark:bg-[#171b23]">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+    <div className="my-5 w-full max-w-full overflow-hidden rounded-2xl border border-border bg-surface-container-lowest">
+      <div className="flex items-center justify-between border-b border-border px-4 py-2 bg-surface-container">
+        <span className="text-xs font-medium text-muted-foreground">
           {language || "code"}
         </span>
         <button
           type="button"
           onClick={handleCopy}
-          className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-surface hover:text-foreground dark:hover:bg-white/8"
+          className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-surface hover:text-foreground active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
           title="Copy code"
+          aria-label="Copy code"
         >
           {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
           {copied ? "Copied" : "Copy"}
         </button>
       </div>
-      <pre className="overflow-x-auto px-4 py-4 text-[14px] leading-6 text-foreground dark:bg-[#0c0f14] dark:text-[#e7eaf0]">
+      <pre className="overflow-x-auto px-4 py-4 text-xs font-mono leading-6 text-foreground bg-surface-container-lowest">
         <code>{code}</code>
       </pre>
     </div>
@@ -369,7 +370,7 @@ export default function ChatWorkspace({
       {/* Main Chat Area */}
       <div
         className={cn(
-          "flex flex-col min-w-0 min-h-0 transition-all duration-300 relative",
+          "flex flex-col min-w-0 min-h-0 relative",
           isInspectorOpen ? "w-[calc(100%-20rem)] md:w-[calc(100%-24rem)] shrink-0" : "flex-1"
         )}
       >
@@ -447,8 +448,9 @@ export default function ChatWorkspace({
                   ].map((item, idx) => (
                     <button
                       key={idx}
+                      type="button"
                       onClick={() => setInputText(item.prompt)}
-                      className="flex items-start p-4 rounded-xl border border-border bg-surface-container-lowest dark:bg-surface hover:border-primary/40 hover:bg-surface-container/80 transition-all text-left group cursor-pointer shadow-xs"
+                      className="flex items-start p-4 rounded-xl border border-border bg-surface-container-lowest hover:border-primary/40 hover:bg-surface-container/80 transition-colors duration-200 text-left group cursor-pointer active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 motion-reduce:transition-none motion-reduce:transform-none"
                     >
                       {/* Single neutral icon — no per-card hue */}
                       <div className="w-8 h-8 rounded-lg bg-surface-container border border-border flex items-center justify-center flex-shrink-0 mr-3.5 group-hover:border-border/80 transition-colors">
@@ -486,10 +488,11 @@ export default function ChatWorkspace({
                         <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center pr-1 h-7">
                           <button
                             onClick={() => handleCopy(msg.id, msg.text)}
-                            className="p-1 text-muted-foreground hover:text-foreground hover:bg-surface rounded-md transition-colors"
+                            className="p-1 text-muted-foreground hover:text-foreground hover:bg-surface rounded-md transition-colors active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
                             title="Copy message"
+                            aria-label="Copy message"
                           >
-                            {copiedId === msg.id ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                            {copiedId === msg.id ? <Check className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5" />}
                           </button>
                         </div>
                       </div>
@@ -500,7 +503,7 @@ export default function ChatWorkspace({
                           <Sparkles className="w-3.5 h-3.5" />
                         </div>
                         <div className={cn(
-                          "min-w-0 flex-1 flex flex-col space-y-2 transition-all duration-300",
+                          "min-w-0 flex-1 flex flex-col space-y-2",
                           isStreaming && "border-l-2 border-l-primary/40 pl-3"
                         )}>
                           <div className="max-w-none min-w-0 text-foreground">
@@ -585,9 +588,9 @@ export default function ChatWorkspace({
                               type="button"
                               onClick={() => toggleMessageSources(msg.id)}
                               className={cn(
-                                "inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer shadow-sm border",
+                                "inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer border active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 motion-reduce:transition-none motion-reduce:transform-none",
                                 expandedSources[msg.id]
-                                  ? "bg-primary/10 text-primary border-primary/30 shadow-primary/5"
+                                  ? "bg-primary/10 text-primary border-primary/30"
                                   : "bg-surface hover:bg-surface-container text-muted-foreground hover:text-foreground border-border/70 hover:border-border"
                               )}
                               title={expandedSources[msg.id] ? "Click to collapse sources" : "Click to view sources"}
@@ -624,17 +627,16 @@ export default function ChatWorkspace({
                                       return (
                                         <button
                                           key={cIdx}
+                                          type="button"
                                           onClick={() => setActiveCitation({ ...cite, name })}
-                                          className="bg-surface border border-border hover:border-primary/40 hover:bg-surface-container px-2.5 py-1 rounded-md flex items-center space-x-2 transition-all cursor-pointer text-left shadow-sm group"
+                                          className="bg-surface border border-border hover:border-primary/40 hover:bg-surface-container px-2.5 py-1 rounded-md flex items-center space-x-2 transition-colors cursor-pointer text-left group active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 motion-reduce:transition-none motion-reduce:transform-none"
                                         >
                                           {isWeb ? (
-                                            <Search className="w-3 h-3 text-sky-500" />
+                                            <Search className="w-3 h-3 text-muted-foreground group-hover:text-foreground" />
                                           ) : name.endsWith(".xlsx") || name.endsWith(".csv") ? (
-                                            <FileSpreadsheet className="w-3 h-3 text-emerald-500" />
-                                          ) : name.endsWith(".pdf") ? (
-                                            <FileText className="w-3 h-3 text-rose-500" />
+                                            <FileSpreadsheet className="w-3 h-3 text-muted-foreground group-hover:text-foreground" />
                                           ) : (
-                                            <FileText className="w-3 h-3 text-amber-500" />
+                                            <FileText className="w-3 h-3 text-muted-foreground group-hover:text-foreground" />
                                           )}
                                           <span className="text-xs font-medium text-foreground truncate max-w-[140px]">
                                             {name}
@@ -656,37 +658,45 @@ export default function ChatWorkspace({
                         {msg.text && (
                           <div className="flex items-center space-x-1 mt-2">
                             <button
+                              type="button"
                               onClick={() => handleCopy(msg.id, msg.text)}
-                              className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-surface rounded-md transition-colors"
+                              className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-surface rounded-md transition-colors active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
                               title="Copy message"
+                              aria-label="Copy message"
                             >
-                              {copiedId === msg.id ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                              {copiedId === msg.id ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
                             </button>
                             <button
+                              type="button"
                               onClick={() => handleFeedback(msg.id, 'up')}
                               className={cn(
-                                "p-1.5 rounded-md transition-colors",
+                                "p-1.5 rounded-md transition-colors active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40",
                                 feedbacks[msg.id] === 'up' ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-surface"
                               )}
                               title="Good response"
+                              aria-label="Good response"
                             >
                               <ThumbsUp className="w-4 h-4" />
                             </button>
                             <button
+                              type="button"
                               onClick={() => handleFeedback(msg.id, 'down')}
                               className={cn(
-                                "p-1.5 rounded-md transition-colors",
-                                feedbacks[msg.id] === 'down' ? "text-red-500 bg-red-500/10" : "text-muted-foreground hover:text-foreground hover:bg-surface"
+                                "p-1.5 rounded-md transition-colors active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40",
+                                feedbacks[msg.id] === 'down' ? "text-danger bg-danger-subtle" : "text-muted-foreground hover:text-foreground hover:bg-surface"
                               )}
                               title="Bad response"
+                              aria-label="Bad response"
                             >
                               <ThumbsDown className="w-4 h-4" />
                             </button>
                             {onRetryMessage && (
                               <button
+                                type="button"
                                 onClick={() => onRetryMessage(msg.id, chatMode)}
-                                className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface transition-colors btn-press"
+                                className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface transition-colors active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
                                 title="Regenerate response"
+                                aria-label="Regenerate response"
                               >
                                 <RotateCcw className="w-4 h-4" />
                               </button>
@@ -704,10 +714,10 @@ export default function ChatWorkspace({
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col space-y-4">
                    <div className="flex items-center space-x-3 mb-2">
                      <div className="w-6 h-6 rounded-md bg-surface-container-high border border-border flex items-center justify-center text-muted-foreground shadow-sm">
-                       <Search className="w-3.5 h-3.5 animate-pulse text-primary" />
+                       <Search className="w-3.5 h-3.5 animate-pulse motion-reduce:animate-none text-primary" />
                      </div>
                      <span className="text-sm font-semibold text-foreground tracking-tight">
-                       Building Answer...
+                       Building Answer…
                      </span>
                    </div>
                    
@@ -722,10 +732,10 @@ export default function ChatWorkspace({
                            isPast ? "opacity-100" : isActive ? "opacity-100" : "opacity-30"
                          )}>
                            {isPast ? (
-                             <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                             <CheckCircle2 className="w-4 h-4 text-success" />
                            ) : isActive ? (
                              <div className="w-4 h-4 flex items-center justify-center">
-                               <div className="w-2 h-2 bg-primary rounded-full animate-ping" />
+                               <div className="w-2 h-2 bg-primary rounded-full animate-ping motion-reduce:animate-none" />
                              </div>
                            ) : (
                              <div className="w-4 h-4 rounded-full border-2 border-border" />
@@ -757,7 +767,7 @@ export default function ChatWorkspace({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.94 }}
               transition={{ duration: 0.16, ease: "easeOut" }}
-              className="absolute bottom-[160px] left-1/2 z-40 -translate-x-1/2 rounded-full border border-border bg-surface-container-lowest p-2.5 text-foreground shadow-premium-panel transition-colors hover:bg-surface-container-high dark:border-white/15"
+              className="absolute bottom-[160px] left-1/2 z-40 -translate-x-1/2 rounded-full border border-border bg-surface-container-lowest p-2.5 text-foreground shadow-premium-panel transition-colors hover:bg-surface-container-high focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-95 disabled:opacity-50 disabled:pointer-events-none motion-reduce:transform-none"
               title="Jump to latest"
               aria-label="Jump to latest message"
             >
@@ -775,7 +785,7 @@ export default function ChatWorkspace({
             <form 
               onSubmit={handleSubmit} 
               className={cn(
-                "w-full bg-surface-container-lowest dark:bg-surface border border-border rounded-xl p-2 flex flex-col transition-all duration-200 shadow-xs",
+                "w-full bg-surface-container-lowest border border-border rounded-xl p-2 flex flex-col transition-colors duration-200 shadow-xs",
                 "focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/15"
               )}
             >
@@ -784,7 +794,7 @@ export default function ChatWorkspace({
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={handleKeyDown}
               className="w-full max-h-32 min-h-[52px] resize-none overflow-y-auto overflow-x-hidden bg-transparent border-none px-4 pt-3 text-[15px] font-medium text-foreground placeholder:text-muted-foreground outline-none focus:outline-none focus:ring-0"
-              placeholder="Ask anything..."
+              placeholder="Ask anything…"
               rows={1}
             />
             
@@ -794,16 +804,16 @@ export default function ChatWorkspace({
               </div>
               
               <div className="flex items-center space-x-2">
-                {/* Mode toggle — refined segmented pill switch with crisp borders */}
-                <div className="flex items-center bg-zinc-200/60 dark:bg-zinc-900/90 border border-zinc-300/80 dark:border-zinc-700/80 rounded-lg p-0.5 text-[11px] font-mono select-none gap-0.5 shadow-inner">
+                {/* Mode toggle — refined segmented pill switch with theme tokens */}
+                <div className="flex items-center bg-surface-container border border-border rounded-lg p-0.5 text-xs select-none gap-0.5">
                   <button
                     type="button"
                     onClick={() => setChatMode("auto")}
                     className={cn(
-                      "px-3 py-1 rounded-md transition-all duration-150 cursor-pointer font-medium flex items-center justify-center",
+                      "px-3 py-1 rounded-md transition-colors duration-150 cursor-pointer font-medium flex items-center justify-center focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 active:scale-95 disabled:opacity-50 disabled:pointer-events-none motion-reduce:transform-none",
                       chatMode === "auto"
-                        ? "bg-white text-zinc-900 border-zinc-300/90 shadow-xs dark:bg-zinc-700/90 dark:text-zinc-100 dark:border-zinc-500/80 font-semibold border"
-                        : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-100 hover:bg-white/60 dark:hover:bg-zinc-800/60 border border-transparent"
+                        ? "bg-surface-container-lowest text-foreground border-border shadow-xs font-semibold border"
+                        : "text-muted-foreground hover:text-foreground hover:bg-surface border border-transparent"
                     )}
                     title="Auto: Dynamic tool routing (Direct, Documents, Web)"
                   >
@@ -813,10 +823,10 @@ export default function ChatWorkspace({
                     type="button"
                     onClick={() => setChatMode("research")}
                     className={cn(
-                      "px-3 py-1 rounded-md transition-all duration-150 cursor-pointer font-medium flex items-center justify-center",
+                      "px-3 py-1 rounded-md transition-colors duration-150 cursor-pointer font-medium flex items-center justify-center focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 active:scale-95 disabled:opacity-50 disabled:pointer-events-none motion-reduce:transform-none",
                       chatMode === "research"
-                        ? "bg-white text-zinc-900 border-zinc-300/90 shadow-xs dark:bg-zinc-700/90 dark:text-zinc-100 dark:border-zinc-500/80 font-semibold border"
-                        : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-100 hover:bg-white/60 dark:hover:bg-zinc-800/60 border border-transparent"
+                        ? "bg-surface-container-lowest text-foreground border-border shadow-xs font-semibold border"
+                        : "text-muted-foreground hover:text-foreground hover:bg-surface border border-transparent"
                     )}
                     title="Research: Multi-step evidence synthesis & deep research"
                   >
@@ -829,12 +839,13 @@ export default function ChatWorkspace({
                   type="submit"
                   disabled={!inputText.trim() || isProcessing}
                   className={cn(
-                    "p-1.5 rounded-lg transition-all flex items-center justify-center btn-press",
+                    "p-1.5 rounded-lg transition-colors flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-95 disabled:opacity-40 disabled:pointer-events-none motion-reduce:transform-none",
                     !inputText.trim() || isProcessing 
-                      ? "text-muted-foreground cursor-not-allowed opacity-40" 
+                      ? "text-muted-foreground cursor-not-allowed" 
                       : "text-primary border border-primary/30 hover:bg-primary/10 cursor-pointer"
                   )}
                   title="Send message"
+                  aria-label="Send message"
                 >
                   <ArrowRight className="w-4 h-4" />
                 </button>
@@ -853,16 +864,19 @@ export default function ChatWorkspace({
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: 400, opacity: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="absolute right-0 top-0 bottom-0 w-80 md:w-96 border-l border-border bg-background z-40 flex flex-col shadow-2xl"
+            className="absolute right-0 top-0 bottom-0 w-80 md:w-96 border-l border-border bg-background z-40 flex flex-col"
           >
-            <div className="h-16 border-b border-border flex items-center px-4 pt-1 bg-background/50 backdrop-blur-md shrink-0">
+            <div className="h-16 border-b border-border flex items-center px-4 pt-1 bg-surface-container-lowest shrink-0">
               <h3 className="font-semibold text-sm text-foreground flex items-center leading-none">
                 <BrainCircuit className="w-4 h-4 mr-2 text-primary" />
                 Inspector
               </h3>
               <button 
+                type="button"
                 onClick={() => setIsInspectorOpen(false)}
-                className="ml-auto p-1.5 hover:bg-surface rounded-md text-muted-foreground transition-colors"
+                className="ml-auto p-1.5 hover:bg-surface rounded-md text-muted-foreground transition-colors active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
+                title="Close inspector"
+                aria-label="Close inspector"
               >
                 <PanelRightClose className="w-4 h-4" />
               </button>
@@ -871,13 +885,14 @@ export default function ChatWorkspace({
             <div className="flex-1 overflow-y-auto p-5">
               <div className="space-y-4">
                 <div className="mb-6">
-                  <h4 className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mb-3">Add Sources</h4>
+                  <h4 className="text-xs font-semibold text-muted-foreground mb-3">Add Sources</h4>
                   <div className="grid grid-cols-2 gap-2">
                     <button
+                      type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="flex flex-col items-center justify-center p-3 rounded-xl border border-border bg-surface-container-lowest hover:border-primary/40 hover:bg-surface/50 transition-all btn-press group"
+                      className="flex flex-col items-center justify-center p-3 rounded-xl border border-border bg-surface-container-lowest hover:border-primary/40 hover:bg-surface/50 transition-colors duration-200 active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 group motion-reduce:transform-none"
                     >
-                      <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-2">
                         <Plus className="w-4 h-4" />
                       </div>
                       <span className="text-[11px] font-semibold text-foreground">Upload File</span>
@@ -888,9 +903,9 @@ export default function ChatWorkspace({
                         <button
                           type="button"
                           onClick={() => setIsLinkDropdownOpen(!isLinkDropdownOpen)}
-                          className="w-full flex flex-col items-center justify-center p-3 border border-border bg-surface-container-lowest hover:border-primary/40 hover:bg-surface/50 rounded-xl transition-all btn-press group"
+                          className="w-full flex flex-col items-center justify-center p-3 border border-border bg-surface-container-lowest hover:border-primary/40 hover:bg-surface/50 rounded-xl transition-colors duration-200 active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 group motion-reduce:transform-none"
                         >
-                          <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                          <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-2">
                             <Paperclip className="w-4 h-4" />
                           </div>
                           <span className="text-[11px] font-semibold text-foreground">Link Existing</span>
@@ -947,7 +962,7 @@ export default function ChatWorkspace({
                 </div>
 
                 <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Active Documents ({documents.length})</h4>
+                  <h4 className="text-xs font-semibold text-muted-foreground">Active Documents ({documents.length})</h4>
                 </div>
                 
                 {documents.length === 0 ? (
@@ -963,32 +978,34 @@ export default function ChatWorkspace({
                     return (
                       <div key={i} className={cn("p-3 bg-surface border border-border rounded-lg flex items-start space-x-3 relative overflow-hidden", isProcessing ? "opacity-80" : "")}>
                         {isProcessing ? (
-                           <Loader2 className="w-4 h-4 text-primary animate-spin shrink-0 mt-0.5" />
+                           <Loader2 className="w-4 h-4 text-primary animate-spin shrink-0 mt-0.5 motion-reduce:animate-none" />
                         ) : isFailed ? (
-                           <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                           <AlertTriangle className="w-4 h-4 text-danger shrink-0 mt-0.5" />
                         ) : (
-                           <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                           <CheckCircle2 className="w-4 h-4 text-success shrink-0 mt-0.5" />
                         )}
                         <div className="flex-1 min-w-0">
                           <h5 className="text-xs font-semibold text-foreground truncate">{doc.name}</h5>
-                          <p className="text-[10px] text-muted-foreground mt-1 truncate">Status: {isProcessing ? "Indexing..." : isFailed ? "Failed" : "Indexed"} • Size: {doc.size || (doc as any).file_size_kb + " KB"}</p>
+                          <p className="text-[10px] text-muted-foreground mt-1 truncate">Status: {isProcessing ? "Indexing…" : isFailed ? "Failed" : "Indexed"} • Size: {doc.size || (doc as any).file_size_kb + " KB"}</p>
                         </div>
                         {onUnlinkDocument && (
                           <button
+                            type="button"
                             onClick={() => onUnlinkDocument(doc.id)}
-                            className="p-1 hover:bg-border rounded-md transition-colors"
+                            className="p-1 hover:bg-border rounded-md transition-colors active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
                             title="Unlink document"
+                            aria-label="Unlink document"
                           >
                             <X className="w-3.5 h-3.5 text-muted-foreground" />
                           </button>
                         )}
                         {isProcessing && (
-                          <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary/20">
+                          <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-surface-container-high overflow-hidden">
                             <motion.div 
                               className="h-full bg-primary" 
-                              initial={{ width: "0%" }}
-                              animate={{ width: "100%" }}
-                              transition={{ duration: 2, repeat: Infinity }}
+                              initial={{ x: "-100%" }}
+                              animate={{ x: "100%" }}
+                              transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
                             />
                           </div>
                         )}
@@ -1014,7 +1031,7 @@ export default function ChatWorkspace({
         {activeCitation && (
           <motion.div 
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+            className="fixed inset-0 bg-background/80 flex items-center justify-center p-4 z-50"
           >
             <motion.div 
               initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
@@ -1023,7 +1040,7 @@ export default function ChatWorkspace({
               <div className="flex items-center justify-between border-b border-border pb-4">
                 <div className="flex items-center space-x-3">
                   <div className="p-2 bg-surface rounded-md border border-border text-foreground">
-                    {activeCitation.type === 'web' ? <Search className="w-4 h-4 text-sky-500" /> : <FileText className="w-4 h-4 text-amber-500" />}
+                    {activeCitation.type === 'web' ? <Search className="w-4 h-4 text-muted-foreground" /> : <FileText className="w-4 h-4 text-muted-foreground" />}
                   </div>
                   <div>
                     <h5 className="font-semibold text-foreground text-sm tracking-tight truncate max-w-[300px]">
@@ -1043,7 +1060,7 @@ export default function ChatWorkspace({
               
               <div className="bg-surface p-4 rounded-xl text-sm text-muted-foreground leading-relaxed font-mono max-h-72 overflow-y-auto whitespace-pre-line border border-border/50">
                 {activeCitation.type === 'web' ? (
-                  <a href={activeCitation.url} target="_blank" rel="noreferrer" className="text-sky-500 hover:underline">
+                  <a href={activeCitation.url} target="_blank" rel="noreferrer" className="text-primary underline underline-offset-2">
                     {activeCitation.url}
                   </a>
                 ) : (
@@ -1053,8 +1070,9 @@ export default function ChatWorkspace({
 
               <div className="flex justify-end pt-2">
                 <button
+                  type="button"
                   onClick={() => setActiveCitation(null)}
-                  className="px-4 py-2 bg-surface border border-border hover:bg-surface-container text-foreground rounded-lg font-medium text-sm cursor-pointer transition-colors shadow-sm"
+                  className="px-4 py-2 bg-surface border border-border hover:bg-surface-container text-foreground rounded-lg font-medium text-sm cursor-pointer transition-colors active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 shadow-sm motion-reduce:transform-none"
                 >
                   Close
                 </button>

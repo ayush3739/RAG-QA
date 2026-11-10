@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { 
   Cpu, Sliders, User, Shield, RefreshCw, Moon, Sun, LogOut, Trash2, Save, Check,
-  Server, Palette, AlertTriangle, Crown, Sparkles, Lock, Eye, EyeOff, Clock,
-  CreditCard, ArrowUpRight, CheckCircle2, FileText, Zap, ChevronRight
+  Server, Palette, AlertTriangle, Lock, Eye, EyeOff, Clock,
+  CreditCard, ArrowUpRight, ChevronRight
 } from "lucide-react";
 import { toast } from "sonner";
 import { ModelParams } from "../types";
@@ -28,13 +28,13 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
       aria-checked={checked}
       onClick={() => onChange(!checked)}
       className={cn(
-        "relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none",
+        "relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
         checked ? "bg-primary" : "bg-surface-container-high"
       )}
     >
       <span
         className={cn(
-          "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200",
+          "pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-lg ring-0 transition-transform duration-200 motion-reduce:transition-none",
           checked ? "translate-x-4" : "translate-x-0"
         )}
       />
@@ -42,13 +42,10 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
   );
 }
 
-// Section wrapper
-function SettingsSection({ title, children }: { title: string; children: React.ReactNode }) {
+// Section heading — sentence case, body face, one step smaller
+function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
-    <div className="space-y-1 pt-2 first:pt-0">
-      <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground px-1 mb-3">{title}</h4>
-      {children}
-    </div>
+    <h4 className="text-xs font-semibold text-muted-foreground mb-3">{children}</h4>
   );
 }
 
@@ -58,9 +55,42 @@ function SettingsRow({ label, desc, children, last = false }: { label: string; d
     <div className={cn("flex items-center justify-between py-3.5", !last && "border-b border-border/50")}>
       <div className="min-w-0 pr-6">
         <span className="text-sm font-semibold text-foreground block">{label}</span>
-        {desc && <p className="text-[12px] text-muted-foreground mt-0.5 leading-snug">{desc}</p>}
+        {desc && <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{desc}</p>}
       </div>
       <div className="shrink-0">{children}</div>
+    </div>
+  );
+}
+
+// Quota meter — reusable across subscription tab
+function QuotaMeter({ label, used, limit, detail }: { label: string; used: number; limit: number | null; detail: string }) {
+  const pct = limit ? Math.min(100, (used / limit) * 100) : 100;
+  const remaining = limit !== null ? Math.max(0, limit - used) : null;
+  const isExhausted = limit !== null && used >= limit;
+  const isWarning = limit !== null && !isExhausted && used / limit >= 0.8;
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between text-xs">
+        <span className="font-medium text-foreground">{label}</span>
+        <span className="tabular-nums font-medium text-foreground">
+          {limit === null ? "Unlimited" : `${used} / ${limit}`}
+        </span>
+      </div>
+      <div className="w-full h-1.5 bg-surface-container rounded-full overflow-hidden">
+        <div 
+          className={cn(
+            "h-full rounded-full origin-left transition-transform duration-300 motion-reduce:transition-none",
+            isExhausted ? "bg-danger" : isWarning ? "bg-warning" : "bg-primary"
+          )}
+          style={{ transform: `scaleX(${pct / 100})`, width: "100%" }}
+        />
+      </div>
+      <div className="flex justify-between text-[11px] text-muted-foreground">
+        <span>{detail}</span>
+        <span className="tabular-nums">
+          {remaining !== null ? `${remaining} remaining` : "Unmetered"}
+        </span>
+      </div>
     </div>
   );
 }
@@ -187,6 +217,17 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
     try { await api.deleteMe(); } catch (e) { /* 204 = ok */ } finally { logout(); }
   };
 
+  // Plan badge styling
+  const planBadge = cn(
+    "text-[10px] font-semibold px-2 py-0.5 rounded border inline-flex items-center gap-1",
+    isAdmin
+      ? "bg-primary/8 text-primary border-primary/15"
+      : isPro
+      ? "bg-primary/8 text-primary border-primary/15"
+      : "bg-surface-container text-muted-foreground border-border/60"
+  );
+
+  const planLabel = isAdmin ? "Admin" : isPro ? "Pro" : "Free";
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-background">
@@ -194,18 +235,19 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
       {/* Page Header */}
       <div className="shrink-0 px-8 md:px-12 pt-10 pb-0">
         <h2 className="text-2xl font-bold text-foreground tracking-tight">Settings</h2>
-        <p className="text-sm text-muted-foreground mt-1 font-medium">Workspace configuration and preferences</p>
+        <p className="text-sm text-muted-foreground mt-1">Workspace configuration and preferences</p>
 
         {/* Top Tab Bar */}
-        <div className="flex items-center gap-1 mt-6 border-b border-border">
+        <div className="flex items-center gap-1 mt-6 border-b border-border overflow-x-auto">
           {SECTIONS.map((s) => {
             const isActive = activeSection === s.id;
             return (
               <button
                 key={s.id}
+                type="button"
                 onClick={() => handleTabChange(s.id)}
                 className={cn(
-                  "relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors cursor-pointer rounded-t-lg",
+                  "relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors cursor-pointer rounded-t-lg shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
                   isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -233,12 +275,12 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.18, ease: "easeOut" }}
-            className="max-w-2xl md:max-w-3xl space-y-8"
+            className="max-w-2xl md:max-w-3xl space-y-6"
           >
 
             {/* LLM Provider */}
             {activeSection === "llm" && (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {[
                   {
                     val: true,
@@ -260,7 +302,7 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
                     type="button"
                     onClick={() => handleToggleOllama(opt.val)}
                     className={cn(
-                      "w-full p-5 rounded-2xl border text-left transition-all duration-200 cursor-pointer group",
+                      "w-full p-5 rounded-xl border text-left transition-colors duration-200 cursor-pointer group focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
                       useOllama === opt.val
                         ? "bg-primary/5 border-primary/40 shadow-[0_0_0_1px_var(--primary)]"
                         : "bg-surface-container-lowest border-border hover:border-border/80 hover:bg-surface"
@@ -269,14 +311,14 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
                     <div className="flex items-start justify-between">
                       <div>
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-sm font-bold text-foreground">{opt.label}</span>
+                          <span className="text-sm font-semibold text-foreground">{opt.label}</span>
                           <span className={cn(
-                            "text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-sm",
-                            useOllama === opt.val ? "bg-primary/20 text-primary" : "bg-surface-container text-muted-foreground"
+                            "text-[10px] font-semibold px-1.5 py-0.5 rounded",
+                            useOllama === opt.val ? "bg-primary/15 text-primary" : "bg-surface-container text-muted-foreground"
                           )}>{opt.badge}</span>
                         </div>
                         <p className="text-xs text-muted-foreground leading-relaxed max-w-sm">{opt.desc}</p>
-                        <p className="text-[10px] font-mono text-muted-foreground/60 mt-2">{opt.model}</p>
+                        <p className="text-[11px] font-mono text-muted-foreground/60 mt-2 tabular-nums">{opt.model}</p>
                       </div>
                       <div className={cn(
                         "w-5 h-5 rounded-full border-2 shrink-0 mt-0.5 flex items-center justify-center transition-colors",
@@ -293,58 +335,56 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
             {/* Appearance */}
             {activeSection === "appearance" && (
               <div className="premium-card p-6 space-y-4">
-                <SettingsSection title="Color Theme">
-                  <div className="grid grid-cols-2 gap-3">
-                    {[
-                      { id: "light", label: "Light", icon: Sun, desc: "Clean bright workspace" },
-                      { id: "dark", label: "Dark", icon: Moon, desc: "Premium dark environment" }
-                    ].map((t) => (
-                      <button
-                        key={t.id}
-                        type="button"
-                        onClick={() => setTheme(t.id as "light" | "dark")}
-                        className={cn(
-                          "relative p-4 rounded-xl border text-left cursor-pointer transition-all group",
-                          theme === t.id
-                            ? "border-primary/50 bg-primary/5"
-                            : "border-border bg-surface hover:bg-surface-container-low"
-                        )}
-                      >
-                        {theme === t.id && (
-                          <div className="absolute top-2 right-2">
-                            <div className="w-4 h-4 rounded-full bg-primary flex items-center justify-center">
-                              <Check className="w-2.5 h-2.5 text-white" />
-                            </div>
+                <SectionHeading>Color theme</SectionHeading>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { id: "light", label: "Light", icon: Sun, desc: "Clean bright workspace" },
+                    { id: "dark", label: "Dark", icon: Moon, desc: "Dark environment" }
+                  ].map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setTheme(t.id as "light" | "dark")}
+                      className={cn(
+                        "relative p-4 rounded-xl border text-left cursor-pointer transition-colors group focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
+                        theme === t.id
+                          ? "border-primary/50 bg-primary/5"
+                          : "border-border bg-surface hover:bg-surface-container-low"
+                      )}
+                    >
+                      {theme === t.id && (
+                        <div className="absolute top-2 right-2">
+                          <div className="w-4 h-4 rounded-full bg-primary flex items-center justify-center">
+                            <Check className="w-2.5 h-2.5 text-white" />
                           </div>
-                        )}
-                        <t.icon className={cn("w-5 h-5 mb-2", theme === t.id ? "text-primary" : "text-muted-foreground")} />
-                        <p className="text-sm font-semibold text-foreground">{t.label}</p>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">{t.desc}</p>
-                      </button>
-                    ))}
-                  </div>
-                </SettingsSection>
+                        </div>
+                      )}
+                      <t.icon className={cn("w-5 h-5 mb-2", theme === t.id ? "text-primary" : "text-muted-foreground")} />
+                      <p className="text-sm font-semibold text-foreground">{t.label}</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">{t.desc}</p>
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
 
             {/* Developer */}
             {activeSection === "developer" && (
               <div className="premium-card p-6">
-                <SettingsSection title="Pipeline Options">
-                  <SettingsRow
-                    label="Show Grounded Chunks"
-                    desc="Expose dense vector retrieval chunks in the inspector panel for debugging."
-                  >
-                    <Toggle checked={showChunks} onChange={(v) => { setShowChunks(v); localStorage.setItem("setting_show_chunks", String(v)); }} />
-                  </SettingsRow>
-                  <SettingsRow
-                    label="Inspector Auto-Open"
-                    desc="Automatically slide open the context inspector when streaming begins."
-                    last
-                  >
-                    <Toggle checked={inspectorOpen} onChange={(v) => { setInspectorOpen(v); localStorage.setItem("setting_inspector_open", String(v)); }} />
-                  </SettingsRow>
-                </SettingsSection>
+                <SectionHeading>Pipeline options</SectionHeading>
+                <SettingsRow
+                  label="Show grounded chunks"
+                  desc="Expose dense vector retrieval chunks in the inspector panel for debugging."
+                >
+                  <Toggle checked={showChunks} onChange={(v) => { setShowChunks(v); localStorage.setItem("setting_show_chunks", String(v)); }} />
+                </SettingsRow>
+                <SettingsRow
+                  label="Inspector auto-open"
+                  desc="Automatically slide open the context inspector when streaming begins."
+                  last
+                >
+                  <Toggle checked={inspectorOpen} onChange={(v) => { setInspectorOpen(v); localStorage.setItem("setting_inspector_open", String(v)); }} />
+                </SettingsRow>
               </div>
             )}
 
@@ -353,23 +393,13 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
               <div className="space-y-6">
                 {/* Avatar + Info strip */}
                 <div className="flex items-center gap-4 p-5 premium-card">
-                  <div className="w-14 h-14 rounded-2xl bg-primary/20 text-primary flex items-center justify-center font-bold text-xl shrink-0 ring-2 ring-primary/20">
+                  <div className="w-14 h-14 rounded-2xl bg-primary/15 text-primary flex items-center justify-center font-bold text-xl shrink-0 ring-1 ring-primary/15">
                     {user?.name?.charAt(0)?.toUpperCase() || "U"}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <p className="text-base font-bold text-foreground truncate">{user?.name || "User"}</p>
-                      <span className={cn(
-                        "text-[10px] font-mono font-extrabold uppercase px-2 py-0.5 rounded tracking-wider flex items-center gap-1",
-                        user?.role?.toLowerCase() === "pro"
-                          ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
-                          : user?.role?.toLowerCase() === "admin"
-                          ? "bg-purple-500/15 text-purple-400 border border-purple-500/30"
-                          : "bg-surface-container-high text-muted-foreground border border-border/60"
-                      )}>
-                        {user?.role?.toLowerCase() === "pro" && <Crown className="w-3 h-3 text-amber-400" />}
-                        {user?.role?.toLowerCase() === "admin" ? "ADMIN" : user?.role?.toLowerCase() === "pro" ? "PRO PLAN" : "FREE PLAN"}
-                      </span>
+                      <span className={planBadge}>{planLabel}</span>
                     </div>
                     <p className="text-sm text-muted-foreground truncate mt-0.5">{user?.email || "No email"}</p>
                   </div>
@@ -377,151 +407,153 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
 
                 {/* Editable fields */}
                 <div className="premium-card p-6 space-y-4">
-                  <SettingsSection title="Profile Details">
-                    <div className="space-y-4 pt-1">
-                      <div>
-                        <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground block mb-1.5">Display Name</label>
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            value={displayName}
-                            onChange={(e) => setDisplayName(e.target.value)}
-                            onKeyDown={(e) => e.key === "Enter" && handleSaveName()}
-                            className="flex-1 text-sm font-medium bg-background border border-border rounded-lg px-3 py-2.5 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all"
-                          />
-                          <button
-                            onClick={handleSaveName}
-                            disabled={isSavingName || !displayName.trim()}
-                            className="px-4 py-2.5 rounded-lg bg-surface border border-border hover:bg-surface-container text-foreground transition-all cursor-pointer disabled:opacity-40 flex items-center gap-2 text-sm font-semibold"
-                          >
-                            {nameSaved ? <Check className="w-4 h-4 text-emerald-500" /> : <Save className="w-4 h-4" />}
-                            {nameSaved ? "Saved" : "Save"}
-                          </button>
-                        </div>
-                      </div>
-                      <div>
-                        <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground block mb-1.5">Email (Read-Only)</label>
+                  <SectionHeading>Profile details</SectionHeading>
+                  <div className="space-y-4 pt-1">
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground block mb-1.5">Display name</label>
+                      <div className="flex gap-2">
                         <input
                           type="text"
-                          readOnly
-                          value={user?.email || ""}
-                          className="w-full text-sm font-medium bg-surface border border-border rounded-lg px-3 py-2.5 text-muted-foreground cursor-not-allowed focus:outline-none"
+                          value={displayName}
+                          onChange={(e) => setDisplayName(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && handleSaveName()}
+                          className="flex-1 text-sm bg-background border border-border rounded-lg px-3 py-2.5 text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-colors"
                         />
-                      </div>
-
-                      <div className="pt-2 border-t border-border/50 flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Assigned Plan</span>
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono font-semibold text-foreground">
-                            {isAdmin ? "Enterprise Admin" : isPro ? "KnowVex Pro" : "Community Free"}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => handleTabChange("subscription")}
-                            className="text-primary hover:underline font-medium inline-flex items-center gap-0.5 cursor-pointer ml-1"
-                          >
-                            <span>Manage Plan & Limits</span>
-                            <ChevronRight className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={handleSaveName}
+                          disabled={isSavingName || !displayName.trim()}
+                          className="px-4 py-2.5 rounded-lg bg-surface border border-border hover:bg-surface-container text-foreground transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                        >
+                          {nameSaved ? <Check className="w-4 h-4 text-success" /> : <Save className="w-4 h-4" />}
+                          {nameSaved ? "Saved" : "Save"}
+                        </button>
                       </div>
                     </div>
-                  </SettingsSection>
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground block mb-1.5">Email (read-only)</label>
+                      <input
+                        type="text"
+                        readOnly
+                        value={user?.email || ""}
+                        className="w-full text-sm bg-surface border border-border rounded-lg px-3 py-2.5 text-muted-foreground cursor-not-allowed focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="pt-2 border-t border-border/50 flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Assigned plan</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-foreground">
+                          {isAdmin ? "Enterprise Admin" : isPro ? "KnowVex Pro" : "Community Free"}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleTabChange("subscription")}
+                          className="text-primary hover:underline font-medium inline-flex items-center gap-0.5 cursor-pointer ml-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                        >
+                          <span>Manage limits</span>
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Security / Password Change */}
                 <div className="premium-card p-6 space-y-4">
-                  <SettingsSection title="Security & Authentication">
-                    <form onSubmit={handleChangePassword} className="space-y-4 pt-1">
-                      <div>
-                        <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground block mb-1.5">
-                          Current Password
-                        </label>
-                        <div className="relative">
-                          <input
-                            type={showPassword ? "text" : "password"}
-                            value={currentPassword}
-                            onChange={(e) => setCurrentPassword(e.target.value)}
-                            placeholder="Enter current password"
-                            className="w-full text-sm font-medium bg-background border border-border rounded-lg pl-3 pr-10 py-2.5 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all font-mono"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
-                          >
-                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground block mb-1.5">
-                            New Password
-                          </label>
-                          <input
-                            type={showPassword ? "text" : "password"}
-                            value={newPassword}
-                            onChange={(e) => setNewPassword(e.target.value)}
-                            placeholder="At least 8 characters"
-                            className="w-full text-sm font-medium bg-background border border-border rounded-lg px-3 py-2.5 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all font-mono"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground block mb-1.5">
-                            Confirm New Password
-                          </label>
-                          <input
-                            type={showPassword ? "text" : "password"}
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            placeholder="Re-type new password"
-                            className="w-full text-sm font-medium bg-background border border-border rounded-lg px-3 py-2.5 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all font-mono"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="flex justify-end pt-1">
+                  <SectionHeading>Security</SectionHeading>
+                  <form onSubmit={handleChangePassword} className="space-y-4 pt-1">
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground block mb-1.5">
+                        Current password
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showPassword ? "text" : "password"}
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          placeholder="Enter current password"
+                          className="w-full text-sm bg-background border border-border rounded-lg pl-3 pr-10 py-2.5 text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-colors font-mono"
+                        />
                         <button
-                          type="submit"
-                          disabled={isChangingPassword || !currentPassword || !newPassword || !confirmPassword}
-                          className="px-4 py-2.5 rounded-lg bg-surface border border-border hover:bg-surface-container text-foreground transition-all cursor-pointer disabled:opacity-40 flex items-center gap-2 text-sm font-semibold"
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                         >
-                          <Lock className="w-4 h-4" />
-                          {isChangingPassword ? "Updating..." : "Update Password"}
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
                       </div>
-                    </form>
-                  </SettingsSection>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground block mb-1.5">
+                          New password
+                        </label>
+                        <input
+                          type={showPassword ? "text" : "password"}
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          placeholder="At least 8 characters"
+                          className="w-full text-sm bg-background border border-border rounded-lg px-3 py-2.5 text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-colors font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground block mb-1.5">
+                          Confirm new password
+                        </label>
+                        <input
+                          type={showPassword ? "text" : "password"}
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          placeholder="Re-type new password"
+                          className="w-full text-sm bg-background border border-border rounded-lg px-3 py-2.5 text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-colors font-mono"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end pt-1">
+                      <button
+                        type="submit"
+                        disabled={isChangingPassword || !currentPassword || !newPassword || !confirmPassword}
+                        className="px-4 py-2.5 rounded-lg bg-surface border border-border hover:bg-surface-container text-foreground transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                      >
+                        <Lock className="w-4 h-4" />
+                        {isChangingPassword ? "Updating\u2026" : "Update password"}
+                      </button>
+                    </div>
+                  </form>
                 </div>
 
                 {/* Danger Zone */}
-                <div className="p-5 rounded-2xl border border-red-500/20 bg-red-500/[0.03] space-y-3">
+                <div className="p-5 rounded-xl border border-danger-subtle bg-danger-subtle/30 space-y-3">
                   <div className="flex items-center gap-2 mb-3">
-                    <AlertTriangle className="w-4 h-4 text-red-500" />
-                    <h4 className="text-sm font-bold text-red-500 uppercase tracking-wider">Danger Zone</h4>
+                    <AlertTriangle className="w-4 h-4 text-danger" />
+                    <h4 className="text-sm font-semibold text-danger">Destructive actions</h4>
                   </div>
                   <button
+                    type="button"
                     onClick={logout}
-                    className="w-full flex items-center justify-center gap-2 bg-surface hover:bg-surface-container border border-border text-foreground font-semibold text-sm py-2.5 rounded-xl transition-all cursor-pointer"
+                    className="w-full flex items-center justify-center gap-2 bg-surface hover:bg-surface-container border border-border text-foreground font-semibold text-sm py-2.5 rounded-lg transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                   >
                     <LogOut className="w-4 h-4" />
-                    Log Out Current Device
+                    Log out this device
                   </button>
                   <button
+                    type="button"
                     onClick={() => { api.logoutAll(); }}
-                    className="w-full flex items-center justify-center gap-2 bg-surface hover:bg-surface-container border border-border text-foreground font-semibold text-sm py-2.5 rounded-xl transition-all cursor-pointer"
+                    className="w-full flex items-center justify-center gap-2 bg-surface hover:bg-surface-container border border-border text-foreground font-semibold text-sm py-2.5 rounded-lg transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                   >
                     <Server className="w-4 h-4" />
-                    Log Out All Devices
+                    Log out all devices
                   </button>
                   <button
+                    type="button"
                     onClick={() => setShowDeleteAccount(true)}
-                    className="w-full flex items-center justify-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 font-semibold text-sm py-2.5 rounded-xl transition-all border border-red-500/20 cursor-pointer"
+                    className="w-full flex items-center justify-center gap-2 bg-danger-subtle hover:bg-danger-subtle text-danger font-semibold text-sm py-2.5 rounded-lg transition-colors border border-danger-subtle cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                   >
                     <Trash2 className="w-4 h-4" />
-                    Delete Account
+                    Delete account
                   </button>
                 </div>
 
@@ -542,28 +574,21 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
                 {/* Active Plan Overview */}
                 <div className="premium-card p-6 space-y-5">
                   <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-1">
+                    <div className="space-y-1.5">
                       <div className="flex items-center gap-2.5">
                         <h3 className="text-base font-bold text-foreground tracking-tight">
-                          {isAdmin ? "Enterprise Administrator" : isPro ? "KnowVex Pro Tier" : "Community Free Tier"}
+                          {isAdmin ? "Enterprise Administrator" : isPro ? "KnowVex Pro" : "Community Free"}
                         </h3>
-                        <span className={cn(
-                          "text-[10px] font-mono font-bold tracking-wider px-2 py-0.5 rounded border uppercase",
-                          isAdmin 
-                            ? "bg-purple-500/10 text-purple-400 border-purple-500/20"
-                            : isPro 
-                            ? "bg-primary/10 text-primary border-primary/20" 
-                            : "bg-surface-container text-muted-foreground border-border"
-                        )}>
-                          {isAdmin ? "SYSTEM ADMIN" : "ACTIVE"}
+                        <span className={planBadge}>
+                          {isAdmin ? "Admin" : "Active"}
                         </span>
                       </div>
-                      <p className="text-xs text-muted-foreground leading-relaxed max-w-xl">
+                      <p className="text-xs text-muted-foreground leading-relaxed max-w-lg">
                         {isAdmin
                           ? "Unmetered infrastructure access with uncapped agent routing, deep research, and storage."
                           : isPro
-                          ? "Professional tier with 500 daily agent queries, 25 deep research executions, and 50 document slots."
-                          : "Standard metered tier with 10 daily agent queries, 1 deep research execution, and 3 document storage slots."}
+                          ? "500 daily agent queries, 25 deep research runs, 50 document slots."
+                          : "10 daily agent queries, 1 deep research run, 3 document slots."}
                       </p>
                     </div>
 
@@ -572,10 +597,10 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
                         type="button"
                         onClick={() => {
                           toast.info("Pro plan includes 500 queries/day, 25 deep research runs, and 50 document slots.", {
-                            description: "To upgrade your organization account, reach out to your team admin or email admin@knowvex.ai"
+                            description: "To upgrade, reach out to your team admin or email admin@knowvex.ai"
                           });
                         }}
-                        className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 border border-primary/20 rounded-lg transition-colors cursor-pointer"
+                        className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/15 border border-primary/15 rounded-lg transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                       >
                         <span>Upgrade to Pro</span>
                         <ArrowUpRight className="w-3.5 h-3.5" />
@@ -583,19 +608,21 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
                     )}
                   </div>
 
-                  {/* Telemetry metadata strip */}
-                  <div className="pt-4 border-t border-border grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                    <div className="p-3 rounded-lg bg-surface-container/30 border border-border/50">
-                      <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Allocation Cycle</div>
-                      <div className="text-xs font-semibold text-foreground mt-0.5">Daily Midnight UTC</div>
+                  {/* Cycle metadata — three stats, no cards-in-cards */}
+                  <div className="pt-4 border-t border-border flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8 text-xs">
+                    <div>
+                      <div className="text-muted-foreground mb-0.5">Allocation cycle</div>
+                      <div className="font-medium text-foreground">Daily at midnight UTC</div>
                     </div>
-                    <div className="p-3 rounded-lg bg-surface-container/30 border border-border/50">
-                      <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Local Reset Window</div>
-                      <div className="text-xs font-semibold text-foreground mt-0.5">{resetInfo.localTime}</div>
+                    <div className="hidden sm:block w-px h-6 bg-border" />
+                    <div>
+                      <div className="text-muted-foreground mb-0.5">Local reset</div>
+                      <div className="font-medium text-foreground">{resetInfo.localTime}</div>
                     </div>
-                    <div className="p-3 rounded-lg bg-surface-container/30 border border-border/50">
-                      <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Cycle Status</div>
-                      <div className="text-xs font-mono font-semibold text-foreground mt-0.5">{resetInfo.timeRemaining} remaining</div>
+                    <div className="hidden sm:block w-px h-6 bg-border" />
+                    <div>
+                      <div className="text-muted-foreground mb-0.5">Time remaining</div>
+                      <div className="font-medium text-foreground tabular-nums">{resetInfo.timeRemaining}</div>
                     </div>
                   </div>
                 </div>
@@ -603,119 +630,45 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
                 {/* Metered Resource Usage */}
                 <div className="premium-card p-6 space-y-5">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                      Metered Resource Usage
+                    <h4 className="text-xs font-semibold text-muted-foreground">
+                      Resource usage
                     </h4>
-                    <div className="flex items-center gap-1.5 text-[11px] font-mono text-muted-foreground">
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       <Clock className="w-3.5 h-3.5 text-primary" />
                       <span>{resetInfo.summary}</span>
                     </div>
                   </div>
 
                   <div className="space-y-4 pt-1">
-                    {/* Daily Queries */}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-semibold text-foreground">Daily Agent Queries</span>
-                        <span className="font-mono font-medium text-foreground">
-                          {quota ? (quota.query_limit === null ? "Unlimited" : `${quota.queries_used} / ${quota.query_limit}`) : "..."}
-                        </span>
-                      </div>
-                      <div className="w-full h-2 bg-surface-container rounded-full overflow-hidden">
-                        <div 
-                          className={cn(
-                            "h-full rounded-full transition-all duration-300",
-                            quota && quota.query_limit !== null && quota.queries_used >= quota.query_limit
-                              ? "bg-red-500"
-                              : quota && quota.query_limit !== null && quota.queries_used / quota.query_limit >= 0.8
-                              ? "bg-amber-500"
-                              : "bg-primary"
-                          )}
-                          style={{ 
-                            width: `${quota && quota.query_limit ? Math.min(100, (quota.queries_used / quota.query_limit) * 100) : (quota?.query_limit === null ? 100 : 0)}%` 
-                          }}
-                        />
-                      </div>
-                      <div className="flex justify-between text-[11px] text-muted-foreground font-mono">
-                        <span>Resets daily at 00:00 UTC</span>
-                        <span>
-                          {quota?.query_limit !== null && quota
-                            ? `${Math.max(0, (quota.query_limit ?? 0) - quota.queries_used)} queries remaining`
-                            : "Unmetered inference"}
-                        </span>
-                      </div>
+                    <QuotaMeter
+                      label="Daily agent queries"
+                      used={quota?.queries_used ?? 0}
+                      limit={quota?.query_limit ?? null}
+                      detail="Resets daily at 00:00 UTC"
+                    />
+
+                    <div className="border-t border-border/50 pt-4">
+                      <QuotaMeter
+                        label="Deep research runs"
+                        used={quota?.research_used ?? 0}
+                        limit={quota?.research_limit ?? null}
+                        detail="Multi-agent research executions"
+                      />
                     </div>
 
-                    {/* Deep Research Executions */}
-                    <div className="space-y-2 pt-3 border-t border-border/50">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-semibold text-foreground">Deep Research Runs</span>
-                        <span className="font-mono font-medium text-foreground">
-                          {quota ? (quota.research_limit === null ? "Unlimited" : `${quota.research_used ?? 0} / ${quota.research_limit}`) : "..."}
-                        </span>
-                      </div>
-                      <div className="w-full h-2 bg-surface-container rounded-full overflow-hidden">
-                        <div 
-                          className={cn(
-                            "h-full rounded-full transition-all duration-300",
-                            quota && quota.research_limit !== null && (quota.research_used ?? 0) >= quota.research_limit
-                              ? "bg-red-500"
-                              : quota && quota.research_limit !== null && (quota.research_used ?? 0) / quota.research_limit >= 0.8
-                              ? "bg-amber-500"
-                              : "bg-primary"
-                          )}
-                          style={{ 
-                            width: `${quota && quota.research_limit ? Math.min(100, ((quota.research_used ?? 0) / quota.research_limit) * 100) : (quota?.research_limit === null ? 100 : 0)}%` 
-                          }}
-                        />
-                      </div>
-                      <div className="flex justify-between text-[11px] text-muted-foreground font-mono">
-                        <span>Autonomous multi-agent research runs</span>
-                        <span>
-                          {quota?.research_limit !== null && quota
-                            ? `${Math.max(0, (quota.research_limit ?? 0) - (quota.research_used ?? 0))} runs remaining`
-                            : "Unmetered runs"}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Document Library Slots */}
-                    <div className="space-y-2 pt-3 border-t border-border/50">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-semibold text-foreground">Document Library Capacity</span>
-                        <span className="font-mono font-medium text-foreground">
-                          {docLimit === null ? `${documents.length} / Unlimited` : `${documents.length} / ${docLimit} files`}
-                        </span>
-                      </div>
-                      <div className="w-full h-2 bg-surface-container rounded-full overflow-hidden">
-                        <div 
-                          className={cn(
-                            "h-full rounded-full transition-all duration-300",
-                            docLimit !== null && documents.length >= docLimit
-                              ? "bg-red-500"
-                              : docLimit !== null && documents.length / docLimit >= 0.8
-                              ? "bg-amber-500"
-                              : "bg-primary"
-                          )}
-                          style={{ 
-                            width: `${docLimit ? Math.min(100, (documents.length / docLimit) * 100) : 100}%` 
-                          }}
-                        />
-                      </div>
-                      <div className="flex justify-between text-[11px] text-muted-foreground font-mono">
-                        <span>Max {pageLimit ?? "unlimited"} pages per document</span>
-                        <span>
-                          {docLimit !== null
-                            ? `${Math.max(0, docLimit - documents.length)} file slots available`
-                            : "Uncapped document store"}
-                        </span>
-                      </div>
+                    <div className="border-t border-border/50 pt-4">
+                      <QuotaMeter
+                        label="Document library"
+                        used={documents.length}
+                        limit={docLimit}
+                        detail={`Max ${pageLimit ?? "unlimited"} pages per document`}
+                      />
                     </div>
                   </div>
 
-                  <div className="pt-3 border-t border-border/50 text-[11px] text-muted-foreground font-mono flex items-center gap-1.5">
+                  <div className="pt-3 border-t border-border/50 text-xs text-muted-foreground flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5 text-primary shrink-0" />
-                    <span>Next allocation cycle begins at {resetInfo.localTime} ({resetInfo.timeRemaining} remaining). All daily meters reset to zero.</span>
+                    <span>Next cycle begins at {resetInfo.localTime} ({resetInfo.timeRemaining} remaining). All daily meters reset.</span>
                   </div>
                 </div>
 
@@ -723,83 +676,49 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
                 <div className="premium-card p-6 space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                        Plan Resource Specifications
+                      <h4 className="text-xs font-semibold text-muted-foreground">
+                        Plan specifications
                       </h4>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        Deterministic constraints enforced across application runtime
+                        Constraints enforced at application runtime
                       </p>
                     </div>
-                    <span className="text-[11px] font-mono text-muted-foreground">
-                      RBAC Engine
-                    </span>
                   </div>
 
                   <div className="overflow-x-auto -mx-2">
                     <table className="w-full text-left border-collapse text-xs">
                       <thead>
-                        <tr className="border-b border-border text-[11px] text-muted-foreground uppercase tracking-wider font-mono">
-                          <th className="py-2.5 px-3 font-semibold">Resource / Capability</th>
-                          <th className={cn("py-2.5 px-3 font-semibold", isFree && "text-primary")}>
-                            Community {isFree && "(Current)"}
+                        <tr className="border-b border-border text-xs text-muted-foreground">
+                          <th className="py-2.5 px-3 font-medium">Resource</th>
+                          <th className={cn("py-2.5 px-3 font-medium", isFree && "text-primary")}>
+                            Community {isFree && "(current)"}
                           </th>
-                          <th className={cn("py-2.5 px-3 font-semibold", isPro && "text-primary")}>
-                            KnowVex Pro {isPro && "(Current)"}
+                          <th className={cn("py-2.5 px-3 font-medium", isPro && "text-primary")}>
+                            Pro {isPro && "(current)"}
                           </th>
-                          <th className={cn("py-2.5 px-3 font-semibold", isAdmin && "text-primary")}>
-                            Enterprise {isAdmin && "(Current)"}
+                          <th className={cn("py-2.5 px-3 font-medium", isAdmin && "text-primary")}>
+                            Enterprise {isAdmin && "(current)"}
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-border/40 font-mono text-[11px]">
-                        <tr className="hover:bg-surface-container/20 transition-colors">
-                          <td className="py-2.5 px-3 font-sans text-foreground font-medium text-xs">Daily Agent Inferences</td>
-                          <td className={cn("py-2.5 px-3", isFree && "font-semibold text-foreground")}>10 / day</td>
-                          <td className={cn("py-2.5 px-3", isPro && "font-semibold text-foreground")}>500 / day</td>
-                          <td className={cn("py-2.5 px-3", isAdmin && "font-semibold text-foreground")}>Unlimited</td>
-                        </tr>
-                        <tr className="hover:bg-surface-container/20 transition-colors">
-                          <td className="py-2.5 px-3 font-sans text-foreground font-medium text-xs">Deep Research Runs</td>
-                          <td className={cn("py-2.5 px-3", isFree && "font-semibold text-foreground")}>1 / day</td>
-                          <td className={cn("py-2.5 px-3", isPro && "font-semibold text-foreground")}>25 / day</td>
-                          <td className={cn("py-2.5 px-3", isAdmin && "font-semibold text-foreground")}>Unlimited</td>
-                        </tr>
-                        <tr className="hover:bg-surface-container/20 transition-colors">
-                          <td className="py-2.5 px-3 font-sans text-foreground font-medium text-xs">Document Library Capacity</td>
-                          <td className={cn("py-2.5 px-3", isFree && "font-semibold text-foreground")}>3 documents</td>
-                          <td className={cn("py-2.5 px-3", isPro && "font-semibold text-foreground")}>50 documents</td>
-                          <td className={cn("py-2.5 px-3", isAdmin && "font-semibold text-foreground")}>Unlimited</td>
-                        </tr>
-                        <tr className="hover:bg-surface-container/20 transition-colors">
-                          <td className="py-2.5 px-3 font-sans text-foreground font-medium text-xs">Max Pages Per Document</td>
-                          <td className={cn("py-2.5 px-3", isFree && "font-semibold text-foreground")}>15 pages</td>
-                          <td className={cn("py-2.5 px-3", isPro && "font-semibold text-foreground")}>300 pages</td>
-                          <td className={cn("py-2.5 px-3", isAdmin && "font-semibold text-foreground")}>Unlimited</td>
-                        </tr>
-                        <tr className="hover:bg-surface-container/20 transition-colors">
-                          <td className="py-2.5 px-3 font-sans text-foreground font-medium text-xs">Real-Time Web Grounding</td>
-                          <td className={cn("py-2.5 px-3", isFree && "font-semibold text-foreground")}>Standard (Tavily)</td>
-                          <td className={cn("py-2.5 px-3", isPro && "font-semibold text-foreground")}>Standard (Tavily)</td>
-                          <td className={cn("py-2.5 px-3", isAdmin && "font-semibold text-foreground")}>High-Throughput</td>
-                        </tr>
-                        <tr className="hover:bg-surface-container/20 transition-colors">
-                          <td className="py-2.5 px-3 font-sans text-foreground font-medium text-xs">RAG Retrieval Pipeline</td>
-                          <td className={cn("py-2.5 px-3", isFree && "font-semibold text-foreground")}>Hybrid Vector + BM25</td>
-                          <td className={cn("py-2.5 px-3", isPro && "font-semibold text-foreground")}>Hybrid Vector + BM25</td>
-                          <td className={cn("py-2.5 px-3", isAdmin && "font-semibold text-foreground")}>Hybrid Vector + BM25</td>
-                        </tr>
-                        <tr className="hover:bg-surface-container/20 transition-colors">
-                          <td className="py-2.5 px-3 font-sans text-foreground font-medium text-xs">Cross-Encoder Reranking</td>
-                          <td className={cn("py-2.5 px-3", isFree && "font-semibold text-foreground")}>CrossEncoder (bge)</td>
-                          <td className={cn("py-2.5 px-3", isPro && "font-semibold text-foreground")}>CrossEncoder (bge)</td>
-                          <td className={cn("py-2.5 px-3", isAdmin && "font-semibold text-foreground")}>CrossEncoder (bge)</td>
-                        </tr>
-                        <tr className="hover:bg-surface-container/20 transition-colors">
-                          <td className="py-2.5 px-3 font-sans text-foreground font-medium text-xs">Execution Timeout</td>
-                          <td className={cn("py-2.5 px-3", isFree && "font-semibold text-foreground")}>120s max</td>
-                          <td className={cn("py-2.5 px-3", isPro && "font-semibold text-foreground")}>300s max</td>
-                          <td className={cn("py-2.5 px-3", isAdmin && "font-semibold text-foreground")}>Uncapped</td>
-                        </tr>
+                      <tbody className="divide-y divide-border/40 text-xs">
+                        {[
+                          { resource: "Daily agent queries", free: "10 / day", pro: "500 / day", admin: "Unlimited" },
+                          { resource: "Deep research runs", free: "1 / day", pro: "25 / day", admin: "Unlimited" },
+                          { resource: "Document library", free: "3 documents", pro: "50 documents", admin: "Unlimited" },
+                          { resource: "Max pages per document", free: "15 pages", pro: "300 pages", admin: "Unlimited" },
+                          { resource: "Web grounding", free: "Tavily", pro: "Tavily", admin: "High-throughput" },
+                          { resource: "RAG pipeline", free: "Hybrid vector + BM25", pro: "Hybrid vector + BM25", admin: "Hybrid vector + BM25" },
+                          { resource: "Cross-encoder reranking", free: "BGE reranker", pro: "BGE reranker", admin: "BGE reranker" },
+                          { resource: "Execution timeout", free: "120 s", pro: "300 s", admin: "Uncapped" },
+                        ].map((row) => (
+                          <tr key={row.resource} className="hover:bg-surface-container/20 transition-colors">
+                            <td className="py-2.5 px-3 font-medium text-foreground">{row.resource}</td>
+                            <td className={cn("py-2.5 px-3 tabular-nums", isFree && "font-medium text-foreground")}>{row.free}</td>
+                            <td className={cn("py-2.5 px-3 tabular-nums", isPro && "font-medium text-foreground")}>{row.pro}</td>
+                            <td className={cn("py-2.5 px-3 tabular-nums", isAdmin && "font-medium text-foreground")}>{row.admin}</td>
+                          </tr>
+                        ))}
                       </tbody>
                     </table>
                   </div>
@@ -811,54 +730,54 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
             {activeSection === "health" && (
               <div className="space-y-4">
                 <div className="premium-card p-6 space-y-4">
-                  <SettingsSection title="Backend Connectivity">
-                    <div className="pt-1 space-y-3">
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        Verify memory caches, uptime, and core RAG pipeline dependencies by querying the server health endpoint directly.
-                      </p>
-                      <button
-                        onClick={() => refetch()}
-                        disabled={isCheckingHealth}
-                        className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground font-semibold text-sm rounded-lg cursor-pointer hover:bg-primary/90 active:scale-95 transition-all shadow-sm disabled:opacity-60"
-                      >
-                        <RefreshCw className={cn("w-4 h-4", isCheckingHealth && "animate-spin")} />
-                        {isCheckingHealth ? "Querying…" : "Query Node Status"}
-                      </button>
+                  <SectionHeading>Backend connectivity</SectionHeading>
+                  <div className="pt-1 space-y-3">
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      Verify memory caches, uptime, and core RAG pipeline dependencies by querying the server health endpoint directly.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => refetch()}
+                      disabled={isCheckingHealth}
+                      className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground font-semibold text-sm rounded-lg cursor-pointer hover:bg-primary/90 active:scale-[0.98] transition-colors shadow-sm disabled:opacity-55 disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary motion-reduce:transform-none"
+                    >
+                      <RefreshCw className={cn("w-4 h-4", isCheckingHealth && "animate-spin")} />
+                      {isCheckingHealth ? "Querying\u2026" : "Query node status"}
+                    </button>
 
-                      <AnimatePresence>
-                        {rawHealth && !isError && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 6 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-4"
-                          >
-                            <div className="flex items-center gap-2 mb-2">
-                              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                              <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Node Online</span>
-                            </div>
-                            <pre className="text-[11px] font-mono text-muted-foreground whitespace-pre-wrap">
-                              {JSON.stringify(rawHealth, null, 2)}
-                            </pre>
-                          </motion.div>
-                        )}
-                        {isError && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 6 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="bg-red-500/5 border border-red-500/20 rounded-xl p-4"
-                          >
-                            <div className="flex items-center gap-2 mb-2">
-                              <span className="w-2 h-2 rounded-full bg-red-500" />
-                              <span className="text-xs font-semibold text-red-500">Connection Failed</span>
-                            </div>
-                            <pre className="text-[11px] font-mono text-red-400 whitespace-pre-wrap">
-                              {'{\n  "error": "Could not contact API endpoints."\n}'}
-                            </pre>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  </SettingsSection>
+                    <AnimatePresence>
+                      {rawHealth && !isError && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="bg-success-subtle border border-success-subtle rounded-xl p-4"
+                        >
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="w-2 h-2 rounded-full bg-success" />
+                            <span className="text-xs font-semibold text-success">Node online</span>
+                          </div>
+                          <pre className="text-[11px] font-mono text-muted-foreground whitespace-pre-wrap">
+                            {JSON.stringify(rawHealth, null, 2)}
+                          </pre>
+                        </motion.div>
+                      )}
+                      {isError && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="bg-danger-subtle border border-danger-subtle rounded-xl p-4"
+                        >
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="w-2 h-2 rounded-full bg-danger" />
+                            <span className="text-xs font-semibold text-danger">Connection failed</span>
+                          </div>
+                          <pre className="text-[11px] font-mono text-danger whitespace-pre-wrap">
+                            {'{\n  "error": "Could not contact API endpoints."\n}'}
+                          </pre>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 </div>
               </div>
             )}

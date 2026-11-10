@@ -129,7 +129,7 @@ export function DocumentsView({
             exit={{ opacity: 0 }}
             className="absolute inset-0 bg-primary/10 backdrop-blur-sm z-40 border-2 border-dashed border-primary m-4 rounded-2xl flex items-center justify-center pointer-events-none"
           >
-            <div className="flex flex-col items-center space-y-4 bg-surface-container-lowest/90 backdrop-blur border border-border p-10 rounded-2xl shadow-2xl">
+            <div className="flex flex-col items-center space-y-4 bg-surface-container-lowest/90 backdrop-blur border border-border p-10 rounded-2xl">
               <motion.div
                 animate={{ y: [0, -12, 0] }}
                 transition={{ duration: 1.2, ease: "easeInOut", repeat: Infinity }}
@@ -163,19 +163,18 @@ export function DocumentsView({
                 <span><strong className="text-foreground font-mono">{documents.length}</strong>{maxDocs !== null ? ` / ${maxDocs}` : ""} documents</span>
               </div>
               {isDocLimitReached && (
-                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-500 rounded-lg text-xs font-semibold">
+                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-warning-subtle border border-warning-subtle text-warning rounded-lg text-xs font-semibold">
                   <AlertTriangle className="w-3.5 h-3.5" />
                   <span>Limit reached ({maxDocs} max on {role === 'pro' ? 'Pro' : 'Free'})</span>
                 </div>
               )}
               <div className="flex items-center gap-2 px-3 py-1.5 bg-surface-container-lowest border border-border rounded-lg text-xs font-medium text-muted-foreground">
                 <Database className="w-3.5 h-3.5 text-muted-foreground" />
-                <span><strong className="text-foreground font-mono">{totalChunks}</strong> chunks indexed</span>
+                <span><strong className="text-foreground font-mono tabular-nums">{totalChunks}</strong> chunks indexed</span>
               </div>
               <div className="flex items-center gap-2 px-3 py-1.5 bg-surface-container-lowest border border-border rounded-lg text-xs font-medium text-muted-foreground">
-                {/* Active dot stays green — it's semantic (live/inactive) */}
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-                <span><strong className="text-foreground font-mono">{activeCount}</strong> active</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-success inline-block" />
+                <span><strong className="text-foreground font-mono tabular-nums">{activeCount}</strong> active</span>
               </div>
             </div>
           )}
@@ -188,9 +187,9 @@ export function DocumentsView({
           transition={{ delay: 0.1, duration: 0.4 }}
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="w-full border border-border hover:border-border/70 hover:bg-surface-container/50 transition-all duration-200 rounded-xl bg-surface p-8 flex flex-col items-center justify-center cursor-pointer group"
+          className="w-full border border-border hover:border-border/70 hover:bg-surface-container/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors duration-200 rounded-xl bg-surface p-8 flex flex-col items-center justify-center cursor-pointer group active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none motion-reduce:transition-none motion-reduce:transform-none"
         >
-          <div className="w-11 h-11 rounded-xl bg-surface-container border border-border flex items-center justify-center text-muted-foreground group-hover:text-foreground group-hover:border-border/70 transition-all duration-200 mb-4">
+          <div className="w-11 h-11 rounded-xl bg-surface-container border border-border flex items-center justify-center text-muted-foreground group-hover:text-foreground group-hover:border-border/70 transition-colors duration-200 mb-4">
             <UploadCloud className="w-5 h-5" />
           </div>
           <h3 className="text-sm font-semibold text-foreground tracking-tight mb-1">Click or drag documents to ingest</h3>
@@ -201,7 +200,7 @@ export function DocumentsView({
         {showSkeleton ? (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="p-5 premium-card animate-pulse flex items-start justify-between min-h-[120px]">
+              <div key={i} className="p-5 premium-card animate-pulse motion-reduce:animate-none flex items-start justify-between min-h-[120px]">
                 <div className="flex items-center space-x-3 w-full">
                   <div className="p-2.5 rounded-lg bg-surface-container-high w-10 h-10 shrink-0" />
                   <div className="flex-1 space-y-2">
@@ -237,7 +236,7 @@ export function DocumentsView({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-opacity cursor-pointer shadow-sm motion-reduce:transition-none motion-reduce:transform-none"
             >
               <UploadCloud className="w-4 h-4" />
               <span>Upload Document</span>
@@ -265,16 +264,11 @@ export function DocumentsView({
                   onClick={() => onSelectDocument(doc.id)}
                   onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onSelectDocument(doc.id)}
                   className={cn(
-                    "p-5 premium-card relative cursor-pointer group overflow-hidden transition-all duration-300 hover:border-primary/30 hover:shadow-premium-hover",
+                    "p-5 premium-card relative cursor-pointer group overflow-hidden transition-colors duration-200 hover:border-primary/30 hover:shadow-premium-hover active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 motion-reduce:transition-none motion-reduce:transform-none",
                     doc.active && isIndexed ? "border-primary/20" : "",
                     isProcessing ? "opacity-80" : ""
                   )}
                 >
-                  {/* Subtle top-left glow for active docs */}
-                  {doc.active && isIndexed && (
-                    <div className="absolute top-0 left-0 w-24 h-24 bg-primary/5 rounded-full blur-2xl pointer-events-none" />
-                  )}
-
                   {/* Card Header */}
                   <div className="flex items-start justify-between relative z-10">
                     <div className="flex items-center space-x-3 min-w-0">
@@ -290,23 +284,26 @@ export function DocumentsView({
                     <div className="flex items-center space-x-2 shrink-0 ml-3" onClick={(e) => e.stopPropagation()}>
                       {!isProcessing && !isFailed && (
                         <button
+                          type="button"
                           onClick={() => onToggleActive(doc.id)}
                           className={cn(
-                            "px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider cursor-pointer transition-all border",
+                            "px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer transition-colors border active:scale-95 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 motion-reduce:transition-none motion-reduce:transform-none",
                             doc.active
-                              ? "bg-primary/10 border-primary/30 text-primary"
-                              : "bg-surface border-border text-muted-foreground hover:text-foreground hover:border-foreground/30"
+                              ? "bg-primary/10 border-primary/30 text-primary hover:bg-primary/15"
+                              : "bg-surface border-border text-muted-foreground hover:text-foreground hover:border-border/80"
                           )}
                         >
-                          {doc.active ? "ACTIVE" : "STANDBY"}
+                          {doc.active ? "Active" : "Standby"}
                         </button>
                       )}
                       <button
+                        type="button"
                         onClick={(e) => { e.stopPropagation(); setDocToDelete(doc.id); }}
-                        className="p-1.5 text-muted-foreground hover:bg-red-500/10 hover:text-red-500 rounded-lg transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
+                        className="p-1.5 text-muted-foreground hover:bg-danger-subtle hover:text-danger rounded-lg transition-colors cursor-pointer opacity-0 group-hover:opacity-100 active:scale-95 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/40 motion-reduce:transition-none"
                         title="Remove document"
+                        aria-label="Remove document"
                       >
-                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                        <svg aria-hidden="true" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                           <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                       </button>
@@ -316,21 +313,21 @@ export function DocumentsView({
                   {/* Status Footer */}
                   <div className="mt-4 pt-3 border-t border-border/40 flex items-center justify-between relative z-10">
                     <div className="flex items-center space-x-1.5">
-                      {isProcessing && <Loader2 className="w-3 h-3 text-primary animate-spin" />}
-                      {isIndexed && <CheckCircle2 className="w-3 h-3 text-emerald-500" />}
-                      {isFailed && <AlertTriangle className="w-3 h-3 text-red-500" />}
+                      {isProcessing && <Loader2 className="w-3 h-3 text-primary animate-spin motion-reduce:animate-none" />}
+                      {isIndexed && <CheckCircle2 className="w-3 h-3 text-success" />}
+                      {isFailed && <AlertTriangle className="w-3 h-3 text-danger" />}
                       <span className={cn(
                         "text-[11px] font-medium",
                         isProcessing ? "text-primary" :
-                        isFailed ? "text-red-500" :
-                        "text-emerald-600 dark:text-emerald-500"
+                        isFailed ? "text-danger" :
+                        "text-success"
                       )}>
                         {isProcessing ? "Indexing…" : isFailed ? "Failed to index" : "Indexed Successfully"}
                       </span>
                     </div>
                     {isIndexed && (
-                      <span className="text-[10px] font-mono text-muted-foreground bg-surface-container px-2 py-0.5 rounded-md">
-                        {doc.chunkCount || 0} chunks
+                      <span className="text-[10px] text-muted-foreground bg-surface-container px-2 py-0.5 rounded-md">
+                        <span className="font-mono tabular-nums">{doc.chunkCount || 0}</span> chunks
                       </span>
                     )}
                   </div>
