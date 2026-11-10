@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Message, SourceDocument, Citation, DocType } from "../types";
+import { Message, SourceDocument, Citation } from "../types";
 import { 
-  Sparkles, Send, Paperclip, Mic, FileText, FileSpreadsheet, 
-  PanelRightClose, PanelRightOpen, BrainCircuit, LayoutList, Layers, Settings2, 
+  Sparkles, Paperclip, FileText, FileSpreadsheet, 
+  PanelRightClose, PanelRightOpen, BrainCircuit, Layers, Settings2, 
   CheckCircle2, Search, ArrowRight, ArrowDown, Plus, Loader2, AlertTriangle, X,
-  Copy, ThumbsUp, ThumbsDown, Check, RotateCcw, ChevronDown
+  Copy, ThumbsUp, ThumbsDown, Check, RotateCcw, ChevronDown, Database
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../lib/utils";
@@ -28,8 +28,8 @@ function CodeBlock({ code, language }: { code: string; language?: string }) {
   };
 
   return (
-    <div className="my-5 w-full max-w-full overflow-hidden rounded-2xl border border-border bg-surface-container-lowest">
-      <div className="flex items-center justify-between border-b border-border px-4 py-2 bg-surface-container">
+    <div className="my-4 w-full max-w-full overflow-hidden rounded-xl border border-border bg-surface-container-lowest">
+      <div className="flex items-center justify-between border-b border-border px-3.5 py-1.5 bg-surface-container">
         <span className="text-xs font-medium text-muted-foreground">
           {language || "code"}
         </span>
@@ -40,11 +40,11 @@ function CodeBlock({ code, language }: { code: string; language?: string }) {
           title="Copy code"
           aria-label="Copy code"
         >
-          {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-          {copied ? "Copied" : "Copy"}
+          {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
+          <span>{copied ? "Copied" : "Copy"}</span>
         </button>
       </div>
-      <pre className="overflow-x-auto px-4 py-4 text-xs font-mono leading-6 text-foreground bg-surface-container-lowest">
+      <pre className="overflow-x-auto px-4 py-3.5 text-xs font-mono leading-6 text-foreground bg-surface-container-lowest">
         <code>{code}</code>
       </pre>
     </div>
@@ -144,14 +144,12 @@ export default function ChatWorkspace({
   onUnlinkDocument,
   onRetryMessage,
   selectedModel,
-  sessionTitle = "New Chat",
+  sessionTitle = "New Research Session",
   graphStatuses = [],
 }: ChatWorkspaceProps) {
   const [inputText, setInputText] = useState("");
-  const [isMicActive, setIsMicActive] = useState(false);
   const [activeCitation, setActiveCitation] = useState<Citation | null>(null);
   const [isInspectorOpen, setIsInspectorOpen] = useState(true);
-  const [inspectorTab, setInspectorTab] = useState<"sources">("sources");
   const [chatMode, setChatMode] = useState<"auto" | "research">("auto");
   const [isLinkDropdownOpen, setIsLinkDropdownOpen] = useState(false);
   
@@ -171,7 +169,6 @@ export default function ChatWorkspace({
   const resolveCitationName = (cite: any): string => {
     if (cite.type === "web") return cite.title || cite.url || "Web Source";
     const rawName = cite.name || cite.title || "";
-    // If rawName looks like a hash filename (e.g. 27c46b7e13c349d18a158d7b50e05bc7.pdf)
     if (/^[a-f0-9]{20,}\./i.test(rawName)) {
       const doc = documents.find((d) => d.id === cite.id || rawName.includes(d.id)) || (documents.length === 1 ? documents[0] : null);
       if (doc?.name) return doc.name;
@@ -242,8 +239,6 @@ export default function ChatWorkspace({
       if (successful) {
         setCopiedId(id);
         setTimeout(() => setCopiedId(null), 1000);
-      } else {
-        console.error("Fallback copy unsuccessful");
       }
     } catch (err) {
       console.error("Fallback copy failed: ", err);
@@ -259,8 +254,7 @@ export default function ChatWorkspace({
           setCopiedId(id);
           setTimeout(() => setCopiedId(null), 1000);
         })
-        .catch((err) => {
-          console.error("Clipboard copy failed: ", err);
+        .catch(() => {
           fallbackCopyText(id, cleaned);
         });
     } else {
@@ -272,7 +266,6 @@ export default function ChatWorkspace({
     const msg = messages.find(m => m.id === id);
     if (!msg) return;
     if (!msg.dbId) {
-      console.warn("Cannot submit feedback: message database ID not available yet.");
       return;
     }
     setActiveFeedbackMsg({
@@ -337,62 +330,43 @@ export default function ChatWorkspace({
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleMicToggle = () => {
-    if (!isMicActive) {
-      setIsMicActive(true);
-      const suggestions = [
-        "Synthesize latency metrics from monolith blueprint.",
-        "Compare operational efficiency projections in Q3 revised report."
-      ];
-      const randomPrompt = suggestions[Math.floor(Math.random() * suggestions.length)];
-      
-      let typed = "";
-      let index = 0;
-      
-      const interval = setInterval(() => {
-        if (index < randomPrompt.length) {
-          typed += randomPrompt[index];
-          setInputText(typed);
-          index++;
-        } else {
-          clearInterval(interval);
-          setIsMicActive(false);
-        }
-      }, 35);
-    } else {
-      setIsMicActive(false);
-    }
-  };
-
   return (
     <div className="flex-1 flex w-full h-full overflow-hidden relative bg-background">
       
-      {/* Main Chat Area */}
+      {/* Main Chat Workstation Stage */}
       <div
         className={cn(
           "flex flex-col min-w-0 min-h-0 relative",
           isInspectorOpen ? "w-[calc(100%-20rem)] md:w-[calc(100%-24rem)] shrink-0" : "flex-1"
         )}
       >
-        {/* Header */}
-        <header className="h-14 shrink-0 flex justify-between items-center px-6 pt-1 bg-background z-20 border-b border-border/80">
-          <div className="flex items-center space-x-3">
-            <span className="text-sm font-medium text-foreground tracking-tight leading-none">{sessionTitle}</span>
-            <span className="text-xs text-muted-foreground flex items-center leading-none">
-              <Paperclip className="w-3 h-3 mr-1" />
-              {documents.length} Docs
+        {/* Workstation Top Navigation Bar */}
+        <header className="h-14 shrink-0 flex justify-between items-center px-6 bg-background border-b border-border z-20">
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="text-sm font-semibold text-foreground tracking-tight truncate max-w-[280px] sm:max-w-md">
+              {sessionTitle}
+            </span>
+            <span className="hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-surface-container border border-border text-xs text-muted-foreground shrink-0">
+              <Paperclip className="w-3 h-3" />
+              <span>{documents.length} sources in context</span>
             </span>
           </div>
-          <div className="flex items-center space-x-3">
+
+          <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={() => setIsInspectorOpen(!isInspectorOpen)}
               className={cn(
-                "p-1.5 rounded-md transition-colors flex items-center space-x-2 text-xs font-medium btn-press",
-                isInspectorOpen ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                "px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-semibold border active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 motion-reduce:transform-none",
+                isInspectorOpen 
+                  ? "bg-surface-container border-border text-foreground" 
+                  : "bg-surface border-border/70 text-muted-foreground hover:text-foreground hover:border-border"
               )}
+              title={isInspectorOpen ? "Close source inspector" : "Open source inspector"}
+              aria-label={isInspectorOpen ? "Close source inspector" : "Open source inspector"}
             >
               <span>Inspector</span>
-              {isInspectorOpen ? <PanelRightClose className="w-4 h-4" /> : <PanelRightOpen className="w-4 h-4" />}
+              {isInspectorOpen ? <PanelRightClose className="w-3.5 h-3.5" /> : <PanelRightOpen className="w-3.5 h-3.5" />}
             </button>
           </div>
         </header>
@@ -401,48 +375,52 @@ export default function ChatWorkspace({
         <div
           ref={chatScrollRef}
           onScroll={handleChatScroll}
-          className="flex-1 overflow-y-auto overflow-x-hidden px-6 md:px-12 pt-6 pb-4 flex flex-col items-center min-h-0"
+          className="flex-1 overflow-y-auto overflow-x-hidden px-4 md:px-10 pt-6 pb-4 flex flex-col items-center min-h-0"
         >
-          <div className={cn("w-full min-w-0 space-y-12", isInspectorOpen ? "max-w-4xl" : "max-w-5xl")}>
+          <div className={cn("w-full min-w-0 space-y-10", isInspectorOpen ? "max-w-3xl" : "max-w-4xl")}>
             
             {messages.length === 0 && (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-16 select-none mt-10 text-center flex flex-col items-center w-full">
-                {/* Brand mark — neutral, not accented */}
-                <div className="w-14 h-14 rounded-xl bg-surface-container border border-border flex items-center justify-center mb-5">
-                   <BrainCircuit className="w-7 h-7 text-muted-foreground" />
+              <motion.div 
+                initial={{ opacity: 0, y: 8 }} 
+                animate={{ opacity: 1, y: 0 }} 
+                transition={{ duration: 0.3 }}
+                className="select-none my-8 text-center flex flex-col items-center w-full"
+              >
+                <div className="w-12 h-12 rounded-xl bg-surface-container border border-border flex items-center justify-center mb-4">
+                  <BrainCircuit className="w-6 h-6 text-primary" />
                 </div>
-                <h2 className="text-2xl font-semibold text-foreground tracking-tight mb-2" style={{ letterSpacing: '-0.03em' }}>
-                  Welcome to KnowVex
+                <h2 className="text-xl font-bold text-foreground tracking-tight mb-1.5">
+                  KnowVex Research Workstation
                 </h2>
-                <p className="text-muted-foreground text-sm max-w-sm text-center mb-8 leading-relaxed">
-                  Start a new conversation to research your documents.
+                <p className="text-muted-foreground text-xs max-w-md text-center mb-8 leading-relaxed">
+                  Query your indexed documents, synthesize evidence, and execute multi-hop RAG retrievals.
                 </p>
 
-                {/* Prompt Suggestions Grid — one neutral tone, content differentiates cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-2xl px-4">
+                {/* Technical Workstation Prompt Launchers */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-xl">
                   {[
                     {
-                      title: "Summarize latest document",
-                      desc: "Extract key findings and generate a summary",
-                      prompt: "Please write a detailed summary of the main topics and key findings in my document.",
+                      title: "Summarize active context",
+                      desc: "Extract key findings and generate an executive brief",
+                      prompt: "Please write a comprehensive executive summary of the primary topics and key findings in the active documents.",
                       icon: FileText,
                     },
                     {
-                      title: "Verify grounding context",
-                      desc: "Cross-reference facts and check context bounds",
-                      prompt: "Identify the critical evidence in the document that supports the claim: ",
+                      title: "Verify grounding claims",
+                      desc: "Cross-reference facts against cited source passages",
+                      prompt: "Identify the critical evidence in the indexed documents that supports the following claim: ",
                       icon: Search,
                     },
                     {
-                      title: "Compare documents",
-                      desc: "Extract side-by-side differences between sources",
-                      prompt: "Compare the main themes and identify any contrasting information between the documents.",
+                      title: "Compare source materials",
+                      desc: "Extract side-by-side contrasts between indexed files",
+                      prompt: "Compare the core methodologies and identify any contrasting points between the active documents.",
                       icon: Layers,
                     },
                     {
-                      title: "Draft QA verification script",
-                      desc: "Write a verification logic script based on standard models",
-                      prompt: "Write a python script to run verification rules on retrieved contexts.",
+                      title: "Draft verification script",
+                      desc: "Generate verification logic based on retrieved rules",
+                      prompt: "Write a python script to run verification assertions on retrieved RAG contexts.",
                       icon: Settings2,
                     }
                   ].map((item, idx) => (
@@ -450,15 +428,14 @@ export default function ChatWorkspace({
                       key={idx}
                       type="button"
                       onClick={() => setInputText(item.prompt)}
-                      className="flex items-start p-4 rounded-xl border border-border bg-surface-container-lowest hover:border-primary/40 hover:bg-surface-container/80 transition-colors duration-200 text-left group cursor-pointer active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 motion-reduce:transition-none motion-reduce:transform-none"
+                      className="flex items-start p-3.5 rounded-xl border border-border bg-surface-container-lowest hover:border-primary/40 hover:bg-surface-container/60 transition-colors duration-150 text-left group cursor-pointer active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 motion-reduce:transform-none"
                     >
-                      {/* Single neutral icon — no per-card hue */}
-                      <div className="w-8 h-8 rounded-lg bg-surface-container border border-border flex items-center justify-center flex-shrink-0 mr-3.5 group-hover:border-border/80 transition-colors">
-                        <item.icon className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                      <div className="w-7 h-7 rounded-lg bg-surface-container border border-border flex items-center justify-center shrink-0 mr-3 text-muted-foreground group-hover:text-foreground transition-colors">
+                        <item.icon className="w-3.5 h-3.5" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-semibold text-foreground truncate">{item.title}</h4>
-                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{item.desc}</p>
+                        <h3 className="text-xs font-semibold text-foreground truncate">{item.title}</h3>
+                        <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{item.desc}</p>
                       </div>
                     </button>
                   ))}
@@ -466,42 +443,37 @@ export default function ChatWorkspace({
               </motion.div>
             )}
 
-            <div className="space-y-10">
+            {/* Conversation Flow */}
+            <div className="space-y-8">
               {messages.map((msg, index) => {
                 const isLastMessage = index === messages.length - 1;
                 const isStreaming = isProcessing && isLastMessage && msg.sender === "assistant";
 
                 return (
-                  <motion.div
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    key={msg.id}
-                    className={cn("flex w-full", msg.sender === "user" ? "justify-end" : "justify-start")}
-                  >
+                  <div key={msg.id} className="w-full flex flex-col">
                     {msg.sender === "user" ? (
-                      <div className="max-w-[80%] flex flex-col items-end space-y-1 group">
-                        <div className="bg-surface-container-high text-foreground px-5 py-3.5 rounded-2xl rounded-tr-sm shadow-sm border border-border">
-                          <div className="text-[15px] leading-relaxed whitespace-pre-wrap font-normal">
-                            {msg.text}
-                          </div>
+                      <div className="flex flex-col items-end w-full">
+                        <div className="max-w-[85%] rounded-2xl bg-surface-container border border-border/80 px-4 py-3 text-sm text-foreground">
+                          <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>
                         </div>
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center pr-1 h-7">
+                        <div className="flex items-center gap-1 mt-1 mr-1">
                           <button
+                            type="button"
                             onClick={() => handleCopy(msg.id, msg.text)}
                             className="p-1 text-muted-foreground hover:text-foreground hover:bg-surface rounded-md transition-colors active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
                             title="Copy message"
-                            aria-label="Copy message"
+                            aria-label="Copy user message"
                           >
                             {copiedId === msg.id ? <Check className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5" />}
                           </button>
                         </div>
                       </div>
                     ) : (
-                      <div className="flex items-start space-x-4 w-full min-w-0">
-                        {/* Neutral assistant avatar — no gradient */}
-                        <div className="w-7 h-7 rounded-lg bg-surface-container border border-border flex items-center justify-center text-muted-foreground flex-shrink-0 mt-0.5">
+                      <div className="flex items-start gap-3.5 w-full min-w-0">
+                        <div className="w-7 h-7 rounded-lg bg-surface-container border border-border flex items-center justify-center text-primary shrink-0 mt-0.5">
                           <Sparkles className="w-3.5 h-3.5" />
                         </div>
+                        
                         <div className={cn(
                           "min-w-0 flex-1 flex flex-col space-y-2",
                           isStreaming && "border-l-2 border-l-primary/40 pl-3"
@@ -513,37 +485,37 @@ export default function ChatWorkspace({
                                   remarkPlugins={[remarkGfm]}
                                   components={{
                                     a: ({ href, children }) => (
-                                      <a href={href} target="_blank" rel="noreferrer" className="text-sky-500 underline underline-offset-2 break-words">
+                                      <a href={href} target="_blank" rel="noreferrer" className="text-primary underline underline-offset-2 break-words">
                                         {children}
                                       </a>
                                     ),
                                     p: ({ children }) => (
-                                      <p className="my-5 break-words text-[16px] leading-8 font-normal text-foreground">
+                                      <p className="my-3.5 break-words text-sm leading-7 text-foreground">
                                         {children}
                                       </p>
                                     ),
                                     h2: ({ children }) => (
-                                      <h2 className="mt-10 mb-5 text-[22px] font-semibold tracking-tight text-foreground">
+                                      <h2 className="mt-7 mb-3 text-lg font-bold tracking-tight text-foreground">
                                         {children}
                                       </h2>
                                     ),
                                     h3: ({ children }) => (
-                                      <h3 className="mt-8 mb-4 text-[17px] font-semibold tracking-tight text-foreground">
+                                      <h3 className="mt-5 mb-2 text-sm font-semibold tracking-tight text-foreground">
                                         {children}
                                       </h3>
                                     ),
                                     ul: ({ children }) => (
-                                      <ul className="my-5 list-disc space-y-2 pl-7">
+                                      <ul className="my-3.5 list-disc space-y-1.5 pl-6 text-sm">
                                         {children}
                                       </ul>
                                     ),
                                     ol: ({ children }) => (
-                                      <ol className="my-5 list-decimal space-y-2 pl-7">
+                                      <ol className="my-3.5 list-decimal space-y-1.5 pl-6 text-sm">
                                         {children}
                                       </ol>
                                     ),
                                     li: ({ children }) => (
-                                      <li className="break-words pl-1 text-[16px] leading-8 text-foreground">
+                                      <li className="break-words pl-1 text-sm leading-6 text-foreground">
                                         {children}
                                       </li>
                                     ),
@@ -560,7 +532,7 @@ export default function ChatWorkspace({
                                         return <CodeBlock code={code} language={language} />;
                                       }
                                       return (
-                                        <code className="rounded-md bg-surface border border-border/70 px-1.5 py-0.5 text-[13px] font-mono font-medium text-foreground" {...props}>
+                                        <code className="rounded-md bg-surface-container border border-border px-1.5 py-0.5 text-xs font-mono font-medium text-foreground" {...props}>
                                           {children}
                                         </code>
                                       );
@@ -581,175 +553,177 @@ export default function ChatWorkspace({
                             )}
                           </div>
                         
-                        {/* Citations Collapsible */}
-                        {msg.citations && msg.citations.length > 0 && (
-                          <div className="mt-3 pt-3 border-t border-border/40">
-                            <button
-                              type="button"
-                              onClick={() => toggleMessageSources(msg.id)}
-                              className={cn(
-                                "inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer border active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 motion-reduce:transition-none motion-reduce:transform-none",
-                                expandedSources[msg.id]
-                                  ? "bg-primary/10 text-primary border-primary/30"
-                                  : "bg-surface hover:bg-surface-container text-muted-foreground hover:text-foreground border-border/70 hover:border-border"
-                              )}
-                              title={expandedSources[msg.id] ? "Click to collapse sources" : "Click to view sources"}
-                            >
-                              <Layers className="w-3.5 h-3.5 text-primary" />
-                              <span className="font-semibold text-foreground">
-                                {msg.citations.length} {msg.citations.length === 1 ? "Source" : "Sources"}
-                              </span>
-                              <span className="text-[11px] text-muted-foreground">
-                                {expandedSources[msg.id] ? "• Click to hide" : "• Click to view"}
-                              </span>
-                              <ChevronDown
-                                className={cn(
-                                  "w-3.5 h-3.5 transition-transform duration-200 text-muted-foreground",
-                                  expandedSources[msg.id] && "rotate-180 text-primary"
-                                )}
-                              />
-                            </button>
-
-                            <AnimatePresence>
-                              {expandedSources[msg.id] && (
-                                <motion.div
-                                  initial={{ opacity: 0, height: 0 }}
-                                  animate={{ opacity: 1, height: "auto" }}
-                                  exit={{ opacity: 0, height: 0 }}
-                                  transition={{ duration: 0.18, ease: "easeOut" }}
-                                  className="overflow-hidden"
-                                >
-                                  <div className="flex flex-wrap gap-2 pt-2.5">
-                                    {msg.citations.map((cite: any, cIdx) => {
-                                      const isWeb = cite.type === "web";
-                                      const name = resolveCitationName(cite);
-                                      const badge = isWeb ? "Web" : cite.page != null ? `Page ${cite.page}` : "Doc";
-                                      return (
-                                        <button
-                                          key={cIdx}
-                                          type="button"
-                                          onClick={() => setActiveCitation({ ...cite, name })}
-                                          className="bg-surface border border-border hover:border-primary/40 hover:bg-surface-container px-2.5 py-1 rounded-md flex items-center space-x-2 transition-colors cursor-pointer text-left group active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 motion-reduce:transition-none motion-reduce:transform-none"
-                                        >
-                                          {isWeb ? (
-                                            <Search className="w-3 h-3 text-muted-foreground group-hover:text-foreground" />
-                                          ) : name.endsWith(".xlsx") || name.endsWith(".csv") ? (
-                                            <FileSpreadsheet className="w-3 h-3 text-muted-foreground group-hover:text-foreground" />
-                                          ) : (
-                                            <FileText className="w-3 h-3 text-muted-foreground group-hover:text-foreground" />
-                                          )}
-                                          <span className="text-xs font-medium text-foreground truncate max-w-[140px]">
-                                            {name}
-                                          </span>
-                                          <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-semibold">
-                                            {badge}
-                                          </span>
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
-                        )}
-
-                        {/* Actions Toolbar (Copy & Feedback) */}
-                        {msg.text && (
-                          <div className="flex items-center space-x-1 mt-2">
-                            <button
-                              type="button"
-                              onClick={() => handleCopy(msg.id, msg.text)}
-                              className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-surface rounded-md transition-colors active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
-                              title="Copy message"
-                              aria-label="Copy message"
-                            >
-                              {copiedId === msg.id ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleFeedback(msg.id, 'up')}
-                              className={cn(
-                                "p-1.5 rounded-md transition-colors active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40",
-                                feedbacks[msg.id] === 'up' ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-surface"
-                              )}
-                              title="Good response"
-                              aria-label="Good response"
-                            >
-                              <ThumbsUp className="w-4 h-4" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleFeedback(msg.id, 'down')}
-                              className={cn(
-                                "p-1.5 rounded-md transition-colors active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40",
-                                feedbacks[msg.id] === 'down' ? "text-danger bg-danger-subtle" : "text-muted-foreground hover:text-foreground hover:bg-surface"
-                              )}
-                              title="Bad response"
-                              aria-label="Bad response"
-                            >
-                              <ThumbsDown className="w-4 h-4" />
-                            </button>
-                            {onRetryMessage && (
+                          {/* Grounding Citations Drawer */}
+                          {msg.citations && msg.citations.length > 0 && (
+                            <div className="mt-3 pt-3 border-t border-border/50">
                               <button
                                 type="button"
-                                onClick={() => onRetryMessage(msg.id, chatMode)}
-                                className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface transition-colors active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
-                                title="Regenerate response"
-                                aria-label="Regenerate response"
+                                onClick={() => toggleMessageSources(msg.id)}
+                                className={cn(
+                                  "inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer border active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 motion-reduce:transform-none",
+                                  expandedSources[msg.id]
+                                    ? "bg-primary/10 text-primary border-primary/30"
+                                    : "bg-surface hover:bg-surface-container text-muted-foreground hover:text-foreground border-border/70 hover:border-border"
+                                )}
+                                title={expandedSources[msg.id] ? "Collapse sources" : "View cited sources"}
                               >
-                                <RotateCcw className="w-4 h-4" />
+                                <Layers className="w-3.5 h-3.5 text-primary" />
+                                <span className="font-semibold text-foreground">
+                                  {msg.citations.length} {msg.citations.length === 1 ? "Source" : "Sources"}
+                                </span>
+                                <span className="text-[11px] text-muted-foreground">
+                                  {expandedSources[msg.id] ? "Click to hide" : "Click to view"}
+                                </span>
+                                <ChevronDown
+                                  className={cn(
+                                    "w-3.5 h-3.5 transition-transform duration-200 text-muted-foreground",
+                                    expandedSources[msg.id] && "rotate-180 text-primary"
+                                  )}
+                                />
                               </button>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </motion.div>
-              )})}
 
-              {/* Research Execution UI */}
+                              <AnimatePresence>
+                                {expandedSources[msg.id] && (
+                                  <motion.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: "auto" }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    transition={{ duration: 0.18, ease: "easeOut" }}
+                                    className="overflow-hidden"
+                                  >
+                                    <div className="flex flex-wrap gap-2 pt-2.5">
+                                      {msg.citations.map((cite: any, cIdx) => {
+                                        const isWeb = cite.type === "web";
+                                        const name = resolveCitationName(cite);
+                                        const badge = isWeb ? "Web" : cite.page != null ? `Page ${cite.page}` : "Doc";
+                                        return (
+                                          <button
+                                            key={cIdx}
+                                            type="button"
+                                            onClick={() => setActiveCitation({ ...cite, name })}
+                                            className="bg-surface border border-border hover:border-primary/40 hover:bg-surface-container px-2.5 py-1 rounded-md flex items-center space-x-2 transition-colors cursor-pointer text-left group active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 motion-reduce:transform-none"
+                                          >
+                                            {isWeb ? (
+                                              <Search className="w-3 h-3 text-muted-foreground group-hover:text-foreground" />
+                                            ) : name.endsWith(".xlsx") || name.endsWith(".csv") ? (
+                                              <FileSpreadsheet className="w-3 h-3 text-muted-foreground group-hover:text-foreground" />
+                                            ) : (
+                                              <FileText className="w-3 h-3 text-muted-foreground group-hover:text-foreground" />
+                                            )}
+                                            <span className="text-xs font-medium text-foreground truncate max-w-[140px]">
+                                              {name}
+                                            </span>
+                                            <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-semibold">
+                                              {badge}
+                                            </span>
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </div>
+                          )}
+
+                          {/* Assistant Message Actions Toolbar */}
+                          {msg.text && (
+                            <div className="flex items-center space-x-1 mt-2">
+                              <button
+                                type="button"
+                                onClick={() => handleCopy(msg.id, msg.text)}
+                                className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-surface rounded-md transition-colors active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
+                                title="Copy answer"
+                                aria-label="Copy assistant answer"
+                              >
+                                {copiedId === msg.id ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleFeedback(msg.id, 'up')}
+                                className={cn(
+                                  "p-1.5 rounded-md transition-colors active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40",
+                                  feedbacks[msg.id] === 'up' ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-surface"
+                                )}
+                                title="Accurate response"
+                                aria-label="Mark accurate response"
+                              >
+                                <ThumbsUp className="w-4 h-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleFeedback(msg.id, 'down')}
+                                className={cn(
+                                  "p-1.5 rounded-md transition-colors active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40",
+                                  feedbacks[msg.id] === 'down' ? "text-danger bg-danger-subtle" : "text-muted-foreground hover:text-foreground hover:bg-surface"
+                                )}
+                                title="Needs improvement"
+                                aria-label="Mark response needs improvement"
+                              >
+                                <ThumbsDown className="w-4 h-4" />
+                              </button>
+                              {onRetryMessage && (
+                                <button
+                                  type="button"
+                                  onClick={() => onRetryMessage(msg.id, chatMode)}
+                                  className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface transition-colors active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
+                                  title="Regenerate response"
+                                  aria-label="Regenerate response"
+                                >
+                                  <RotateCcw className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* Research Execution Pipeline Node */}
               {isProcessing && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col space-y-4">
-                   <div className="flex items-center space-x-3 mb-2">
-                     <div className="w-6 h-6 rounded-md bg-surface-container-high border border-border flex items-center justify-center text-muted-foreground shadow-sm">
-                       <Search className="w-3.5 h-3.5 animate-pulse motion-reduce:animate-none text-primary" />
-                     </div>
-                     <span className="text-sm font-semibold text-foreground tracking-tight">
-                       Building Answer…
-                     </span>
-                   </div>
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col space-y-3">
+                  <div className="flex items-center gap-2.5 mb-1">
+                    <div className="w-6 h-6 rounded-md bg-surface-container border border-border flex items-center justify-center text-primary">
+                      <Search className="w-3.5 h-3.5 animate-pulse motion-reduce:animate-none" />
+                    </div>
+                    <span className="text-xs font-semibold text-foreground tracking-tight">
+                      Executing Research Pipeline…
+                    </span>
+                  </div>
                    
-                   <div className="pl-9 space-y-3">
-                     {visibleGraphStatuses.map((step: any, idx) => {
-                       const isPast = step.status === "completed";
-                       const isActive = step.status === "running";
-                       const label = step.label || step.message || step.node || String(step);
+                  <div className="pl-8 space-y-2.5">
+                    {visibleGraphStatuses.map((step: any, idx) => {
+                      const isPast = step.status === "completed";
+                      const isActive = step.status === "running";
+                      const label = step.label || step.message || step.node || String(step);
                        
-                       return (
-                         <div key={`${label}-${idx}`} className={cn("flex items-center space-x-3 transition-opacity duration-300", 
-                           isPast ? "opacity-100" : isActive ? "opacity-100" : "opacity-30"
-                         )}>
-                           {isPast ? (
-                             <CheckCircle2 className="w-4 h-4 text-success" />
-                           ) : isActive ? (
-                             <div className="w-4 h-4 flex items-center justify-center">
-                               <div className="w-2 h-2 bg-primary rounded-full animate-ping motion-reduce:animate-none" />
-                             </div>
-                           ) : (
-                             <div className="w-4 h-4 rounded-full border-2 border-border" />
-                           )}
-                           <span className={cn(
-                             "text-xs font-medium",
-                             isPast ? "text-muted-foreground" : isActive ? "text-primary" : "text-muted-foreground"
-                           )}>
-                             {label}
-                           </span>
-                         </div>
-                       )
-                     })}
-                   </div>
+                      return (
+                        <div key={`${label}-${idx}`} className={cn(
+                          "flex items-center gap-2.5 transition-opacity duration-200", 
+                          isPast ? "opacity-100" : isActive ? "opacity-100" : "opacity-40"
+                        )}>
+                          {isPast ? (
+                            <CheckCircle2 className="w-4 h-4 text-success" />
+                          ) : isActive ? (
+                            <div className="w-4 h-4 flex items-center justify-center">
+                              <span className="w-2 h-2 bg-primary rounded-full animate-ping motion-reduce:animate-none" />
+                            </div>
+                          ) : (
+                            <div className="w-4 h-4 rounded-full border border-border" />
+                          )}
+                          <span className={cn(
+                            "text-xs font-medium",
+                            isPast ? "text-muted-foreground" : isActive ? "text-primary font-semibold" : "text-muted-foreground"
+                          )}>
+                            {label}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </motion.div>
               )}
               
@@ -758,17 +732,18 @@ export default function ChatWorkspace({
           </div>
         </div>
 
+        {/* Jump to Latest Floating Button */}
         <AnimatePresence>
           {showJumpToLatest && (
             <motion.button
               type="button"
               onClick={scrollToLatest}
-              initial={{ opacity: 0, y: 10, scale: 0.94 }}
+              initial={{ opacity: 0, y: 8, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 10, scale: 0.94 }}
-              transition={{ duration: 0.16, ease: "easeOut" }}
-              className="absolute bottom-[160px] left-1/2 z-40 -translate-x-1/2 rounded-full border border-border bg-surface-container-lowest p-2.5 text-foreground shadow-premium-panel transition-colors hover:bg-surface-container-high focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-95 disabled:opacity-50 disabled:pointer-events-none motion-reduce:transform-none"
-              title="Jump to latest"
+              exit={{ opacity: 0, y: 8, scale: 0.95 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+              className="absolute bottom-[140px] left-1/2 z-40 -translate-x-1/2 rounded-full border border-border bg-surface-container-lowest p-2 text-foreground shadow-sm transition-colors hover:bg-surface-container focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-95 disabled:opacity-50 disabled:pointer-events-none motion-reduce:transform-none"
+              title="Jump to latest message"
               aria-label="Jump to latest message"
             >
               <ArrowDown className="h-4 w-4" />
@@ -776,105 +751,104 @@ export default function ChatWorkspace({
           )}
         </AnimatePresence>
 
-        {/* Input Bar */}
-        <div className="shrink-0 px-6 md:px-12 pb-6 pt-2 flex justify-center relative z-30">
+        {/* Docked Command Composer Dock */}
+        <div className="shrink-0 px-4 md:px-10 pb-5 pt-2 flex justify-center relative z-30">
           <div className={cn(
             "w-full relative z-10",
-            isInspectorOpen ? "max-w-4xl" : "max-w-5xl"
+            isInspectorOpen ? "max-w-3xl" : "max-w-4xl"
           )}>
             <form 
               onSubmit={handleSubmit} 
-              className={cn(
-                "w-full bg-surface-container-lowest border border-border rounded-xl p-2 flex flex-col transition-colors duration-200 shadow-xs",
-                "focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/15"
-              )}
+              className="w-full bg-surface-container-lowest border border-border rounded-xl p-2.5 flex flex-col transition-colors duration-150 shadow-sm focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/15"
             >
-            <textarea
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="w-full max-h-32 min-h-[52px] resize-none overflow-y-auto overflow-x-hidden bg-transparent border-none px-4 pt-3 text-[15px] font-medium text-foreground placeholder:text-muted-foreground outline-none focus:outline-none focus:ring-0"
-              placeholder="Ask anything…"
-              rows={1}
-            />
+              <textarea
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="w-full max-h-36 min-h-[52px] resize-none overflow-y-auto overflow-x-hidden bg-transparent border-none px-3.5 pt-2 text-sm font-medium text-foreground placeholder:text-muted-foreground outline-none focus:outline-none focus:ring-0"
+                placeholder="Ask anything or research your documents…"
+                rows={1}
+              />
             
-            <div className="flex items-center justify-between px-2 pb-1 pt-1.5">
-              <div className="flex items-center space-x-1">
-                {/* File upload removed from chat input */}
-              </div>
+              <div className="flex items-center justify-between px-2 pb-1 pt-1.5 border-t border-border/40 mt-1">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span className="hidden sm:inline">Press</span>
+                  <kbd className="text-[10px] font-sans font-medium text-muted-foreground border border-border px-1.5 py-0.5 rounded bg-surface">Enter</kbd>
+                  <span className="hidden sm:inline">to send</span>
+                </div>
               
-              <div className="flex items-center space-x-2">
-                {/* Mode toggle — refined segmented pill switch with theme tokens */}
-                <div className="flex items-center bg-surface-container border border-border rounded-lg p-0.5 text-xs select-none gap-0.5">
+                <div className="flex items-center gap-2.5">
+                  {/* Segmented Mode Selector */}
+                  <div className="flex items-center bg-surface-container border border-border rounded-lg p-0.5 text-xs select-none gap-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setChatMode("auto")}
+                      className={cn(
+                        "px-2.5 py-1 rounded-md transition-colors duration-150 cursor-pointer font-medium flex items-center justify-center focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 active:scale-95 disabled:opacity-50 disabled:pointer-events-none motion-reduce:transform-none",
+                        chatMode === "auto"
+                          ? "bg-surface-container-lowest text-foreground border-border shadow-xs font-semibold border"
+                          : "text-muted-foreground hover:text-foreground hover:bg-surface border border-transparent"
+                      )}
+                      title="Auto: Dynamic tool routing (Direct, Documents, Web)"
+                    >
+                      Auto
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setChatMode("research")}
+                      className={cn(
+                        "px-2.5 py-1 rounded-md transition-colors duration-150 cursor-pointer font-medium flex items-center justify-center focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 active:scale-95 disabled:opacity-50 disabled:pointer-events-none motion-reduce:transform-none",
+                        chatMode === "research"
+                          ? "bg-surface-container-lowest text-foreground border-border shadow-xs font-semibold border"
+                          : "text-muted-foreground hover:text-foreground hover:bg-surface border border-transparent"
+                      )}
+                      title="Research: Multi-step evidence synthesis & deep research"
+                    >
+                      Research
+                    </button>
+                  </div>
+
+                  {/* Send Button */}
                   <button
-                    type="button"
-                    onClick={() => setChatMode("auto")}
+                    type="submit"
+                    disabled={!inputText.trim() || isProcessing}
                     className={cn(
-                      "px-3 py-1 rounded-md transition-colors duration-150 cursor-pointer font-medium flex items-center justify-center focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 active:scale-95 disabled:opacity-50 disabled:pointer-events-none motion-reduce:transform-none",
-                      chatMode === "auto"
-                        ? "bg-surface-container-lowest text-foreground border-border shadow-xs font-semibold border"
-                        : "text-muted-foreground hover:text-foreground hover:bg-surface border border-transparent"
+                      "p-1.5 rounded-lg transition-colors flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-95 disabled:opacity-40 disabled:pointer-events-none motion-reduce:transform-none",
+                      !inputText.trim() || isProcessing 
+                        ? "text-muted-foreground cursor-not-allowed" 
+                        : "text-primary border border-primary/30 hover:bg-primary/10 cursor-pointer"
                     )}
-                    title="Auto: Dynamic tool routing (Direct, Documents, Web)"
+                    title="Send message"
+                    aria-label="Send message"
                   >
-                    Auto
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setChatMode("research")}
-                    className={cn(
-                      "px-3 py-1 rounded-md transition-colors duration-150 cursor-pointer font-medium flex items-center justify-center focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 active:scale-95 disabled:opacity-50 disabled:pointer-events-none motion-reduce:transform-none",
-                      chatMode === "research"
-                        ? "bg-surface-container-lowest text-foreground border-border shadow-xs font-semibold border"
-                        : "text-muted-foreground hover:text-foreground hover:bg-surface border border-transparent"
-                    )}
-                    title="Research: Multi-step evidence synthesis & deep research"
-                  >
-                    Research
+                    <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
-
-                {/* Send button — outlined accent, not filled */}
-                <button
-                  type="submit"
-                  disabled={!inputText.trim() || isProcessing}
-                  className={cn(
-                    "p-1.5 rounded-lg transition-colors flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-95 disabled:opacity-40 disabled:pointer-events-none motion-reduce:transform-none",
-                    !inputText.trim() || isProcessing 
-                      ? "text-muted-foreground cursor-not-allowed" 
-                      : "text-primary border border-primary/30 hover:bg-primary/10 cursor-pointer"
-                  )}
-                  title="Send message"
-                  aria-label="Send message"
-                >
-                  <ArrowRight className="w-4 h-4" />
-                </button>
               </div>
-            </div>
-          </form>
+            </form>
           </div>
         </div>
       </div>
 
-      {/* Right Inspector Panel */}
+      {/* Right Workstation Inspector Panel */}
       <AnimatePresence>
         {isInspectorOpen && (
           <motion.div
             initial={{ x: 400, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: 400, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            transition={{ type: "spring", stiffness: 350, damping: 32 }}
             className="absolute right-0 top-0 bottom-0 w-80 md:w-96 border-l border-border bg-background z-40 flex flex-col"
           >
-            <div className="h-16 border-b border-border flex items-center px-4 pt-1 bg-surface-container-lowest shrink-0">
-              <h3 className="font-semibold text-sm text-foreground flex items-center leading-none">
+            <div className="h-14 border-b border-border flex items-center px-4 bg-surface-container-lowest shrink-0">
+              <h3 className="font-semibold text-xs text-foreground flex items-center">
                 <BrainCircuit className="w-4 h-4 mr-2 text-primary" />
-                Inspector
+                Knowledge Context Inspector
               </h3>
               <button 
                 type="button"
                 onClick={() => setIsInspectorOpen(false)}
-                className="ml-auto p-1.5 hover:bg-surface rounded-md text-muted-foreground transition-colors active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
+                className="ml-auto p-1.5 hover:bg-surface rounded-md text-muted-foreground hover:text-foreground transition-colors active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
                 title="Close inspector"
                 aria-label="Close inspector"
               >
@@ -882,136 +856,144 @@ export default function ChatWorkspace({
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-5">
-              <div className="space-y-4">
-                <div className="mb-6">
-                  <h4 className="text-xs font-semibold text-muted-foreground mb-3">Add Sources</h4>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="flex flex-col items-center justify-center p-3 rounded-xl border border-border bg-surface-container-lowest hover:border-primary/40 hover:bg-surface/50 transition-colors duration-200 active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 group motion-reduce:transform-none"
-                    >
-                      <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-2">
-                        <Plus className="w-4 h-4" />
-                      </div>
-                      <span className="text-[11px] font-semibold text-foreground">Upload File</span>
-                    </button>
-                    
-                    {allDocuments.length > 0 && onLinkDocument ? (
-                      <div className="relative">
-                        <button
-                          type="button"
-                          onClick={() => setIsLinkDropdownOpen(!isLinkDropdownOpen)}
-                          className="w-full flex flex-col items-center justify-center p-3 border border-border bg-surface-container-lowest hover:border-primary/40 hover:bg-surface/50 rounded-xl transition-colors duration-200 active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 group motion-reduce:transform-none"
-                        >
-                          <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-2">
-                            <Paperclip className="w-4 h-4" />
-                          </div>
-                          <span className="text-[11px] font-semibold text-foreground">Link Existing</span>
-                        </button>
-                        
-                        <AnimatePresence>
-                          {isLinkDropdownOpen && (
-                            <>
-                              <div className="fixed inset-0 z-40" onClick={() => setIsLinkDropdownOpen(false)} />
-                              <motion.div
-                                initial={{ opacity: 0, y: 5, scale: 0.95 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                exit={{ opacity: 0, y: 5, scale: 0.95 }}
-                                transition={{ duration: 0.15, ease: "easeOut" }}
-                                className="absolute top-full left-0 right-0 mt-2 p-1 bg-surface-container-lowest border border-border rounded-xl shadow-premium-panel z-50 max-h-48 overflow-y-auto"
-                              >
-                                {allDocuments.reduce<React.ReactNode[]>((acc, d) => {
-                                  if (!documents.find(sd => sd.id === d.id)) {
-                                    acc.push(
-                                      <button
-                                        key={d.id}
-                                        type="button"
-                                        onClick={() => {
-                                          onLinkDocument(d.id);
-                                          setIsLinkDropdownOpen(false);
-                                        }}
-                                        className="w-full text-left px-3 py-2 text-xs font-medium text-foreground hover:bg-surface hover:text-primary rounded-lg transition-colors truncate"
-                                      >
-                                        {d.name}
-                                      </button>
-                                    );
-                                  }
-                                  return acc;
-                                }, [])}
-                                {allDocuments.every(d => documents.some(sd => sd.id === d.id)) && (
-                                  <div className="px-3 py-4 text-center text-xs text-muted-foreground">
-                                    All documents linked
-                                  </div>
-                                )}
-                              </motion.div>
-                            </>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center p-3 rounded-xl border border-border bg-surface-container-lowest opacity-50 cursor-not-allowed">
-                        <div className="w-8 h-8 rounded-full bg-surface-container-high text-muted-foreground flex items-center justify-center mb-2">
+            <div className="flex-1 overflow-y-auto p-4 space-y-5">
+              {/* Add Sources Section */}
+              <div>
+                <h4 className="text-xs font-semibold text-muted-foreground mb-2.5">Add Sources to Context</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex flex-col items-center justify-center p-3 rounded-xl border border-border bg-surface-container-lowest hover:border-primary/40 hover:bg-surface-container transition-colors duration-150 active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 group motion-reduce:transform-none"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-1.5">
+                      <Plus className="w-4 h-4" />
+                    </div>
+                    <span className="text-xs font-medium text-foreground">Upload File</span>
+                  </button>
+                  
+                  {allDocuments.length > 0 && onLinkDocument ? (
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setIsLinkDropdownOpen(!isLinkDropdownOpen)}
+                        className="w-full flex flex-col items-center justify-center p-3 border border-border bg-surface-container-lowest hover:border-primary/40 hover:bg-surface-container rounded-xl transition-colors duration-150 active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 group motion-reduce:transform-none"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-1.5">
                           <Paperclip className="w-4 h-4" />
                         </div>
-                        <span className="text-[11px] font-semibold text-muted-foreground">Link Existing</span>
+                        <span className="text-xs font-medium text-foreground">Link Existing</span>
+                      </button>
+                      
+                      <AnimatePresence>
+                        {isLinkDropdownOpen && (
+                          <>
+                            <div className="fixed inset-0 z-40" onClick={() => setIsLinkDropdownOpen(false)} />
+                            <motion.div
+                              initial={{ opacity: 0, y: 4, scale: 0.98 }}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                              exit={{ opacity: 0, y: 4, scale: 0.98 }}
+                              transition={{ duration: 0.14, ease: "easeOut" }}
+                              className="absolute top-full left-0 right-0 mt-1.5 p-1 bg-surface-container-lowest border border-border rounded-xl shadow-md z-50 max-h-48 overflow-y-auto"
+                            >
+                              {allDocuments.reduce<React.ReactNode[]>((acc, d) => {
+                                if (!documents.find(sd => sd.id === d.id)) {
+                                  acc.push(
+                                    <button
+                                      key={d.id}
+                                      type="button"
+                                      onClick={() => {
+                                        onLinkDocument(d.id);
+                                        setIsLinkDropdownOpen(false);
+                                      }}
+                                      className="w-full text-left px-2.5 py-2 text-xs font-medium text-foreground hover:bg-surface hover:text-primary rounded-lg transition-colors truncate focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
+                                    >
+                                      {d.name}
+                                    </button>
+                                  );
+                                }
+                                return acc;
+                              }, [])}
+                              {allDocuments.every(d => documents.some(sd => sd.id === d.id)) && (
+                                <div className="px-3 py-3 text-center text-xs text-muted-foreground">
+                                  All indexed documents linked
+                                </div>
+                              )}
+                            </motion.div>
+                          </>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center p-3 rounded-xl border border-border bg-surface-container-lowest opacity-50 cursor-not-allowed">
+                      <div className="w-8 h-8 rounded-full bg-surface-container text-muted-foreground flex items-center justify-center mb-1.5">
+                        <Paperclip className="w-4 h-4" />
                       </div>
-                    )}
-                  </div>
+                      <span className="text-xs font-medium text-muted-foreground">Link Existing</span>
+                    </div>
+                  )}
                 </div>
+              </div>
 
-                <div className="flex items-center justify-between mb-3">
+              {/* Active Documents Section */}
+              <div>
+                <div className="flex items-center justify-between mb-2.5">
                   <h4 className="text-xs font-semibold text-muted-foreground">Active Documents ({documents.length})</h4>
                 </div>
                 
                 {documents.length === 0 ? (
-                  <div className="text-center p-4 bg-surface border border-dashed border-border rounded-lg">
-                    <p className="text-xs text-muted-foreground">No documents uploaded.</p>
+                  <div className="text-center p-5 bg-surface border border-dashed border-border rounded-xl">
+                    <Database className="w-6 h-6 text-muted-foreground opacity-40 mx-auto mb-1.5" />
+                    <p className="text-xs text-muted-foreground">No documents in context.</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">Upload or link sources above.</p>
                   </div>
                 ) : (
-                  documents.map((doc, i) => {
-                    const isProcessing = doc.status === "queued" || doc.status === "indexing";
-                    const isFailed = doc.status === "failed";
-                    const isIndexed = doc.status === "indexed" || !doc.status;
-                    
-                    return (
-                      <div key={i} className={cn("p-3 bg-surface border border-border rounded-lg flex items-start space-x-3 relative overflow-hidden", isProcessing ? "opacity-80" : "")}>
-                        {isProcessing ? (
-                           <Loader2 className="w-4 h-4 text-primary animate-spin shrink-0 mt-0.5 motion-reduce:animate-none" />
-                        ) : isFailed ? (
-                           <AlertTriangle className="w-4 h-4 text-danger shrink-0 mt-0.5" />
-                        ) : (
-                           <CheckCircle2 className="w-4 h-4 text-success shrink-0 mt-0.5" />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <h5 className="text-xs font-semibold text-foreground truncate">{doc.name}</h5>
-                          <p className="text-[10px] text-muted-foreground mt-1 truncate">Status: {isProcessing ? "Indexing…" : isFailed ? "Failed" : "Indexed"} • Size: {doc.size || (doc as any).file_size_kb + " KB"}</p>
-                        </div>
-                        {onUnlinkDocument && (
-                          <button
-                            type="button"
-                            onClick={() => onUnlinkDocument(doc.id)}
-                            className="p-1 hover:bg-border rounded-md transition-colors active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
-                            title="Unlink document"
-                            aria-label="Unlink document"
-                          >
-                            <X className="w-3.5 h-3.5 text-muted-foreground" />
-                          </button>
-                        )}
-                        {isProcessing && (
-                          <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-surface-container-high overflow-hidden">
-                            <motion.div 
-                              className="h-full bg-primary" 
-                              initial={{ x: "-100%" }}
-                              animate={{ x: "100%" }}
-                              transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                            />
+                  <div className="space-y-2">
+                    {documents.map((doc, i) => {
+                      const isProcessingDoc = doc.status === "queued" || doc.status === "indexing";
+                      const isFailed = doc.status === "failed";
+                      const isIndexed = doc.status === "indexed" || !doc.status;
+                      
+                      return (
+                        <div key={i} className={cn("p-2.5 bg-surface-container-lowest border border-border rounded-lg flex items-start space-x-2.5 relative overflow-hidden", isProcessingDoc ? "opacity-80" : "")}>
+                          {isProcessingDoc ? (
+                            <Loader2 className="w-4 h-4 text-primary animate-spin shrink-0 mt-0.5 motion-reduce:animate-none" />
+                          ) : isFailed ? (
+                            <AlertTriangle className="w-4 h-4 text-danger shrink-0 mt-0.5" />
+                          ) : (
+                            <CheckCircle2 className="w-4 h-4 text-success shrink-0 mt-0.5" />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <h5 className="text-xs font-semibold text-foreground truncate">{doc.name}</h5>
+                            <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
+                              Status: {isProcessingDoc ? "Indexing…" : isFailed ? "Failed" : "Indexed"} · Size: {doc.size || (doc as any).file_size_kb + " KB"}
+                            </p>
                           </div>
-                        )}
-                      </div>
-                    );
-                  })
+                          {onUnlinkDocument && (
+                            <button
+                              type="button"
+                              onClick={() => onUnlinkDocument(doc.id)}
+                              className="p-1 hover:bg-surface-container text-muted-foreground hover:text-foreground rounded-md transition-colors active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
+                              title="Unlink document"
+                              aria-label="Unlink document"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          {isProcessingDoc && (
+                            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-surface-container-high overflow-hidden">
+                              <motion.div 
+                                className="h-full bg-primary" 
+                                initial={{ x: "-100%" }}
+                                animate={{ x: "100%" }}
+                                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
             </div>
@@ -1027,40 +1009,45 @@ export default function ChatWorkspace({
         accept=".pdf,.txt,.md,.docx"
       />
 
+      {/* Citation Detail Modal */}
       <AnimatePresence>
         {activeCitation && (
           <motion.div 
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }}
             className="fixed inset-0 bg-background/80 flex items-center justify-center p-4 z-50"
           >
             <motion.div 
-              initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
-              className="bg-surface-container-lowest max-w-xl w-full rounded-2xl p-6 border border-border shadow-premium space-y-4"
+              initial={{ scale: 0.96 }} 
+              animate={{ scale: 1 }} 
+              exit={{ scale: 0.96 }}
+              className="bg-surface-container-lowest max-w-xl w-full rounded-2xl p-6 border border-border shadow-lg space-y-4"
             >
-              <div className="flex items-center justify-between border-b border-border pb-4">
+              <div className="flex items-center justify-between border-b border-border pb-3.5">
                 <div className="flex items-center space-x-3">
                   <div className="p-2 bg-surface rounded-md border border-border text-foreground">
                     {activeCitation.type === 'web' ? <Search className="w-4 h-4 text-muted-foreground" /> : <FileText className="w-4 h-4 text-muted-foreground" />}
                   </div>
                   <div>
-                    <h5 className="font-semibold text-foreground text-sm tracking-tight truncate max-w-[300px]">
-                      {activeCitation.name || activeCitation.title || "Source"}
-                    </h5>
+                    <h4 className="font-semibold text-foreground text-sm tracking-tight truncate max-w-[320px]">
+                      {activeCitation.name || activeCitation.title || "Grounding Source"}
+                    </h4>
                     {activeCitation.page != null && (
-                      <p className="text-[10px] text-muted-foreground mt-0.5">Page {activeCitation.page}</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">Page {activeCitation.page}</p>
                     )}
                   </div>
                 </div>
                 {activeCitation.fitScore != null && (
-                  <span className="text-[10px] font-semibold text-foreground bg-surface px-2 py-1 rounded-md border border-border">
+                  <span className="text-[11px] font-semibold text-foreground bg-surface px-2 py-1 rounded-md border border-border">
                     {activeCitation.fitScore}% Match
                   </span>
                 )}
               </div>
               
-              <div className="bg-surface p-4 rounded-xl text-sm text-muted-foreground leading-relaxed font-mono max-h-72 overflow-y-auto whitespace-pre-line border border-border/50">
+              <div className="bg-surface p-4 rounded-xl text-xs text-muted-foreground leading-relaxed font-mono max-h-72 overflow-y-auto whitespace-pre-line border border-border/50">
                 {activeCitation.type === 'web' ? (
-                  <a href={activeCitation.url} target="_blank" rel="noreferrer" className="text-primary underline underline-offset-2">
+                  <a href={activeCitation.url} target="_blank" rel="noreferrer" className="text-primary underline underline-offset-2 break-all">
                     {activeCitation.url}
                   </a>
                 ) : (
@@ -1068,11 +1055,11 @@ export default function ChatWorkspace({
                 )}
               </div>
 
-              <div className="flex justify-end pt-2">
+              <div className="flex justify-end pt-1">
                 <button
                   type="button"
                   onClick={() => setActiveCitation(null)}
-                  className="px-4 py-2 bg-surface border border-border hover:bg-surface-container text-foreground rounded-lg font-medium text-sm cursor-pointer transition-colors active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 shadow-sm motion-reduce:transform-none"
+                  className="px-4 py-2 bg-surface border border-border hover:bg-surface-container text-foreground rounded-lg font-medium text-xs cursor-pointer transition-colors active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 shadow-xs motion-reduce:transform-none"
                 >
                   Close
                 </button>

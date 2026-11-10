@@ -49,66 +49,62 @@ export default function NotFoundView({ onNavigate }: NotFoundViewProps) {
   };
 
   return (
-    <div className="relative min-h-screen w-full flex flex-col items-center justify-center p-6 bg-background text-foreground overflow-hidden select-none">
-      {/* Ambient glowing orbs */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="ambient-orb orb-1 bg-primary/10 w-[600px] h-[600px] -top-[150px] left-1/2 -translate-x-1/2 blur-3xl rounded-full" />
-        <div className="ambient-orb orb-2 bg-secondary/10 w-[400px] h-[400px] bottom-[-100px] right-1/4 blur-3xl rounded-full" />
-      </div>
-
+    <div className="relative min-h-screen w-full flex flex-col items-center justify-center p-6 bg-background text-foreground select-none">
       <motion.div
-        initial={{ opacity: 0, y: 20, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
         className="relative z-10 max-w-md w-full text-center flex flex-col items-center"
       >
-        {/* Icon & Error Code */}
-        <div className="relative mb-6">
-          <div className="w-20 h-20 rounded-2xl bg-surface-container border border-border flex items-center justify-center text-primary shadow-premium">
-            <Compass className="w-10 h-10 animate-spin" style={{ animationDuration: "20s" }} />
+        {/* Precision Diagnostic Badge */}
+        <div className="mb-5 flex flex-col items-center">
+          <div className="w-16 h-16 rounded-2xl bg-surface-container border border-border flex items-center justify-center text-primary mb-3 shadow-xs">
+            <Compass className="w-8 h-8 text-primary motion-safe:animate-spin motion-reduce:animate-none" style={{ animationDuration: "24s" }} />
           </div>
-          <span className="absolute -bottom-2 -right-2 px-2 py-0.5 text-[11px] font-mono font-bold bg-primary text-primary-foreground rounded-full shadow-sm">
-            404
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-surface-container border border-border text-xs font-semibold text-muted-foreground">
+            <span className="w-1.5 h-1.5 rounded-full bg-warning inline-block" />
+            <span className="font-mono tabular-nums">404</span>
+            <span>Unresolved Route</span>
           </span>
         </div>
 
-        {/* Heading */}
-        <h1 className="text-3xl font-extrabold text-foreground tracking-tight mb-2">
-          Page Not Found
+        {/* Heading & Prose */}
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight mb-2">
+          Page not found
         </h1>
-        <p className="text-sm text-muted-foreground leading-relaxed mb-8 max-w-sm">
-          The page or route you were looking for doesn't exist, has moved, or the link is invalid.
+        <p className="text-sm text-muted-foreground leading-relaxed mb-7 max-w-sm">
+          The requested route or resource does not exist, has moved, or the link is no longer valid.
         </p>
 
-        {/* Action Buttons */}
-        <div className="w-full space-y-3">
+        {/* Action Panel */}
+        <div className="w-full space-y-2.5">
           {isAuthenticated ? (
             <>
               <button
                 type="button"
                 onClick={handleGoDashboard}
-                className="w-full py-2.5 px-4 rounded-xl bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center space-x-2 shadow-premium hover:shadow-premium-hover hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer"
+                className="w-full py-2.5 px-4 rounded-xl bg-primary text-primary-foreground font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-opacity cursor-pointer shadow-xs motion-reduce:transform-none"
               >
                 <Home className="w-4 h-4" />
                 <span>Return to Dashboard</span>
               </button>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2.5">
                 <button
                   type="button"
                   onClick={handleGoChat}
-                  className="py-2.5 px-3 rounded-xl bg-surface-container border border-border text-foreground font-medium text-xs flex items-center justify-center space-x-2 hover:bg-surface-container-high active:scale-[0.98] transition-all cursor-pointer"
+                  className="py-2.5 px-3 rounded-xl bg-surface border border-border text-foreground font-medium text-xs flex items-center justify-center gap-1.5 hover:bg-surface-container active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors cursor-pointer motion-reduce:transform-none"
                 >
                   <Plus className="w-3.5 h-3.5 text-primary" />
-                  <span>Start New Chat</span>
+                  <span>Start Research</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={handleGoDocuments}
-                  className="py-2.5 px-3 rounded-xl bg-surface-container border border-border text-foreground font-medium text-xs flex items-center justify-center space-x-2 hover:bg-surface-container-high active:scale-[0.98] transition-all cursor-pointer"
+                  className="py-2.5 px-3 rounded-xl bg-surface border border-border text-foreground font-medium text-xs flex items-center justify-center gap-1.5 hover:bg-surface-container active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors cursor-pointer motion-reduce:transform-none"
                 >
-                  <FolderOpen className="w-3.5 h-3.5 text-secondary" />
+                  <FolderOpen className="w-3.5 h-3.5 text-muted-foreground" />
                   <span>Knowledge Base</span>
                 </button>
               </div>
@@ -117,26 +113,26 @@ export default function NotFoundView({ onNavigate }: NotFoundViewProps) {
             <button
               type="button"
               onClick={() => { navigate('/login'); }}
-              className="w-full py-2.5 px-4 rounded-xl bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center space-x-2 shadow-premium hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer"
+              className="w-full py-2.5 px-4 rounded-xl bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-opacity cursor-pointer shadow-xs motion-reduce:transform-none"
             >
-              <span>Sign In to KnowVex</span>
+              <span>Sign in to KnowVex</span>
             </button>
           )}
 
           <button
             type="button"
             onClick={handleGoBack}
-            className="w-full py-2 text-xs text-muted-foreground hover:text-foreground flex items-center justify-center space-x-1 transition-colors cursor-pointer"
+            className="w-full py-2 text-xs text-muted-foreground hover:text-foreground flex items-center justify-center gap-1.5 transition-colors cursor-pointer active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 whitespace-nowrap motion-reduce:transform-none"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Go back to previous page</span>
+            <span>Go back</span>
           </button>
         </div>
 
-        {/* Brand footer watermark */}
-        <div className="mt-12 text-[11px] font-mono text-muted-foreground/60 flex items-center space-x-1.5">
-          <span>KnowVex Intelligence Core</span>
-          <span>•</span>
+        {/* Diagnostic Watermark */}
+        <div className="mt-10 text-xs text-muted-foreground flex items-center gap-2">
+          <span>KnowVex Workstation Core</span>
+          <span className="w-1 h-1 rounded-full bg-border" />
           <span>v2.0</span>
         </div>
       </motion.div>

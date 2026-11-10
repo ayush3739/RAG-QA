@@ -1,7 +1,7 @@
 import { navigate } from '../lib/navigation';
 import React from "react";
 import { motion } from "framer-motion";
-import { Gauge, Home, RotateCcw, AlertOctagon } from "lucide-react";
+import { Gauge, Home, RotateCcw, AlertCircle } from "lucide-react";
 import { useStore } from "../store/useStore";
 
 export default function RateLimitView() {
@@ -12,69 +12,78 @@ export default function RateLimitView() {
     navigate('/chat/new');
   };
 
-  return (
-    <div className="relative min-h-screen w-full flex flex-col items-center justify-center p-6 bg-background text-foreground overflow-hidden select-none">
-      {/* Ambient glowing orbs */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="ambient-orb orb-1 bg-amber-500/10 w-[500px] h-[500px] -top-[100px] left-1/2 -translate-x-1/2 blur-3xl rounded-full" />
-      </div>
+  const handleDashboard = () => {
+    setCurrentTab("dashboard");
+    navigate('/dashboard');
+  };
 
+  return (
+    <div className="relative min-h-screen w-full flex flex-col items-center justify-center p-6 bg-background text-foreground select-none">
       <motion.div
-        initial={{ opacity: 0, y: 20, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
         className="relative z-10 max-w-md w-full text-center flex flex-col items-center"
       >
-        {/* Icon Badge */}
-        <div className="relative mb-6">
-          <div className="w-20 h-20 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-500 shadow-premium">
-            <Gauge className="w-10 h-10 animate-pulse" />
+        {/* Diagnostic Telemetry Badge */}
+        <div className="mb-5 flex flex-col items-center">
+          <div className="w-16 h-16 rounded-2xl bg-warning-subtle border border-warning-subtle flex items-center justify-center text-warning mb-3 shadow-xs">
+            <Gauge className="w-8 h-8 text-warning" />
           </div>
-          <span className="absolute -bottom-2 -right-2 px-2 py-0.5 text-[11px] font-mono font-bold bg-amber-500 text-white rounded-full shadow-sm">
-            429
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-warning-subtle border border-warning-subtle text-xs font-semibold text-warning">
+            <span className="w-1.5 h-1.5 rounded-full bg-warning inline-block" />
+            <span className="font-mono tabular-nums">429</span>
+            <span>Capacity Limit Reached</span>
           </span>
         </div>
 
-        {/* Heading */}
-        <h1 className="text-2xl font-extrabold text-foreground tracking-tight mb-2">
-          Rate Limit Reached
+        {/* Heading & Prose */}
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight mb-2">
+          Rate limit reached
         </h1>
         <p className="text-sm text-muted-foreground leading-relaxed mb-6 max-w-sm">
-          You've reached the current model throughput capacity or query frequency limit. Please pause for a moment before retrying.
+          You have reached the temporary throughput capacity or query frequency allocation. The token bucket refills automatically.
         </p>
 
-        {/* Tips Box */}
-        <div className="w-full text-left p-4 rounded-xl bg-surface-container border border-border space-y-2 mb-6 text-xs text-muted-foreground">
-          <div className="flex items-center text-foreground font-semibold space-x-1.5">
-            <AlertOctagon className="w-3.5 h-3.5 text-amber-500" />
-            <span>Optimization Guidance:</span>
+        {/* Optimization Guidance Box */}
+        <div className="w-full text-left p-4 rounded-xl bg-surface-container-lowest border border-border space-y-2 mb-6 text-xs text-muted-foreground">
+          <div className="flex items-center text-foreground font-semibold gap-1.5">
+            <AlertCircle className="w-4 h-4 text-warning" />
+            <span>Optimization guidance</span>
           </div>
-          <ul className="list-disc list-inside space-y-1 pl-1">
-            <li>Wait approximately <strong>30–60 seconds</strong> for the token bucket to refill.</li>
-            <li>Unlink inactive documents to reduce prompt context tokens.</li>
-            <li>Break large multi-part queries into shorter questions.</li>
+          <ul className="list-disc list-inside space-y-1.5 pl-0.5">
+            <li>Wait approximately 30 to 60 seconds for token bucket replenishment.</li>
+            <li>Unlink inactive documents to conserve prompt context tokens.</li>
+            <li>Deconstruct extensive multi-part queries into focused research questions.</li>
           </ul>
         </div>
 
-        {/* Actions */}
-        <div className="w-full space-y-3">
+        {/* Actions Panel */}
+        <div className="w-full space-y-2.5">
           <button
             type="button"
             onClick={handleReturn}
-            className="w-full py-2.5 px-4 rounded-xl bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center space-x-2 shadow-premium hover:shadow-premium-hover hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer"
+            className="w-full py-2.5 px-4 rounded-xl bg-primary text-primary-foreground font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 whitespace-nowrap transition-opacity cursor-pointer shadow-xs motion-reduce:transform-none"
           >
             <RotateCcw className="w-4 h-4" />
-            <span>Return to Chat</span>
+            <span>Return to research</span>
           </button>
 
           <button
             type="button"
-            onClick={() => { setCurrentTab("dashboard"); navigate('/dashboard'); }}
-            className="w-full py-2 text-xs text-muted-foreground hover:text-foreground flex items-center justify-center space-x-1.5 transition-colors cursor-pointer"
+            onClick={handleDashboard}
+            className="w-full py-2.5 px-4 rounded-xl bg-surface border border-border text-foreground font-medium text-xs sm:text-sm flex items-center justify-center gap-2 hover:bg-surface-container active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors cursor-pointer motion-reduce:transform-none"
           >
-            <Home className="w-3.5 h-3.5" />
+            <Home className="w-4 h-4 text-muted-foreground" />
             <span>Go to Dashboard</span>
           </button>
+        </div>
+
+        {/* Diagnostic Watermark */}
+        <div className="mt-10 text-xs text-muted-foreground flex items-center gap-2">
+          <span>KnowVex Token Rate Governor</span>
+          <span className="w-1 h-1 rounded-full bg-border" />
+          <span>Throughput Shield</span>
         </div>
       </motion.div>
     </div>

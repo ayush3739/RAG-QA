@@ -22,61 +22,67 @@ export default function ServerErrorView() {
     }
   };
 
-  return (
-    <div className="relative min-h-screen w-full flex flex-col items-center justify-center p-6 bg-background text-foreground overflow-hidden select-none">
-      {/* Ambient glowing orbs */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="ambient-orb orb-1 bg-red-500/10 w-[500px] h-[500px] -top-[100px] left-1/2 -translate-x-1/2 blur-3xl rounded-full" />
-      </div>
+  const handleReturnHome = () => {
+    window.history.pushState(null, '', '/');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    window.dispatchEvent(new HashChangeEvent('hashchange'));
+  };
 
+  return (
+    <div className="relative min-h-screen w-full flex flex-col items-center justify-center p-6 bg-background text-foreground select-none">
       <motion.div
-        initial={{ opacity: 0, y: 20, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
         className="relative z-10 max-w-md w-full text-center flex flex-col items-center"
       >
-        {/* Icon Badge */}
-        <div className="relative mb-6">
-          <div className="w-20 h-20 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500 shadow-premium">
-            <ServerCrash className="w-10 h-10 animate-bounce" />
+        {/* Diagnostic Telemetry Badge */}
+        <div className="mb-5 flex flex-col items-center">
+          <div className="w-16 h-16 rounded-2xl bg-danger-subtle border border-danger-subtle flex items-center justify-center text-danger mb-3 shadow-xs">
+            <ServerCrash className="w-8 h-8 text-danger" />
           </div>
-          <span className="absolute -bottom-2 -right-2 px-2 py-0.5 text-[11px] font-mono font-bold bg-red-500 text-white rounded-full shadow-sm">
-            500
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-danger-subtle border border-danger-subtle text-xs font-semibold text-danger">
+            <span className="w-1.5 h-1.5 rounded-full bg-danger inline-block" />
+            <span className="font-mono tabular-nums">500</span>
+            <span>Core Node Offline</span>
           </span>
         </div>
 
-        {/* Heading */}
-        <h1 className="text-2xl font-extrabold text-foreground tracking-tight mb-2">
-          Internal Server Error
+        {/* Heading & Prose */}
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight mb-2">
+          Internal server error
         </h1>
-        <p className="text-sm text-muted-foreground leading-relaxed mb-8 max-w-sm">
-          The KnowVex API server encountered an unexpected error or is temporarily unavailable. Please try reconnecting.
+        <p className="text-sm text-muted-foreground leading-relaxed mb-7 max-w-sm">
+          The KnowVex core retrieval node encountered an unexpected exception or is temporarily unreachable. Please retry the connection.
         </p>
 
-        {/* Actions */}
-        <div className="w-full space-y-3">
+        {/* Action Panel */}
+        <div className="w-full space-y-2.5">
           <button
             type="button"
             onClick={handleRetry}
             disabled={isRetrying}
-            className="w-full py-2.5 px-4 rounded-xl bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center space-x-2 shadow-premium hover:shadow-premium-hover hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer disabled:opacity-60"
+            className="w-full py-2.5 px-4 rounded-xl bg-primary text-primary-foreground font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-opacity cursor-pointer shadow-xs motion-reduce:transform-none"
           >
-            <RefreshCw className={`w-4 h-4 ${isRetrying ? "animate-spin" : ""}`} />
-            <span>{isRetrying ? "Attempting Reconnection..." : "Retry Connection"}</span>
+            <RefreshCw className={cn("w-4 h-4", isRetrying && "animate-spin motion-reduce:animate-none")} />
+            <span>{isRetrying ? "Attempting reconnection…" : "Retry connection"}</span>
           </button>
 
           <button
             type="button"
-            onClick={() => {
-              window.history.pushState(null, '', '/');
-              window.dispatchEvent(new PopStateEvent('popstate'));
-              window.dispatchEvent(new HashChangeEvent('hashchange'));
-            }}
-            className="w-full py-2 text-xs text-muted-foreground hover:text-foreground flex items-center justify-center space-x-1.5 transition-colors cursor-pointer"
+            onClick={handleReturnHome}
+            className="w-full py-2.5 px-4 rounded-xl bg-surface border border-border text-foreground font-medium text-xs sm:text-sm flex items-center justify-center gap-2 hover:bg-surface-container active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors cursor-pointer motion-reduce:transform-none"
           >
-            <Home className="w-3.5 h-3.5" />
+            <Home className="w-4 h-4 text-muted-foreground" />
             <span>Return to Home</span>
           </button>
+        </div>
+
+        {/* Diagnostic Watermark */}
+        <div className="mt-10 text-xs text-muted-foreground flex items-center gap-2">
+          <span>KnowVex Telemetry Channel</span>
+          <span className="w-1 h-1 rounded-full bg-border" />
+          <span>Node monolith-v4.2.0</span>
         </div>
       </motion.div>
     </div>
