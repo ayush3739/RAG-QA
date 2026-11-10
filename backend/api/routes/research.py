@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.agent.router import answer_query
-from backend.api.deps import get_current_user
+from backend.api.deps import get_current_user,require_research_quota
 from backend.db.base import get_db
 from backend.models import models
 from backend.models.schemas import ResearchRequest, ResearchResponse
@@ -66,6 +66,7 @@ async def research(
     request: ResearchRequest,
     db: AsyncSession = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
+    _ = Depends(require_research_quota)
 ):
     """Run the same agent router as chat and return a structured research report."""
     document_ids = await _document_ids_from_collection(

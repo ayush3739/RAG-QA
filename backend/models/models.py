@@ -77,11 +77,15 @@ class RefreshToken(Base):
 
 class DataUsage(Base):
     __tablename__ = "data_usages"
-
+    __table_args__ = (
+        UniqueConstraint("user_id", "date", name="uq_user_daily_usage"),
+    )
+    
     id : Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     query_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    research_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     user: Mapped["User"] = relationship(back_populates="data_usages")
 
 class UserToken(Base):

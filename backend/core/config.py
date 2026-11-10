@@ -69,6 +69,13 @@ class Settings(BaseSettings):
     chunk_size: int = 600
     chunk_overlap: int = 150
 
+    #Document Upload limits
+    ROLE_DOCUMENT_LIMITS: {
+        UserRole.USER: 3,
+        UserRole.PRO: 50,
+        UserRole.ADMIN: None,
+    }
+
 
     # Mail
     mail_server: str = "localhost"

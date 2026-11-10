@@ -13,7 +13,7 @@ from pypdf import PdfReader
 
 
 from backend.db.base import get_db, AsyncSessionLocal
-from backend.api.deps import get_current_user
+from backend.api.deps import get_current_user,require_document_quota
 from backend.core.config import settings
 from backend.core.indexer import Indexer
 from backend.core.retriever import Retriever
@@ -26,6 +26,7 @@ from backend.models.schemas import (
 )
 from backend.models import models
 from backend.services.session_service import SessionService
+from backend.services.quota_service import validate_document_pages
 
 router = APIRouter()
 
@@ -116,6 +117,7 @@ async def upload_document(
     current_user: models.User = Depends(get_current_user),
     file: UploadFile = File(...),
     session_id: UUID | None = Form(None),
+    _= Depends(require_document_quota)
 ):
     """Upload and index a PDF, Word, Markdown, or Text document."""
     if not file.filename:
@@ -199,6 +201,7 @@ async def upload_document(
     public_id = uuid4().hex
     saved_path = upload_dir / f"{public_id}{ext}"
     saved_path.write_bytes(contents)
+    validate_document_pages(num_pages=total_pages, role=current_user.role)
 
     # 8. Dry-run parser check to identify unreadable/corrupted files upfront
     if ext == ".docx":

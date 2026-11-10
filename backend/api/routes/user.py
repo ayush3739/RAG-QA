@@ -17,6 +17,7 @@ from sqlalchemy import select
 from backend.api.deps import get_current_user, get_db
 from backend.models.auth_schemas import UserResponse
 from backend.models.models import User,Document
+from backend.services.quota_service import get_user_quota_info
 
 router = APIRouter()
 
@@ -84,3 +85,12 @@ async def delete_me(
 
     await db.delete(current_user)
     await db.commit()
+
+
+@router.get("/quota")
+async def get_my_quota(
+    current_user : User = Depends(get_current_user),
+    db : AsyncSession = Depends(get_db)
+):
+
+    return await get_user_quota_info(user = current_user,db = db)

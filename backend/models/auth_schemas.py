@@ -9,6 +9,7 @@ These are request/response shapes only — ORM models live in models/models.py.
 
 
 from typing import Optional
+from datetime import datetime
 from pydantic import BaseModel, EmailStr, Field
 
 
@@ -76,3 +77,11 @@ class OAuthProfile(BaseModel):
     email: str
     name: str
     avatar_url: str | None
+
+
+class UserQuotaResponse(BaseModel):
+    role: str
+    queries_used: int
+    query_limit: Optional[int] = None
+    queries_remaining: Optional[int] = None
+    reset_at: datetime

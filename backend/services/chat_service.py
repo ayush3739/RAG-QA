@@ -52,13 +52,7 @@ class ChatService:
         )
 
         # 2b. Track query usage
-        try:
-            await self.analytics_service.record_user_query(
-                user_id=user_id,
-                db=db,
-            )
-        except Exception:
-            pass  # Do not block chat execution if analytics tracking fails
+        # it gets as a deps at the chat api level 
 
         # 3. Load history
         # Already includes the user message saved above — no need to append it again.
