@@ -169,9 +169,14 @@ export function useChatStream({
 
       if (!res.ok || !res.body) {
         if (res.status === 429) {
-          const rateLimitMsg = "⏳ **Rate Limited** — The AI provider is busy. Please wait a moment and try again.";
+          const errorData = await res.json().catch(() => null);
+          const isDailyQuota = errorData?.detail?.error === "QUOTA_EXCEEDED" || errorData?.error === "QUOTA_EXCEEDED";
+          const rateLimitMsg = isDailyQuota
+            ? `🛑 **Daily Query Quota Exceeded** — ${errorData?.detail?.message || "You have reached your daily query allowance."} Please upgrade to Pro for 500 queries/day.`
+            : "⏳ **Rate Limited** — The AI provider is busy. Please wait a moment and try again.";
           setActiveMessages((prev) => prev.map((m) => (m.id === botMsgId ? { ...m, text: rateLimitMsg } : m)));
-          toast.warning("Rate limited by AI provider. Try again in a few seconds.", { duration: 6000 });
+          toast.warning(errorData?.detail?.message || "Daily quota limit reached.", { duration: 7000 });
+          api.getQuota().then((q) => useStore.getState().setQuota(q)).catch(() => {});
           return;
         }
         if (res.status === 401) {
@@ -289,6 +294,7 @@ export function useChatStream({
 
       queryClient.invalidateQueries({ queryKey: ["sessions"] });
       queryClient.invalidateQueries({ queryKey: ["user-activity"] });
+      api.getQuota().then((q) => useStore.getState().setQuota(q)).catch(() => {});
       setGraphStatuses([]);
     }
   };

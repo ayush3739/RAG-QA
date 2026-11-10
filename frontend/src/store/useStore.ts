@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { SourceDocument, Conversation, ModelParams, DocType } from '../types';
+import { SourceDocument, Conversation, ModelParams, DocType, UserQuota } from '../types';
 
 export type AuthMode = 'login' | 'register' | 'forgot-password' | 'verification-sent' | 'forgot-password-sent';
 
@@ -44,6 +44,8 @@ interface AppState {
   setTokens: (accessToken: string | null, refreshToken: string | null) => void;
   user: UserData | null;
   setUser: (user: UserData | null) => void;
+  quota: UserQuota | null;
+  setQuota: (quota: UserQuota | null) => void;
   logout: () => void;
 }
 
@@ -67,11 +69,14 @@ export const useStore = create<AppState>()(
       }),
       user: null,
       setUser: (user) => set({ user }),
+      quota: null,
+      setQuota: (quota) => set({ quota }),
       logout: () => set({
         accessToken: null,
         refreshToken: null,
         isAuthenticated: false,
         user: null,
+        quota: null,
         authMode: 'login',
         activeConvId: null,
         activeDocumentId: null,

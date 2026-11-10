@@ -1,4 +1,7 @@
 import { useStore } from '../store/useStore';
+import { UserQuota } from '../types';
+
+export type { UserQuota };
 
 export const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 
@@ -142,7 +145,9 @@ async function apiFetch(endpoint: string, options: CustomRequestInit = {}) {
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => null);
-    let msg = errorData?.detail?.[0]?.msg || errorData?.detail;
+    let msg = typeof errorData?.detail === 'string'
+      ? errorData.detail
+      : errorData?.detail?.message || errorData?.detail?.[0]?.msg || errorData?.message;
     
     if (!msg) {
       if (response.status >= 500) {
@@ -237,6 +242,8 @@ export const api = {
   },
 
   getMe: () => apiFetch('/auth/me'),
+
+  getQuota: (): Promise<UserQuota> => apiFetch('/user/quota'),
 
   updateMe: (body: { name?: string; email?: string }) => apiFetch('/user/me', {
     method: 'PATCH',

@@ -52,7 +52,17 @@ export function useDocumentUpload({ documents, sessionDocuments }: UseDocumentUp
       }
     },
     onError: (error: any) => {
-      toast.error(`Upload failed: ${error.message || "An unknown error occurred"}`);
+      const detail = error.data?.detail;
+      const errCode = detail?.error || error.data?.error;
+      const errMsg = detail?.message || error.message;
+
+      if (errCode === "DOCUMENT_QUOTA_EXCEEDED" || errCode === "DOCUMENT_UPLOAD_QUOTA_EXCEEDED" || error.status === 403) {
+        toast.warning(errMsg || "Document upload limit reached. Upgrade to Pro for up to 50 documents.", { duration: 6000 });
+      } else if (errCode === "PAGE_LIMIT_EXCEEDED" || error.status === 413) {
+        toast.warning(errMsg || "Document exceeds the maximum page limit for your plan.", { duration: 6000 });
+      } else {
+        toast.error(`Upload failed: ${error.message || "An unknown error occurred"}`);
+      }
     },
   });
 

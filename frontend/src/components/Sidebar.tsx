@@ -18,11 +18,29 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
   const theme = useStore(s => s.theme);
   const setTheme = useStore(s => s.setTheme);
   const user = useStore(s => s.user);
+  const quota = useStore(s => s.quota);
+  const setQuota = useStore(s => s.setQuota);
+  const isAuthenticated = useStore(s => s.isAuthenticated);
   const logout = () => { api.logout(); };
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isEdgeHovering, setIsEdgeHovering] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    let isMounted = true;
+    api.getQuota()
+      .then((q) => {
+        if (isMounted) setQuota(q);
+      })
+      .catch(() => {
+        // Fallback gracefully if quota endpoint fails
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [isAuthenticated, setQuota]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -221,6 +239,37 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
                 {user?.role?.toLowerCase() === "pro" && <Crown className="w-2.5 h-2.5 text-amber-400" />}
                 {user?.role?.toLowerCase() === "admin" ? "ADMIN" : user?.role?.toLowerCase() === "pro" ? "PRO" : "FREE"}
               </span>
+            </div>
+
+            {/* Daily Quota Progress */}
+            <div className="px-3.5 py-2.5 bg-surface/50 border-b border-border/60">
+              <div className="flex items-center justify-between text-[11px] mb-1.5">
+                <span className="text-muted-foreground flex items-center gap-1.5 font-medium">
+                  <Sparkles className="w-3 h-3 text-primary" /> Daily Queries
+                </span>
+                <span className="font-mono font-semibold text-foreground text-[10px]">
+                  {quota ? (quota.query_limit === null ? "Unlimited" : `${quota.queries_used} / ${quota.query_limit}`) : "..."}
+                </span>
+              </div>
+              {quota && quota.query_limit !== null ? (
+                <div className="w-full h-1.5 bg-surface-container rounded-full overflow-hidden">
+                  <div 
+                    className={cn(
+                      "h-full rounded-full transition-all duration-300",
+                      quota.queries_used >= quota.query_limit
+                        ? "bg-red-500"
+                        : quota.queries_used / quota.query_limit > 0.8
+                        ? "bg-amber-500"
+                        : "bg-primary"
+                    )}
+                    style={{ width: `${Math.min(100, (quota.queries_used / quota.query_limit) * 100)}%` }}
+                  />
+                </div>
+              ) : (
+                <div className="text-[10px] text-primary/80 font-mono">
+                  Full unmetered access
+                </div>
+              )}
             </div>
 
             <div className="p-1.5 space-y-1">

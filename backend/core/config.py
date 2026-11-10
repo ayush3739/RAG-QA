@@ -70,11 +70,11 @@ class Settings(BaseSettings):
     chunk_overlap: int = 150
 
     #Document Upload limits
-    ROLE_DOCUMENT_LIMITS: {
-        UserRole.USER: 3,
-        UserRole.PRO: 50,
-        UserRole.ADMIN: None,
-    }
+    # ROLE_DOCUMENT_LIMITS: {
+    #     UserRole.USER: 3,
+    #     UserRole.PRO: 50,
+    #     UserRole.ADMIN: None,
+    # }
 
 
     # Mail

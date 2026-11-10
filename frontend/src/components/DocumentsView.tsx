@@ -9,6 +9,7 @@ import { cn } from "../lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../lib/api";
 import { toast } from "sonner";
+import { useStore } from "../store/useStore";
 import ConfirmDialog from "./ConfirmDialog";
 
 // Module-scope pure function: no local state used
@@ -58,6 +59,10 @@ export function DocumentsView({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [docToDelete, setDocToDelete] = useState<string | null>(null);
   const [showSkeleton] = useState(false);
+  const user = useStore(s => s.user);
+  const role = user?.role?.toLowerCase() || "user";
+  const maxDocs = role === "admin" ? null : role === "pro" ? 50 : 3;
+  const isDocLimitReached = maxDocs !== null && documents.length >= maxDocs;
 
   const handleUpload = (file: File) => {
     if (file.size === 0) { toast.error(`Upload failed: File ${file.name} is empty.`); return; }
@@ -152,11 +157,17 @@ export function DocumentsView({
 
           {/* Stats Strip */}
           {documents.length > 0 && (
-            <div className="flex items-center gap-4 mt-5">
+            <div className="flex items-center gap-4 mt-5 flex-wrap">
               <div className="flex items-center gap-2 px-3 py-1.5 bg-surface-container-lowest border border-border rounded-lg text-xs font-medium text-muted-foreground">
                 <Layers className="w-3.5 h-3.5 text-muted-foreground" />
-                <span><strong className="text-foreground font-mono">{documents.length}</strong> documents</span>
+                <span><strong className="text-foreground font-mono">{documents.length}</strong>{maxDocs !== null ? ` / ${maxDocs}` : ""} documents</span>
               </div>
+              {isDocLimitReached && (
+                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-500 rounded-lg text-xs font-semibold">
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  <span>Limit reached ({maxDocs} max on {role === 'pro' ? 'Pro' : 'Free'})</span>
+                </div>
+              )}
               <div className="flex items-center gap-2 px-3 py-1.5 bg-surface-container-lowest border border-border rounded-lg text-xs font-medium text-muted-foreground">
                 <Database className="w-3.5 h-3.5 text-muted-foreground" />
                 <span><strong className="text-foreground font-mono">{totalChunks}</strong> chunks indexed</span>

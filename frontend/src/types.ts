@@ -50,3 +50,12 @@ export interface ModelParams {
   systemInstruction: string;
   selectedModel: string;
 }
+
+export interface UserQuota {
+  role: string;
+  queries_used: number;
+  query_limit: number | null;
+  queries_remaining: number | null;
+  reset_at: string;
+}
+
