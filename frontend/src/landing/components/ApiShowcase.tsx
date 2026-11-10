@@ -72,7 +72,7 @@ export default function ApiShowcase() {
   const currentTabData = tabs.find(t => t.id === activeTab) || tabs[0]
 
   return (
-    <section id="api" className="border-t border-white/[0.05] bg-[#09090b] py-28">
+    <section id="api" className="border-t border-border bg-background py-28">
       <div className="mx-auto max-w-5xl px-6">
         {/* Header */}
         <motion.div
@@ -82,16 +82,16 @@ export default function ApiShowcase() {
           transition={{ duration: 0.6 }}
           className="mb-16"
         >
-          <p className="mb-3 font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-600">
+          <p className="mb-3 font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
             Case Study · 06
           </p>
           <h2
-            className="text-3xl font-medium leading-tight tracking-[-0.03em] text-white md:text-4xl"
+            className="text-3xl font-medium leading-tight tracking-[-0.03em] text-foreground md:text-4xl"
             style={{ fontFamily: "'DM Sans', sans-serif" }}
           >
             REST API Showcase
           </h2>
-          <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-zinc-500">
+          <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-muted-foreground">
             Every feature is exposed via a documented REST API. Built with FastAPI for high-concurrency streaming.
           </p>
         </motion.div>
@@ -102,25 +102,25 @@ export default function ApiShowcase() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-50px' }}
           transition={{ duration: 0.6, delay: 0.1 }}
-          className="overflow-hidden rounded-2xl border border-white/[0.05] bg-white/[0.02]"
+          className="overflow-hidden rounded-2xl border border-border bg-card/60 dark:bg-white/[0.02] shadow-sm"
         >
           {/* Tab Navigation */}
-          <div className="flex flex-wrap border-b border-white/[0.05] bg-[#060608]">
+          <div className="flex flex-wrap border-b border-border bg-surface-container-low dark:bg-[#060608]">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`relative px-6 py-4 text-sm font-medium transition-colors ${
                   activeTab === tab.id
-                    ? 'text-white'
-                    : 'text-zinc-500 hover:bg-white/[0.02] hover:text-zinc-300'
+                    ? 'text-foreground font-semibold'
+                    : 'text-muted-foreground hover:bg-muted/40 hover:text-foreground'
                 }`}
               >
                 {tab.name}
                 {activeTab === tab.id && (
                   <motion.div
                     layoutId="api-tab-indicator"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
                     transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                   />
                 )}
@@ -136,34 +136,34 @@ export default function ApiShowcase() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.2 }}
-              className="grid grid-cols-1 divide-y divide-white/[0.05] md:grid-cols-2 md:divide-x md:divide-y-0"
+              className="grid grid-cols-1 divide-y divide-border md:grid-cols-2 md:divide-x md:divide-y-0"
             >
               {/* Request Pane */}
-              <div className="p-6 md:p-8">
+              <div className="p-6 md:p-8 bg-card/40">
                 <div className="mb-4 flex items-center justify-between">
-                  <span className="font-mono text-[10px] uppercase tracking-widest text-zinc-500">Request</span>
-                  <span className="rounded-full bg-indigo-500/10 px-2 py-0.5 font-mono text-[10px] uppercase text-indigo-400">
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Request</span>
+                  <span className="rounded-full bg-primary/10 px-2 py-0.5 font-mono text-[10px] uppercase text-primary font-medium">
                     {currentTabData.method}
                   </span>
                 </div>
-                <div className="font-mono text-[13px] text-zinc-300">
-                  <span className="text-indigo-400">{currentTabData.endpoint}</span>
+                <div className="font-mono text-[13px] text-foreground font-semibold">
+                  <span className="text-primary">{currentTabData.endpoint}</span>
                 </div>
-                <pre className="mt-6 overflow-x-auto font-mono text-[11px] leading-relaxed text-zinc-400">
+                <pre className="mt-6 overflow-x-auto font-mono text-[11px] leading-relaxed text-muted-foreground">
                   {currentTabData.request}
                 </pre>
               </div>
 
               {/* Response Pane */}
-              <div className="bg-[#060608] p-6 md:p-8">
+              <div className="bg-surface-container-low/70 dark:bg-[#060608] p-6 md:p-8">
                 <div className="mb-4 flex items-center justify-between">
-                  <span className="font-mono text-[10px] uppercase tracking-widest text-zinc-500">Response</span>
-                  <div className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] uppercase text-emerald-400">
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Response</span>
+                  <div className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] uppercase text-emerald-500 font-medium">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                     200 OK
                   </div>
                 </div>
-                <pre className="overflow-x-auto font-mono text-[11px] leading-relaxed text-zinc-400">
+                <pre className="overflow-x-auto font-mono text-[11px] leading-relaxed text-muted-foreground">
                   {'{'}{'\n  '}
                   {currentTabData.response}
                   {'\n}'}

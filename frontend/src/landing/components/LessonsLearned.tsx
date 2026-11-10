@@ -41,7 +41,7 @@ export default function LessonsLearned() {
   }
 
   return (
-    <section id="lessons" className="border-t border-white/[0.05] bg-[#09090b] py-28">
+    <section id="lessons" className="border-t border-border bg-background py-28">
       <div className="mx-auto max-w-5xl px-6">
         {/* Header */}
         <motion.div
@@ -51,16 +51,16 @@ export default function LessonsLearned() {
           transition={{ duration: 0.6 }}
           className="mb-16"
         >
-          <p className="mb-3 font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-600">
+          <p className="mb-3 font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
             Case Study · 08
           </p>
           <h2
-            className="text-3xl font-medium leading-tight tracking-[-0.03em] text-white md:text-4xl"
+            className="text-3xl font-medium leading-tight tracking-[-0.03em] text-foreground md:text-4xl"
             style={{ fontFamily: "'DM Sans', sans-serif" }}
           >
             Lessons Learned
           </h2>
-          <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-zinc-500">
+          <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-muted-foreground">
             Key engineering insights gained while designing, testing, and debugging stateful RAG systems.
           </p>
         </motion.div>
@@ -79,19 +79,19 @@ export default function LessonsLearned() {
               <motion.div
                 key={les.title}
                 variants={itemVariants}
-                className="group flex flex-col justify-between rounded-2xl border border-white/[0.05] bg-white/[0.02] p-8 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-white/20 hover:bg-white/[0.03] hover:shadow-xl hover:shadow-black/50"
+                className="group flex flex-col justify-between rounded-2xl border border-border bg-card/60 dark:bg-white/[0.02] p-8 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/40 hover:bg-card dark:hover:bg-white/[0.04] hover:shadow-xl hover:shadow-primary/5 dark:hover:shadow-black/50"
               >
                 <div>
                   <div className="mb-6 flex items-center justify-between">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/[0.04] text-zinc-400 transition-all duration-300 group-hover:scale-110 group-hover:bg-indigo-500/10 group-hover:text-indigo-300">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition-all duration-300 group-hover:scale-110 group-hover:bg-primary/20">
                       <Icon className="h-5 w-5" strokeWidth={1.5} />
                     </span>
-                    <span className="font-mono text-[10px] uppercase tracking-widest text-zinc-500 transition-colors duration-200 group-hover:text-zinc-400">
+                    <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground transition-colors duration-200 group-hover:text-foreground">
                       {les.tag}
                     </span>
                   </div>
-                  <h3 className="mb-3 text-[15px] font-medium text-white transition-colors duration-200 group-hover:text-indigo-200">{les.title}</h3>
-                  <p className="text-[13px] leading-relaxed text-zinc-500 transition-colors duration-200 group-hover:text-zinc-400">{les.description}</p>
+                  <h3 className="mb-3 text-[15px] font-medium text-foreground transition-colors duration-200 group-hover:text-primary">{les.title}</h3>
+                  <p className="text-[13px] leading-relaxed text-muted-foreground transition-colors duration-200 group-hover:text-foreground/80">{les.description}</p>
                 </div>
               </motion.div>
             )

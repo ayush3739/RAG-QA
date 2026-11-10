@@ -17,17 +17,17 @@ export default function LogoMarquee() {
   const duplicatedTech = [...technologies, ...technologies, ...technologies];
 
   return (
-    <section className="py-16 border-y border-white/[0.05] bg-[#050508] overflow-hidden">
+    <section className="py-16 border-y border-border bg-background overflow-hidden">
       <div className="max-w-7xl mx-auto px-6 mb-8 text-center">
-        <p className="text-[11px] font-mono uppercase tracking-[0.2em] text-zinc-500">
+        <p className="text-xs font-medium text-muted-foreground">
           Powered by industry-standard open source
         </p>
       </div>
       
       <div className="relative flex w-full overflow-hidden">
         {/* Gradient Masks for smooth fade on edges */}
-        <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-[#050508] to-transparent z-10" />
-        <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-[#050508] to-transparent z-10" />
+        <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
+        <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
 
         <motion.div
           className="flex items-center gap-16 whitespace-nowrap"
@@ -43,10 +43,10 @@ export default function LogoMarquee() {
             return (
               <div 
                 key={index} 
-                className="flex items-center gap-3 text-zinc-600 hover:text-indigo-400 transition-colors duration-300"
+                className="flex items-center gap-3 text-muted-foreground hover:text-foreground transition-colors duration-150"
               >
-                <Icon className="w-6 h-6" />
-                <span className="text-sm font-medium tracking-wide">{tech.name}</span>
+                <Icon className="w-6 h-6" aria-hidden="true" />
+                <span className="text-sm font-medium">{tech.name}</span>
               </div>
             );
           })}

@@ -67,7 +67,7 @@ export default function ArchitectureDiagram() {
   }
 
   return (
-    <section id="architecture" className="border-t border-white/[0.05] bg-[#09090b] py-28">
+    <section id="architecture" className="border-t border-border bg-background py-28">
       <div className="mx-auto max-w-5xl px-6">
         {/* Header */}
         <motion.div
@@ -77,16 +77,16 @@ export default function ArchitectureDiagram() {
           transition={{ duration: 0.6 }}
           className="mb-16"
         >
-          <p className="mb-3 font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-600">
+          <p className="mb-3 font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
             Case Study · 02
           </p>
           <h2
-            className="text-3xl font-medium leading-tight tracking-[-0.03em] text-white md:text-4xl"
+            className="text-3xl font-medium leading-tight tracking-[-0.03em] text-foreground md:text-4xl"
             style={{ fontFamily: "'DM Sans', sans-serif" }}
           >
             System Architecture
           </h2>
-          <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-zinc-500">
+          <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-muted-foreground">
             A compact overview of the tech stack — from the user interface down to vector storage and inference engines.
           </p>
         </motion.div>
@@ -103,24 +103,24 @@ export default function ArchitectureDiagram() {
             <motion.div
               key={layer.name}
               variants={itemVariants}
-              className="group flex flex-col justify-between rounded-2xl border border-white/[0.05] bg-white/[0.02] p-6 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:bg-white/[0.03] hover:shadow-xl hover:shadow-black/50"
+              className="group flex flex-col justify-between rounded-2xl border border-border bg-card/60 dark:bg-white/[0.02] p-6 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:bg-card dark:hover:bg-white/[0.04] hover:shadow-xl hover:shadow-primary/5 dark:hover:shadow-black/50"
             >
               <div>
                 <div className="mb-4 flex items-center justify-between">
-                  <span className="font-mono text-xs font-semibold text-zinc-500 transition-colors duration-200 group-hover:text-zinc-400">
+                  <span className="font-mono text-xs font-semibold text-muted-foreground transition-colors duration-200 group-hover:text-primary">
                     {layer.step}
                   </span>
                   {layer.highlight && (
-                    <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2 py-0.5 font-mono text-[9px] font-medium uppercase tracking-wider text-zinc-400 transition-colors duration-200 group-hover:border-white/20 group-hover:text-zinc-300">
+                    <span className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 font-mono text-[9px] font-medium uppercase tracking-wider text-primary transition-colors duration-200">
                       Core Agent
                     </span>
                   )}
                 </div>
 
-                <h3 className="mb-2 text-[15px] font-semibold text-white transition-colors duration-200 group-hover:text-indigo-200">
+                <h3 className="mb-2 text-[15px] font-semibold text-foreground transition-colors duration-200 group-hover:text-primary">
                   {layer.name}
                 </h3>
-                <p className="text-[13px] leading-relaxed text-zinc-500 transition-colors duration-200 group-hover:text-zinc-400">
+                <p className="text-[13px] leading-relaxed text-muted-foreground transition-colors duration-200 group-hover:text-foreground/80">
                   {layer.description}
                 </p>
               </div>
@@ -130,7 +130,7 @@ export default function ArchitectureDiagram() {
                 {layer.chips.map((chip) => (
                   <span
                     key={chip}
-                    className="rounded-md border border-white/[0.05] bg-white/[0.03] px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-zinc-400 transition-colors duration-200 group-hover:border-white/10 group-hover:text-zinc-300"
+                    className="rounded-md border border-border bg-muted/40 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground transition-colors duration-200 group-hover:border-primary/30 group-hover:text-foreground"
                   >
                     {chip}
                   </span>

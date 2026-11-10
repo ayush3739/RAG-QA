@@ -20,14 +20,14 @@ const metrics = [
 
 export default function MetricsGrid() {
   return (
-    <section id="metrics" className="border-y border-white/[0.05] bg-[#09090b] py-20">
+    <section id="metrics" className="border-y border-border bg-background py-20">
       <div className="mx-auto max-w-6xl px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-50px' }}
           transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
-          className="grid grid-cols-1 gap-0 divide-y divide-white/[0.05] md:grid-cols-3 md:divide-x md:divide-y-0"
+          className="grid grid-cols-1 gap-0 divide-y divide-border md:grid-cols-3 md:divide-x md:divide-y-0"
         >
           {metrics.map((m, i) => (
             <motion.div
@@ -36,18 +36,18 @@ export default function MetricsGrid() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: i * 0.12 }}
-              className="group px-0 py-10 transition-colors duration-300 md:px-12 md:py-4 first:pl-0 last:pr-0"
+              className="group px-0 py-10 transition-colors duration-150 md:px-12 md:py-4 first:pl-0 last:pr-0"
             >
               <p
-                className="mb-2 text-5xl font-medium tracking-[-0.04em] text-white transition-transform duration-300 group-hover:translate-x-1 group-hover:text-indigo-200 md:text-6xl"
+                className="mb-2 text-5xl font-medium tracking-[-0.04em] text-foreground transition-transform duration-150 motion-reduce:transform-none group-hover:translate-x-1 md:text-6xl"
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
               >
                 {m.value}
               </p>
-              <p className="mb-1 text-[15px] font-medium text-zinc-300 transition-colors duration-200 group-hover:text-white">
+              <p className="mb-1 text-[15px] font-medium text-foreground">
                 {m.label}
               </p>
-              <p className="text-[13px] text-zinc-600 transition-colors duration-200 group-hover:text-zinc-400">
+              <p className="text-[13px] text-muted-foreground">
                 {m.sub}
               </p>
             </motion.div>

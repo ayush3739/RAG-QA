@@ -103,7 +103,8 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (theme === "dark") {
+    const effectiveTheme = theme || "dark";
+    if (effectiveTheme === "dark") {
       document.documentElement.classList.add("dark");
     } else {
       document.documentElement.classList.remove("dark");

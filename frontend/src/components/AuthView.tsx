@@ -172,7 +172,7 @@ export default function AuthView() {
                   </div>
                   <button
                     onClick={() => resetFormState("login")}
-                    className="w-full flex items-center justify-center gap-2 bg-white hover:bg-neutral-200 text-black font-semibold text-sm py-2.5 rounded-lg transition-all duration-300 mt-4 shadow-lg"
+                    className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-sm py-2.5 rounded-lg transition-all duration-300 mt-4 shadow-md shadow-primary/25 hover:-translate-y-0.5"
                   >
                     Proceed to Sign In
                   </button>
@@ -193,7 +193,7 @@ export default function AuthView() {
                   </div>
                   <button
                     onClick={() => resetFormState("login")}
-                    className="w-full flex items-center justify-center gap-2 bg-white hover:bg-neutral-200 text-black font-semibold text-sm py-2.5 rounded-lg transition-all duration-300 mt-4 shadow-lg"
+                    className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-sm py-2.5 rounded-lg transition-all duration-300 mt-4 shadow-md shadow-primary/25 hover:-translate-y-0.5"
                   >
                     Back to Sign In
                   </button>
@@ -394,11 +394,11 @@ export default function AuthView() {
                     <button
                       type="submit"
                       disabled={isLoading || isPasswordInvalid}
-                      className="relative w-full flex items-center justify-center gap-2 bg-white hover:bg-neutral-200 text-black font-semibold text-sm py-2.5 rounded-lg transition-all duration-500 mt-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] shadow-[0_0_20px_-5px_rgba(255,255,255,0.3)] hover:-translate-y-0.5 disabled:opacity-60 disabled:hover:translate-y-0 disabled:cursor-not-allowed overflow-hidden"
+                      className="relative w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-sm py-2.5 rounded-lg transition-all duration-300 mt-6 shadow-md shadow-primary/25 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-60 disabled:hover:translate-y-0 disabled:cursor-not-allowed overflow-hidden"
                     >
                       {isLoading && (
-                        <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10 backdrop-blur-sm">
-                          <Loader2 className="w-5 h-5 animate-spin text-black" />
+                        <div className="absolute inset-0 bg-primary/70 flex items-center justify-center z-10 backdrop-blur-sm">
+                          <Loader2 className="w-5 h-5 animate-spin text-primary-foreground" />
                         </div>
                       )}
                       {authMode === "login"

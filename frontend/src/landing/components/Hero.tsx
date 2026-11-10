@@ -30,10 +30,10 @@ const fadeIn = {
 interface ToolTag { icon: React.ReactNode; label: string; color: string }
 
 const TOOL_TAGS: Record<string, ToolTag> = {
-  rag:    { icon: <Database size={9} />,  label: 'RAG Retrieval',   color: 'text-violet-400 bg-violet-400/10 border-violet-400/25' },
-  web:    { icon: <Globe size={9} />,     label: 'Web Search',      color: 'text-sky-400 bg-sky-400/10 border-sky-400/25' },
-  reason: { icon: <Brain size={9} />,     label: 'Direct Reasoning',color: 'text-amber-400 bg-amber-400/10 border-amber-400/25' },
-  deep:   { icon: <Zap size={9} />,       label: 'Deep Research',   color: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/25' },
+  rag:    { icon: <Database size={9} aria-hidden="true" />,  label: 'RAG Retrieval',   color: 'text-primary bg-primary/10 border-primary/25' },
+  web:    { icon: <Globe size={9} aria-hidden="true" />,     label: 'Web Search',      color: 'text-secondary bg-secondary/10 border-secondary/25' },
+  reason: { icon: <Brain size={9} aria-hidden="true" />,     label: 'Direct Reasoning',color: 'text-warning bg-warning-subtle border-warning-subtle' },
+  deep:   { icon: <Zap size={9} aria-hidden="true" />,       label: 'Deep Research',   color: 'text-success bg-success-subtle border-success-subtle' },
 }
 
 /* ─── Sidebar nav items (matches actual app) ────────────── */
@@ -92,7 +92,7 @@ function ChatBubble({ msg, idx }: { msg: Msg; idx: number }) {
         animate="visible"
         className="flex justify-end"
       >
-        <div className="max-w-[78%] rounded-2xl rounded-tr-sm bg-[#5b4fe8] px-3.5 py-2.5 text-[11.5px] leading-relaxed text-white">
+        <div className="max-w-[78%] rounded-2xl rounded-tr-sm bg-primary px-3.5 py-2.5 text-[11.5px] leading-relaxed text-primary-foreground">
           {msg.text}
         </div>
       </motion.div>
@@ -110,8 +110,8 @@ function ChatBubble({ msg, idx }: { msg: Msg; idx: number }) {
       {/* Route status chip */}
       {msg.routeStatus && (
         <div className="flex items-center gap-1.5">
-          <span className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-pulse" />
-          <span className="font-mono text-[9.5px] text-zinc-600">{msg.routeStatus}</span>
+          <span className="h-1.5 w-1.5 rounded-full bg-primary motion-safe:animate-pulse" />
+          <span className="font-mono text-[9.5px] text-muted-foreground">{msg.routeStatus}</span>
         </div>
       )}
 
@@ -136,14 +136,14 @@ function ChatBubble({ msg, idx }: { msg: Msg; idx: number }) {
           {[0, 1, 2].map((i) => (
             <span
               key={i}
-              className="h-1.5 w-1.5 rounded-full bg-zinc-600 animate-bounce"
+              className="h-1.5 w-1.5 rounded-full bg-muted-foreground motion-safe:animate-pulse"
               style={reduced ? {} : { animationDelay: `${i * 0.15}s` }}
             />
           ))}
-          <span className="ml-1 text-[10.5px] text-zinc-600">Searching the web…</span>
+          <span className="ml-1 text-[10.5px] text-muted-foreground">Searching the web…</span>
         </div>
       ) : (
-        <p className="text-[11.5px] leading-relaxed text-zinc-300">{msg.text}</p>
+        <p className="text-[11.5px] leading-relaxed text-foreground">{msg.text}</p>
       )}
 
       {/* Citations */}
@@ -152,9 +152,9 @@ function ChatBubble({ msg, idx }: { msg: Msg; idx: number }) {
           {msg.citations.map((c) => (
             <span
               key={c}
-              className="inline-flex items-center gap-1 rounded-md border border-white/[0.07] bg-white/[0.03] px-2 py-0.5 text-[9px] text-zinc-500"
+              className="inline-flex items-center gap-1 rounded-md border border-border bg-surface-container px-2 py-0.5 text-[9px] text-muted-foreground"
             >
-              <CheckCircle2 size={8} className="text-emerald-500 shrink-0" />
+              <CheckCircle2 size={8} className="text-success shrink-0" aria-hidden="true" />
               {c}
             </span>
           ))}
@@ -167,22 +167,25 @@ function ChatBubble({ msg, idx }: { msg: Msg; idx: number }) {
 /* ─── The app mockup ────────────────────────────────────── */
 function AppMockup() {
   return (
-    <div className="flex h-full divide-x divide-white/[0.06]">
+    <div className="flex h-full divide-x divide-border">
       {/* ── Left sidebar (matches actual app) ── */}
-      <aside className="hidden w-[200px] flex-col bg-[#08090c] p-4 md:flex">
+      <aside className="hidden w-[200px] flex-col bg-surface-container-low p-4 md:flex">
         {/* Brand */}
         <div className="mb-5 flex items-center gap-2 px-1">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#5b4fe8]">
-            <Database size={13} className="text-white" />
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
+            <Database size={13} className="text-primary-foreground" aria-hidden="true" />
           </div>
-          <span className="text-[12px] font-semibold tracking-tight text-white">KnowVex</span>
+          <span className="text-[12px] font-semibold tracking-tight text-foreground">KnowVex</span>
         </div>
 
         {/* New Chat button */}
-        <button className="mb-4 flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-[11px] text-zinc-400 transition-colors hover:text-white">
-          <Plus size={12} />
+        <button
+          type="button"
+          className="mb-4 flex items-center gap-2 rounded-xl border border-border bg-surface-container px-3 py-2 text-[11px] text-muted-foreground transition-colors duration-150 hover:text-foreground active:scale-[0.98] disabled:opacity-50"
+        >
+          <Plus size={12} aria-hidden="true" />
           New Chat
-          <span className="ml-auto font-mono text-[9px] text-zinc-700">⌘K</span>
+          <span className="ml-auto font-mono text-[9px] text-muted-foreground">⌘K</span>
         </button>
 
         {/* Nav items */}
@@ -193,16 +196,16 @@ function AppMockup() {
             return (
               <div
                 key={item.id}
-                className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[11.5px] transition-colors ${
+                className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[11.5px] transition-colors duration-150 ${
                   isActive
-                    ? 'bg-white/[0.06] text-white'
-                    : 'text-zinc-600'
+                    ? 'bg-surface-container-high text-foreground'
+                    : 'text-muted-foreground'
                 }`}
               >
-                <Icon size={13} className={isActive ? 'text-violet-400' : ''} />
+                <Icon size={13} className={isActive ? 'text-primary' : ''} aria-hidden="true" />
                 {item.label}
                 {item.count != null && (
-                  <span className="ml-auto flex h-4 min-w-4 items-center justify-center rounded-full bg-[#5b4fe8] px-1 text-[9px] font-medium text-white">
+                  <span className="ml-auto flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-medium text-primary-foreground">
                     {item.count}
                   </span>
                 )}
@@ -212,13 +215,13 @@ function AppMockup() {
         </nav>
 
         {/* User chip at bottom */}
-        <div className="mt-auto flex items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.03] px-2.5 py-2">
-          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#5b4fe8] text-[10px] font-bold text-white">
+        <div className="mt-auto flex items-center gap-2 rounded-lg border border-border bg-surface-container px-2.5 py-2">
+          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
             U
           </div>
           <div className="min-w-0">
-            <p className="truncate text-[10.5px] font-medium text-zinc-300">User</p>
-            <p className="truncate text-[9px] text-zinc-600">No email</p>
+            <p className="truncate text-[10.5px] font-medium text-foreground">User</p>
+            <p className="truncate text-[9px] text-muted-foreground">No email</p>
           </div>
         </div>
       </aside>
@@ -226,12 +229,12 @@ function AppMockup() {
       {/* ── Main chat area ── */}
       <main className="flex flex-1 flex-col overflow-hidden">
         {/* Chat top bar */}
-        <div className="flex h-10 shrink-0 items-center gap-3 border-b border-white/[0.06] px-4">
-          <span className="text-[12px] font-medium text-zinc-200">New Chat</span>
-          <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2 py-0.5 text-[9.5px] text-zinc-600">0 Docs</span>
+        <div className="flex h-10 shrink-0 items-center gap-3 border-b border-border px-4">
+          <span className="text-[12px] font-medium text-foreground">New Chat</span>
+          <span className="rounded-full border border-border bg-surface-container px-2 py-0.5 text-[9.5px] text-muted-foreground">0 Docs</span>
           <div className="ml-auto flex items-center gap-2">
-            <span className="font-mono text-[9.5px] text-zinc-700">Inspector</span>
-            <PanelRight size={12} className="text-zinc-700" />
+            <span className="text-[9.5px] font-medium text-muted-foreground">Inspector</span>
+            <PanelRight size={12} className="text-muted-foreground" aria-hidden="true" />
           </div>
         </div>
 
@@ -243,39 +246,48 @@ function AppMockup() {
         </div>
 
         {/* Input bar */}
-        <div className="shrink-0 border-t border-white/[0.06] px-4 py-3">
-          <div className="flex items-center gap-2 rounded-2xl border border-white/[0.08] bg-white/[0.03] px-4 py-2.5">
-            <span className="flex-1 text-[11.5px] text-zinc-700">Ask anything…</span>
+        <div className="shrink-0 border-t border-border px-4 py-3">
+          <div className="flex items-center gap-2 rounded-2xl border border-border bg-surface-container px-4 py-2.5">
+            <span className="flex-1 text-[11.5px] text-muted-foreground">Ask anything…</span>
             {/* Mode badge */}
-            <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2 py-0.5 text-[9px] font-medium text-zinc-500">
+            <span className="rounded-full border border-border bg-surface-container-high px-2 py-0.5 text-[9px] font-medium text-muted-foreground">
               AUTO
             </span>
-            <button className="rounded-lg bg-[#5b4fe8] p-1.5">
-              <ArrowRight size={11} className="text-white" />
+            <button
+              type="button"
+              className="rounded-lg bg-primary p-1.5 active:scale-[0.98] disabled:opacity-50"
+            >
+              <ArrowRight size={11} className="text-primary-foreground" aria-hidden="true" />
             </button>
           </div>
         </div>
       </main>
 
       {/* ── Right inspector panel ── */}
-      <aside className="hidden w-[180px] flex-col bg-[#08090c] p-3 lg:flex">
-        <p className="mb-3 px-1 text-[9.5px] font-semibold uppercase tracking-widest text-zinc-700">Add Sources</p>
+      <aside className="hidden w-[180px] flex-col bg-surface-container-low p-3 lg:flex">
+        <p className="mb-3 px-1 text-[10px] font-medium text-muted-foreground">Add sources</p>
 
         {/* Upload / Link buttons */}
         <div className="mb-4 grid grid-cols-2 gap-2">
-          <button className="flex flex-col items-center gap-1.5 rounded-xl border border-white/[0.07] bg-white/[0.02] py-3 text-[9.5px] text-zinc-500 transition-colors hover:text-zinc-300">
-            <Upload size={14} />
+          <button
+            type="button"
+            className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-surface-container py-3 text-[9.5px] text-muted-foreground transition-colors duration-150 hover:text-foreground active:scale-[0.98] disabled:opacity-50"
+          >
+            <Upload size={14} aria-hidden="true" />
             Upload File
           </button>
-          <button className="flex flex-col items-center gap-1.5 rounded-xl border border-white/[0.07] bg-white/[0.02] py-3 text-[9.5px] text-zinc-500 transition-colors hover:text-zinc-300">
-            <Link2 size={14} />
+          <button
+            type="button"
+            className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-surface-container py-3 text-[9.5px] text-muted-foreground transition-colors duration-150 hover:text-foreground active:scale-[0.98] disabled:opacity-50"
+          >
+            <Link2 size={14} aria-hidden="true" />
             Link Existing
           </button>
         </div>
 
-        <p className="mb-2 px-1 text-[9px] font-semibold uppercase tracking-widest text-zinc-700">Active Documents (0)</p>
-        <div className="flex flex-1 items-center justify-center rounded-xl border border-dashed border-white/[0.06] py-6">
-          <p className="text-center text-[10px] text-zinc-700">No documents<br />uploaded.</p>
+        <p className="mb-2 px-1 text-[10px] font-medium text-muted-foreground">Active documents (0)</p>
+        <div className="flex flex-1 items-center justify-center rounded-xl border border-dashed border-border py-6">
+          <p className="text-center text-[10px] text-muted-foreground">No documents<br />uploaded.</p>
         </div>
       </aside>
     </div>
@@ -287,46 +299,36 @@ export default function Hero() {
   return (
     <section
       id="hero"
-      className="relative flex min-h-screen flex-col items-center bg-[#060608]"
+      className="relative flex min-h-dvh flex-col items-center bg-background overflow-hidden"
     >
-      {/* ── Butter-smooth ambient hero spotlight (zero hard lines or banding) ── */}
+      {/* ── Butter-smooth ambient hero spotlight (little blue halo) ── */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-0 h-[500px] w-[850px] -translate-y-1/4 rounded-full bg-gradient-to-b from-violet-600/30 via-indigo-900/15 to-transparent blur-[120px]"
-      />
-      {/* Star-dot pattern */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 opacity-[0.015]"
-        style={{
-          backgroundImage: 'radial-gradient(circle, #ffffff 1px, transparent 1px)',
-          backgroundSize: '44px 44px',
-        }}
+        className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-0 h-[500px] w-[850px] -translate-y-1/4 rounded-full bg-gradient-to-b from-blue-500/20 via-primary/10 to-transparent blur-[120px]"
       />
 
       {/* ── Text content ── */}
-      <div className="relative z-10 mx-auto flex w-full max-w-4xl flex-col items-center px-6 pt-36 pb-10 text-center">
+      <div className="relative z-10 mx-auto flex w-full max-w-4xl flex-col items-center px-6 pt-32 pb-10 text-center">
         {/* Editorial Badge Pill */}
         <motion.div
           custom={0}
           variants={fadeUp}
           initial="hidden"
           animate="visible"
-          className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3.5 py-1 backdrop-blur-md transition-all hover:bg-white/[0.06]"
+          className="mb-8 inline-flex items-center gap-2 rounded-full border border-border bg-surface-container px-3.5 py-1 text-xs text-foreground transition-colors duration-150"
         >
           <span
-            className="h-1.5 w-1.5 rounded-full bg-violet-400"
-            style={{ animation: 'pulse 2s infinite' }}
+            className="h-1.5 w-1.5 rounded-full bg-primary motion-safe:animate-pulse"
           />
-          <span className="text-[11.5px] font-medium text-zinc-200">
+          <span className="text-[11.5px] font-medium text-foreground">
             Agentic RAG
           </span>
-          <span className="text-[10px] text-zinc-600 font-light">/</span>
-          <span className="text-[11.5px] text-zinc-400">
+          <span className="text-[10px] text-muted-foreground font-light">/</span>
+          <span className="text-[11.5px] text-muted-foreground">
             Tool-routing
           </span>
-          <span className="text-[10px] text-zinc-600 font-light">/</span>
-          <span className="text-[11.5px] text-zinc-400">
+          <span className="text-[10px] text-muted-foreground font-light">/</span>
+          <span className="text-[11.5px] text-muted-foreground">
             Open source
           </span>
         </motion.div>
@@ -337,7 +339,7 @@ export default function Hero() {
           variants={fadeUp}
           initial="hidden"
           animate="visible"
-          className="text-balance text-5xl font-semibold leading-[1.04] text-white md:text-[68px] lg:text-[76px]"
+          className="text-balance text-5xl font-semibold leading-[1.04] text-foreground md:text-[68px] lg:text-[76px]"
           style={{
             fontFamily: "'DM Sans', -apple-system, sans-serif",
             letterSpacing: '-0.035em',
@@ -345,21 +347,21 @@ export default function Hero() {
           }}
         >
           The RAG workspace that{' '}
-          <span style={{ color: '#818CF8' }}>
+          <span className="text-primary">
             thinks before it searches.
           </span>
         </motion.h1>
 
-        {/* Sub-line with higher contrast weight & looser leading */}
+        {/* Sub-line */}
         <motion.p
           custom={0.22}
           variants={fadeUp}
           initial="hidden"
           animate="visible"
-          className="mt-6 max-w-[540px] text-[15px] md:text-[16.5px] font-normal leading-[1.65] text-zinc-400"
+          className="mt-6 max-w-[540px] text-[15px] md:text-[16.5px] font-normal leading-[1.65] text-muted-foreground"
         >
           Agentic tool-routing decides between document retrieval, web search, deep research,
-          and direct reasoning — each answer grounded with citations.
+          and direct reasoning, each answer grounded with citations.
         </motion.p>
 
         {/* CTAs */}
@@ -370,25 +372,22 @@ export default function Hero() {
           animate="visible"
           className="mt-9 flex flex-wrap items-center justify-center gap-3"
         >
-          <div className="group relative rounded-full p-[1px] shadow-[0_0_20px_rgba(99,102,241,0.2)] transition-all duration-300 hover:shadow-[0_0_30px_rgba(99,102,241,0.35)] hover:scale-[1.02] active:scale-[0.98]">
-            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-400/80 via-purple-400/80 to-blue-400/80 opacity-80 transition-opacity duration-300 group-hover:opacity-100" />
+          <div>
             <button
               onClick={() => { navigate('/chat/new') }}
-              className="relative flex items-center gap-2 rounded-full bg-[#060608]/90 px-6 py-2.5 text-sm font-medium backdrop-blur-md transition-colors hover:bg-[#060608]/70"
+              className="group flex items-center gap-2 rounded-full bg-primary hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50 px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary motion-safe:hover:scale-[1.02] motion-reduce:transform-none"
             >
-              <span className="bg-gradient-to-r from-blue-100 to-purple-200 bg-clip-text text-transparent">
-                Launch workspace
-              </span>
-              <ArrowRight className="h-4 w-4 text-purple-200 transition-transform duration-200 group-hover:translate-x-0.5" />
+              <span>Launch workspace</span>
+              <ArrowRight className="h-4 w-4 transition-transform duration-150 motion-reduce:transform-none group-hover:translate-x-0.5" aria-hidden="true" />
             </button>
           </div>
           <a
             href="https://github.com/ayush3739/RAG-QA"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 rounded-full border border-white/[0.08] px-6 py-2.5 text-sm font-medium text-zinc-400 backdrop-blur-sm transition-all duration-200 hover:border-white/[0.2] hover:bg-white/[0.04] hover:text-white hover:scale-[1.02] active:scale-[0.98]"
+            className="flex items-center gap-2 rounded-full border border-border bg-surface px-6 py-2.5 text-sm font-medium text-foreground transition-colors duration-150 hover:bg-surface-container active:scale-[0.98] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary motion-safe:hover:scale-[1.02] motion-reduce:transform-none"
           >
-            <Github className="h-4 w-4" />
+            <Github className="h-4 w-4" aria-hidden="true" />
             View on GitHub
           </a>
         </motion.div>
@@ -399,17 +398,11 @@ export default function Hero() {
           variants={fadeIn}
           initial="hidden"
           animate="visible"
-          className="mt-5 text-[11px] text-zinc-700"
+          className="mt-5 text-[11px] text-muted-foreground"
         >
-          No credit card required · Open source · MIT licensed
+          Self-hosted, locally orchestrated, MIT licensed
         </motion.p>
       </div>
-
-      {/* Bottom fade into next section for cohesive scroll transition */}
-      <div 
-        className="pointer-events-none absolute bottom-0 left-0 right-0 h-64 z-20"
-        style={{ background: 'linear-gradient(to bottom, transparent 0%, #09090b 100%)' }} 
-      />
 
       {/* ── Product mockup ── */}
       <motion.div
@@ -419,30 +412,29 @@ export default function Hero() {
         animate="visible"
         className="relative z-10 mx-auto w-full max-w-[1100px] px-4 pb-20"
       >
-        {/* ── Premium Product Horizon Glow (tightly anchored to card rim) ── */}
         {/* Soft tight ambient bloom strictly behind top horizon rim */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 h-[90px] w-[75%] max-w-[750px] rounded-full bg-gradient-to-b from-violet-500/30 via-indigo-600/10 to-transparent blur-[25px]"
+          className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 h-[90px] w-[75%] max-w-[750px] rounded-full bg-gradient-to-b from-blue-500/25 via-primary/15 to-transparent blur-[25px]"
         />
 
         {/* Crisp hairline horizon light on top edge */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -top-[1px] left-1/2 -translate-x-1/2 h-[1px] w-[60%] max-w-[600px] bg-gradient-to-r from-transparent via-violet-300/70 to-transparent"
+          className="pointer-events-none absolute -top-[1px] left-1/2 -translate-x-1/2 h-[1px] w-[60%] max-w-[600px] bg-gradient-to-r from-transparent via-blue-400/80 to-transparent"
         />
 
-        {/* Browser chrome with crisp 1px light border separating object from glow */}
-        <div className="relative overflow-hidden rounded-[14px] border border-white/[0.08] border-t-white/[0.18] bg-[#0d0d10] shadow-[0_30px_90px_rgba(0,0,0,0.8)]">
+        {/* Browser chrome with clean border */}
+        <div className="relative overflow-hidden rounded-[14px] border border-border bg-surface shadow-lg">
           {/* Title bar */}
-          <div className="flex h-10 items-center border-b border-white/[0.06] bg-[#09090d] px-4">
+          <div className="flex h-10 items-center border-b border-border bg-surface-container-low px-4">
             <div className="flex items-center gap-1.5">
-              <span className="h-3 w-3 rounded-full bg-[#ff5f57]" />
-              <span className="h-3 w-3 rounded-full bg-[#febc2e]" />
-              <span className="h-3 w-3 rounded-full bg-[#28c840]" />
+              <span className="h-3 w-3 rounded-full bg-danger" />
+              <span className="h-3 w-3 rounded-full bg-warning" />
+              <span className="h-3 w-3 rounded-full bg-success" />
             </div>
-            <div className="mx-auto flex h-5 w-[200px] items-center justify-center gap-1.5 rounded-md border border-white/[0.07] bg-white/[0.03] px-3">
-              <span className="text-[10px] text-zinc-600">app.KnowVex.ai</span>
+            <div className="mx-auto flex h-5 w-[200px] items-center justify-center gap-1.5 rounded-md border border-border bg-surface px-3">
+              <span className="text-[10px] text-muted-foreground">app.KnowVex.ai</span>
             </div>
           </div>
 

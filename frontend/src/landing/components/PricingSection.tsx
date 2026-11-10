@@ -49,16 +49,13 @@ export default function PricingSection() {
     }
   };
   return (
-    <section id="pricing" className="py-28 bg-[#09090b] relative border-t border-white/[0.05]">
-      {/* Background Glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[300px] bg-indigo-500/10 blur-[120px] rounded-full pointer-events-none" />
-
+    <section id="pricing" className="py-28 bg-background relative border-t border-border">
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-5xl font-medium tracking-tight text-white mb-4" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-            Simple, transparent <span className="text-indigo-400">pricing</span>
+          <h2 className="text-3xl md:text-5xl font-medium tracking-tight text-foreground mb-4" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+            Simple, transparent <span className="text-primary">pricing</span>
           </h2>
-          <p className="text-zinc-400 max-w-xl mx-auto">
+          <p className="text-muted-foreground max-w-xl mx-auto">
             Choose the plan that best fits your scale. All plans include full access to our open-source core.
           </p>
         </div>
@@ -67,40 +64,40 @@ export default function PricingSection() {
           {tiers.map((tier) => (
             <Card 
               key={tier.name} 
-              className={`relative flex flex-col h-full bg-[#0c0c0e] border ${
+              className={`relative flex flex-col h-full bg-surface border transition-all duration-300 ease-out hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-primary/10 dark:hover:shadow-black/80 ${
                 tier.popular 
-                  ? 'border-indigo-500 shadow-[0_0_30px_rgba(99,102,241,0.15)]' 
-                  : 'border-white/[0.08]'
+                  ? 'border-primary hover:border-primary' 
+                  : 'border-border hover:border-primary/60'
               }`}
             >
               {tier.popular && (
                 <div className="absolute -top-3 inset-x-0 flex justify-center">
-                  <span className="bg-indigo-500 text-white text-[10px] font-bold tracking-widest uppercase px-3 py-1 rounded-full">
-                    Most Popular
+                  <span className="bg-primary text-primary-foreground text-[11px] font-semibold px-3 py-0.5 rounded-full shadow-sm">
+                    Popular
                   </span>
                 </div>
               )}
               
               <CardHeader className="p-8 pb-4">
-                <CardTitle className="text-xl text-white mb-2">{tier.name}</CardTitle>
-                <CardDescription className="text-zinc-400 h-10">{tier.description}</CardDescription>
+                <CardTitle className="text-xl text-foreground mb-2">{tier.name}</CardTitle>
+                <CardDescription className="text-muted-foreground h-10">{tier.description}</CardDescription>
               </CardHeader>
               
               <CardContent className="p-8 pt-0 flex-grow">
                 <div className="mb-8 mt-4 flex items-end">
-                  <span className="text-4xl font-bold text-white tracking-tight">{tier.price}</span>
-                  {tier.period && <span className="text-zinc-500 mb-1 ml-1">{tier.period}</span>}
+                  <span className="text-4xl font-bold text-foreground tracking-tight">{tier.price}</span>
+                  {tier.period && <span className="text-muted-foreground mb-1 ml-1">{tier.period}</span>}
                 </div>
                 
                 <ul className="space-y-4">
                   {tier.features.map((feature, i) => (
                     <li key={i} className="flex items-start text-sm">
                       {feature.included ? (
-                        <Check className="w-5 h-5 text-indigo-400 mr-3 shrink-0" />
+                        <Check className="w-5 h-5 text-primary mr-3 shrink-0" aria-hidden="true" />
                       ) : (
-                        <X className="w-5 h-5 text-zinc-700 mr-3 shrink-0" />
+                        <X className="w-5 h-5 text-muted-foreground mr-3 shrink-0" aria-hidden="true" />
                       )}
-                      <span className={feature.included ? 'text-zinc-300' : 'text-zinc-600'}>
+                      <span className={feature.included ? 'text-foreground' : 'text-muted-foreground'}>
                         {feature.text}
                       </span>
                     </li>
@@ -112,10 +109,10 @@ export default function PricingSection() {
                 <CardFooter className="p-8 pt-0 mt-auto">
                   <Button 
                     onClick={handleAction}
-                    className={`w-full cursor-pointer ${
+                    className={`w-full cursor-pointer transition-colors duration-150 active:scale-[0.98] disabled:opacity-50 motion-reduce:transform-none focus-visible:ring-2 focus-visible:ring-primary ${
                       tier.popular 
-                        ? 'bg-indigo-500 hover:bg-indigo-600 text-white' 
-                        : 'bg-white/5 hover:bg-white/10 text-white border border-white/10'
+                        ? 'bg-primary hover:bg-primary/90 text-primary-foreground' 
+                        : 'bg-surface-container hover:bg-surface-container-high text-foreground border border-border'
                     }`}
                     variant={tier.popular ? 'default' : 'outline'}
                   >

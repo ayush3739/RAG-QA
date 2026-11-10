@@ -27,7 +27,7 @@ export default function DevelopmentTimeline() {
   }
 
   return (
-    <section id="timeline" className="border-t border-white/[0.05] bg-[#09090b] py-28">
+    <section id="timeline" className="border-t border-border bg-background py-28">
       <div className="mx-auto max-w-6xl px-6">
         {/* Header */}
         <motion.div
@@ -37,16 +37,16 @@ export default function DevelopmentTimeline() {
           transition={{ duration: 0.6 }}
           className="mb-16"
         >
-          <p className="mb-3 font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-600">
+          <p className="mb-3 font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
             Case Study · 09
           </p>
           <h2
-            className="text-3xl font-medium leading-tight tracking-[-0.03em] text-white md:text-4xl"
+            className="text-3xl font-medium leading-tight tracking-[-0.03em] text-foreground md:text-4xl"
             style={{ fontFamily: "'DM Sans', sans-serif" }}
           >
             Development Timeline
           </h2>
-          <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-zinc-500">
+          <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-muted-foreground">
             Five sequential project phases executed to design, orchestrate, and validate the system architecture.
           </p>
         </motion.div>
@@ -55,13 +55,13 @@ export default function DevelopmentTimeline() {
         <div className="hidden md:block">
           <div className="relative pt-4">
             {/* Horizontal Line */}
-            <div className="absolute top-[21px] left-[10px] right-[10px] h-px bg-white/[0.05]" />
+            <div className="absolute top-[21px] left-[10px] right-[10px] h-px bg-border" />
             <motion.div
               initial={{ scaleX: 0 }}
               whileInView={{ scaleX: 1 }}
               viewport={{ once: true }}
               transition={{ duration: 1.0, ease: 'easeOut', delay: 0.2 }}
-              className="absolute top-[21px] left-[10px] right-[10px] h-px origin-left bg-indigo-500/60"
+              className="absolute top-[21px] left-[10px] right-[10px] h-px origin-left bg-primary/60"
             />
 
             <motion.div
@@ -78,13 +78,13 @@ export default function DevelopmentTimeline() {
                   className="group px-2 transition-transform duration-200 hover:-translate-y-1"
                 >
                   <div
-                    className="mb-6 h-[9px] w-[9px] rounded-full bg-indigo-500 ring-4 ring-[#09090b] transition-all duration-300 group-hover:scale-125 group-hover:bg-indigo-400 group-hover:ring-indigo-500/20"
+                    className="mb-6 h-[9px] w-[9px] rounded-full bg-primary ring-4 ring-background transition-all duration-300 group-hover:scale-125 group-hover:ring-primary/20"
                   />
-                  <span className="font-mono text-[10px] uppercase tracking-wider text-indigo-400">
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-primary font-medium">
                     {item.phase}
                   </span>
-                  <h3 className="mt-3 text-[15px] font-medium text-white transition-colors duration-200 group-hover:text-indigo-200">{item.title}</h3>
-                  <p className="mt-2 text-[13px] leading-relaxed text-zinc-500 transition-colors duration-200 group-hover:text-zinc-400">{item.desc}</p>
+                  <h3 className="mt-3 text-[15px] font-medium text-foreground transition-colors duration-200 group-hover:text-primary">{item.title}</h3>
+                  <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground transition-colors duration-200 group-hover:text-foreground/80">{item.desc}</p>
                 </motion.div>
               ))}
             </motion.div>
@@ -92,13 +92,13 @@ export default function DevelopmentTimeline() {
         </div>
 
         {/* Timeline Mobile */}
-        <div className="relative ml-2 border-l border-white/[0.05] md:hidden">
+        <div className="relative ml-2 border-l border-border md:hidden">
           <motion.div
             initial={{ scaleY: 0 }}
             whileInView={{ scaleY: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 1.0, ease: 'easeOut' }}
-            className="absolute bottom-0 left-[-1px] top-0 h-full w-px origin-top bg-indigo-500/60"
+            className="absolute bottom-0 left-[-1px] top-0 h-full w-px origin-top bg-primary/60"
           />
           <motion.div
             variants={containerVariants}
@@ -110,13 +110,13 @@ export default function DevelopmentTimeline() {
             {phases.map((item) => (
               <motion.div key={item.phase} variants={itemVariants} className="relative">
                 <div
-                  className="absolute -left-[29px] top-1.5 h-[9px] w-[9px] rounded-full bg-indigo-500 ring-4 ring-[#09090b]"
+                  className="absolute -left-[29px] top-1.5 h-[9px] w-[9px] rounded-full bg-primary ring-4 ring-background"
                 />
-                <span className="font-mono text-[10px] uppercase tracking-wider text-indigo-400">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-primary font-medium">
                   {item.phase}
                 </span>
-                <h3 className="mt-2 text-[15px] font-medium text-white">{item.title}</h3>
-                <p className="mt-1 text-[13px] leading-relaxed text-zinc-500">{item.desc}</p>
+                <h3 className="mt-2 text-[15px] font-medium text-foreground">{item.title}</h3>
+                <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">{item.desc}</p>
               </motion.div>
             ))}
           </motion.div>

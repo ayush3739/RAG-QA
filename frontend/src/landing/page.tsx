@@ -13,33 +13,30 @@ import LogoMarquee from './components/LogoMarquee'
 import PricingSection from './components/PricingSection'
 
 export default function LandingPage() {
-
   return (
-    <div className="relative min-h-screen flex flex-col bg-[#09090b] text-white antialiased overflow-hidden">
-      {/* Fixed Ambient Glows for the whole page */}
-      <div className="pointer-events-none fixed -left-[20%] top-[20%] h-[800px] w-[800px] rounded-full bg-blue-500/5 blur-[150px] z-0" />
-      <div className="pointer-events-none fixed -right-[10%] top-[60%] h-[600px] w-[600px] rounded-full bg-purple-500/5 blur-[120px] z-0" />
-      
+    <div className="relative min-h-screen flex flex-col bg-background text-foreground antialiased selection:bg-primary/30 selection:text-foreground overflow-hidden">
+      {/* Ambient Blue Halo Glows */}
+      <div className="pointer-events-none fixed -left-[20%] top-[20%] h-[800px] w-[800px] rounded-full bg-blue-500/10 dark:bg-blue-500/15 blur-[150px] z-0" aria-hidden="true" />
+      <div className="pointer-events-none fixed -right-[10%] top-[60%] h-[600px] w-[600px] rounded-full bg-purple-500/10 dark:bg-purple-500/15 blur-[120px] z-0" aria-hidden="true" />
+
       <div className="relative z-10 flex flex-col min-h-screen">
         <Navbar />
-      <main className="flex-1">
-        {/* ── Above the fold: 4 clean sections ── */}
-        <Hero />
-        <TerminalDemo />
-        <LogoMarquee />
-        <RoutingFlowDiagram />
-        <MetricsGrid />
-        <ProductShowcase />
-        {/* ── Testimonials (Hidden for now) ── */}
-        {/* <Testimonials /> */}
+        <main className="flex-1">
+          {/* Above the fold sections */}
+          <Hero />
+          <TerminalDemo />
+          <LogoMarquee />
+          <RoutingFlowDiagram />
+          <MetricsGrid />
+          <ProductShowcase />
 
-        {/* ── Pricing ── */}
-        <PricingSection />
+          {/* Pricing */}
+          <PricingSection />
 
-        {/* ── FAQ ── */}
-        <FAQSection />
-      </main>
-      <Footer />
+          {/* FAQ */}
+          <FAQSection />
+        </main>
+        <Footer />
       </div>
     </div>
   )
