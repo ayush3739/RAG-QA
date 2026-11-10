@@ -25,6 +25,7 @@ class ChatService:
         question: str,
         user_id: int,
         db: AsyncSession,
+        mode :str = "auto",
     ) -> AsyncGenerator[tuple[str, object], None]:
 
         # 1. Validate session
@@ -96,6 +97,7 @@ class ChatService:
                 ],
                 include_web=True,
                 document_names=document_names,
+                mode = mode,
             ):
                 if event_type == "agent_result":
                     result = data

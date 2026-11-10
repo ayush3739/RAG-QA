@@ -25,7 +25,7 @@ interface AppWorkspaceProps {
   setCurrentTab: (tab: string) => void;
   handleNewResearch: () => void;
   handleSelectSession: (id: string) => void;
-  handleSendMessage: (text: string) => void;
+  handleSendMessage: (text: string, mode?: "auto" | "research") => void;
   handleAddDocument: (file: File, sessionId?: string) => void;
   handleLinkDocument: (sessionId: string, documentId: string) => void;
   handleUnlinkDocument: (sessionId: string, documentId: string) => void;

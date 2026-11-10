@@ -211,6 +211,13 @@ def _parse_json_object(text: str) -> dict:
 
 @log_node("main", "main_router")
 async def main_router(state: MainState) -> dict:
+    if state.get("mode") == "research":
+        return {
+            "route": "research",
+            "effective_query": state["user_query"],
+            "routing_reason": "explicit deep research mode selected in UI",
+            "tool_trace": ["main_router:forced_research"],
+        }
     has_documents = bool(state.get("document_ids"))
     query = state["user_query"]
     previous_web_results = _previous_web_results(state.get("history", []))
@@ -259,7 +266,7 @@ async def main_router(state: MainState) -> dict:
     route = result.get("route", "general")
     if route not in {"general", "document", "web", "research"}:
         route = "general"
-    if route in {"document", "research"} and not state.get("document_ids"):
+    if route == "document" and not state.get("document_ids"):
         route = "general"
     if route == "web" and not state.get("include_web", True):
         route = "general"

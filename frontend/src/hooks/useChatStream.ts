@@ -79,7 +79,7 @@ export function useChatStream({
     }
   }, [activeConvId, historyMessages, activeMessages.length]);
 
-  const handleSendMessage = async (text: string) => {
+  const handleSendMessage = async (text: string, mode: "auto" | "research" = "auto") => {
     if (!text.trim() || isProcessing) return;
 
     let targetConvId = activeConvId;
@@ -165,17 +165,20 @@ export function useChatStream({
     let finalMessageId: number | undefined = undefined;
 
     try {
-      const res = await api.streamChat(finalConvId, text);
+      const res = await api.streamChat(finalConvId, text, mode);
 
       if (!res.ok || !res.body) {
         if (res.status === 429) {
           const errorData = await res.json().catch(() => null);
+          const isResearchQuota = errorData?.detail?.error === "RESEARCH_QUOTA_EXCEEDED" || errorData?.detail?.code === "RESEARCH_QUOTA_EXCEEDED" || errorData?.error === "RESEARCH_QUOTA_EXCEEDED";
           const isDailyQuota = errorData?.detail?.error === "QUOTA_EXCEEDED" || errorData?.error === "QUOTA_EXCEEDED";
-          const rateLimitMsg = isDailyQuota
+          const rateLimitMsg = isResearchQuota
+            ? `🛑 **Deep Research Quota Exceeded** — ${errorData?.detail?.message || "You have reached your daily research allowance."} Please upgrade to Pro for higher limits.`
+            : isDailyQuota
             ? `🛑 **Daily Query Quota Exceeded** — ${errorData?.detail?.message || "You have reached your daily query allowance."} Please upgrade to Pro for 500 queries/day.`
             : "⏳ **Rate Limited** — The AI provider is busy. Please wait a moment and try again.";
           setActiveMessages((prev) => prev.map((m) => (m.id === botMsgId ? { ...m, text: rateLimitMsg } : m)));
-          toast.warning(errorData?.detail?.message || "Daily quota limit reached.", { duration: 7000 });
+          toast.warning(errorData?.detail?.message || "Quota limit reached.", { duration: 7000 });
           api.getQuota().then((q) => useStore.getState().setQuota(q)).catch(() => {});
           return;
         }

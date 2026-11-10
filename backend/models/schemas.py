@@ -12,6 +12,7 @@ class Item(BaseModel):
 # Chat Models
 class ChatRequest(BaseModel):
     question:str =  Field(min_length= 1, max_length = 1000) 
+    mode: Optional[str] = Field(default="auto") # auto or research
 
     @field_validator('question')
     @classmethod
@@ -19,7 +20,6 @@ class ChatRequest(BaseModel):
         v = v.strip()
         if not v:
             raise ValueError("Question cannot be empty or whitespace.")
-
         return v
 
 

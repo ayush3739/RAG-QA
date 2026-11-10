@@ -11,6 +11,7 @@ class MainState(TypedDict, total=False):
     history: list[dict[str, str]]
     include_web: bool
     db: Any
+    mode: str
 
     route: str
     effective_query: str
@@ -76,6 +77,7 @@ def create_main_state(
     history: list[dict[str, str]] | None = None,
     include_web: bool = True,
     db: Any | None = None,
+    mode: str = "auto",
 ) -> MainState:
     return {
         "user_query": query,
@@ -84,6 +86,7 @@ def create_main_state(
         "history": history or [],
         "include_web": include_web,
         "db": db,
+        "mode": mode,
         "route": "",
         "effective_query": query,
         "routing_reason": "",

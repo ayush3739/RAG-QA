@@ -107,6 +107,7 @@ async def answer_query_with_graph(
     history: list[dict] | None = None,
     include_web: bool = True,
     document_names: list[str] | None = None,
+    mode: str = "auto",
 ) -> dict:
     """Run one chat query through the graph agent.
 
@@ -120,6 +121,7 @@ async def answer_query_with_graph(
         history=history or [],
         include_web=include_web,
         db=db,
+        mode=mode,
     )
     result = await main_graph.ainvoke(state)
     return _format_graph_result(result)
@@ -132,6 +134,7 @@ async def stream_answer_query_with_graph(
     history: list[dict] | None = None,
     include_web: bool = True,
     document_names: list[str] | None = None,
+    mode:str = "auto",
 ) -> AsyncGenerator[tuple[str, object], None]:
     """Stream graph progress events, then yield the final agent result.
 
@@ -145,6 +148,7 @@ async def stream_answer_query_with_graph(
         history=history or [],
         include_web=include_web,
         db=db,
+        mode=mode,
     )
     final_state = dict(state)
 

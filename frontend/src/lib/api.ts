@@ -306,10 +306,10 @@ export const api = {
   }),
 
   // Chat/Research Stream with unified 401 refresh & retry
-  streamChat: (sessionId: string, question: string) =>
+  streamChat: (sessionId: string, question: string, mode: "auto" | "research" = "auto") =>
     authenticatedFetch(`/chat/${sessionId}`, {
       method: 'POST',
-      body: JSON.stringify({ question }),
+      body: JSON.stringify({ question, mode, chat_mode: mode }),
     }),
 
   getChatEndpoint: (sessionId: string) => `${API_BASE}/chat/${sessionId}`,

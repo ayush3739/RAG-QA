@@ -118,7 +118,7 @@ const formatAssistantMarkdown = (text: string) => {
 interface ChatWorkspaceProps {
   messages: Message[];
   isProcessing: boolean;
-  onSendMessage: (text: string) => void;
+  onSendMessage: (text: string, mode?: "auto" | "research") => void;
   documents: SourceDocument[];
   allDocuments?: SourceDocument[];
   activeConvId?: string;
@@ -223,7 +223,7 @@ export default function ChatWorkspace({
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!inputText.trim() || isProcessing) return;
-    onSendMessage(inputText.trim());
+    onSendMessage(inputText.trim(), chatMode);
     setInputText("");
   };
 
@@ -794,19 +794,20 @@ export default function ChatWorkspace({
               </div>
               
               <div className="flex items-center space-x-2">
-                {/* Mode toggle — brightness-only, no background fill */}
+                {/* Mode toggle */}
                 <button
                   type="button"
                   onClick={() => setChatMode(prev => prev === "auto" ? "research" : "auto")}
                   className={cn(
-                    "px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors",
+                    "px-2.5 py-1 text-[11px] font-mono font-medium rounded-md transition-all flex items-center gap-1.5 cursor-pointer",
                     chatMode === "auto" 
-                      ? "text-muted-foreground hover:text-foreground" 
-                      : "text-foreground"
+                      ? "text-muted-foreground hover:text-foreground hover:bg-surface-container" 
+                      : "text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 shadow-[0_0_8px_rgba(16,185,129,0.15)]"
                   )}
-                  title="Toggle Mode"
+                  title="Toggle Mode (Auto / Deep Research)"
                 >
-                  {chatMode === "auto" ? "Auto" : "Research"}
+                  {chatMode === "research" && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />}
+                  {chatMode === "auto" ? "Auto" : "Deep Research"}
                 </button>
 
                 {/* Send button — outlined accent, not filled */}

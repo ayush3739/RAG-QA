@@ -8,7 +8,8 @@ from backend.db.base import get_db
 from backend.services.chat_service import ChatService
 from backend.services.session_service import SessionService
 from backend.models.schemas import ChatRequest
-from backend.api.deps import get_current_user, require_query_quota
+from backend.api.deps import get_current_user
+from backend.services.quota_service import check_and_consume_quota, check_and_consume_research_quota
 
 router = APIRouter(prefix="/chat",)
 
@@ -21,8 +22,13 @@ async def chat(
     request: ChatRequest,
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
-    _= Depends(require_query_quota),
 ):
+    if request.mode == "research":
+        await check_and_consume_research_quota(user=current_user, db=db)
+    else:
+        await check_and_consume_quota(user=current_user, db=db)
+
+   
 
     async def event_generator():
 
@@ -31,6 +37,7 @@ async def chat(
             question=request.question,
             user_id=current_user.id,
             db=db,
+            mode = request.mode or "auto",
         ):
 
             yield {
