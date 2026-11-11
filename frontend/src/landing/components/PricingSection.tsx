@@ -31,7 +31,7 @@ const tiers = [
       { text: 'Sub-chunk citation mapping', included: true },
       { text: 'Priority support', included: false },
     ],
-    buttonText: '',
+    buttonText: 'Join Waitlist',
     popular: true,
   },
 ];
@@ -64,10 +64,10 @@ export default function PricingSection() {
           {tiers.map((tier) => (
             <Card 
               key={tier.name} 
-              className={`relative flex flex-col h-full bg-surface border transition-all duration-300 ease-out hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-primary/10 dark:hover:shadow-black/80 ${
+              className={`relative flex flex-col h-full bg-surface transition-all duration-300 ease-out hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-primary/10 dark:hover:shadow-black/80 shadow-[0_1px_3px_rgba(0,0,0,0.03),0_4px_12px_rgba(0,0,0,0.02)] dark:shadow-none ${
                 tier.popular 
-                  ? 'border-primary hover:border-primary' 
-                  : 'border-border hover:border-primary/60'
+                  ? 'border-2 border-primary hover:border-primary' 
+                  : 'border border-slate-200 dark:border-border hover:border-primary/60'
               }`}
             >
               {tier.popular && (
@@ -109,12 +109,12 @@ export default function PricingSection() {
                 <CardFooter className="p-8 pt-0 mt-auto">
                   <Button 
                     onClick={handleAction}
-                    className={`w-full cursor-pointer transition-colors duration-150 active:scale-[0.98] disabled:opacity-50 motion-reduce:transform-none focus-visible:ring-2 focus-visible:ring-primary ${
+                    variant={tier.popular ? 'default' : 'secondary'}
+                    className={`w-full cursor-pointer transition-all duration-150 active:scale-[0.98] disabled:opacity-50 motion-reduce:transform-none focus-visible:ring-2 focus-visible:ring-primary py-2.5 rounded-lg text-sm ${
                       tier.popular 
-                        ? 'bg-primary hover:bg-primary/90 text-primary-foreground' 
-                        : 'bg-surface-container hover:bg-surface-container-high text-foreground border border-border'
+                        ? 'font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-md shadow-primary/25' 
+                        : 'font-medium bg-slate-900 text-white hover:bg-slate-800 border border-slate-900 shadow-sm dark:bg-white/10 dark:text-white dark:border-white/20 dark:hover:bg-white/15 dark:hover:border-indigo-400/40 dark:shadow-none'
                     }`}
-                    variant={tier.popular ? 'default' : 'outline'}
                   >
                     {tier.buttonText}
                   </Button>

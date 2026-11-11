@@ -26,26 +26,9 @@ const steps = [
 ]
 
 export default function RoutingFlowDiagram() {
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.12 },
-    },
-  }
-
-  const stepVariants = {
-    hidden: { opacity: 0, y: 16 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.5, ease: [0.23, 1, 0.32, 1] },
-    },
-  }
-
   return (
     <section id="how-it-works" className="bg-background py-28 border-t border-border">
-      <div className="mx-auto max-w-6xl px-6">
+      <div className="mx-auto max-w-7xl px-6 w-full">
 
         {/* Section heading */}
         <motion.div
@@ -66,19 +49,18 @@ export default function RoutingFlowDiagram() {
           </p>
         </motion.div>
 
-        {/* 4 Cards with clean layout */}
+        {/* 4 Cards evenly balanced across container width */}
         <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: '-50px' }}
-          className="grid grid-cols-1 gap-4 md:grid-cols-4"
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] as const }}
+          className="grid w-full grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4"
         >
           {steps.map((step, i) => (
-            <motion.div
+            <div
               key={step.number}
-              variants={stepVariants}
-              className="group relative flex flex-col justify-between rounded-2xl border border-border bg-surface p-6 transition-all duration-300 ease-out hover:-translate-y-1.5 hover:border-primary/60 hover:bg-surface-container hover:shadow-2xl hover:shadow-primary/10 dark:hover:shadow-black/80"
+              className="group relative flex flex-col justify-between h-full rounded-2xl border border-slate-200 dark:border-border bg-surface p-6 shadow-[0_1px_3px_rgba(0,0,0,0.03),0_4px_12px_rgba(0,0,0,0.02)] dark:shadow-none transition-all duration-300 ease-out hover:-translate-y-1.5 hover:border-primary/60 hover:bg-surface-container hover:shadow-2xl hover:shadow-primary/10 dark:hover:shadow-black/80"
             >
               <div>
                 {/* Top header row */}
@@ -106,14 +88,14 @@ export default function RoutingFlowDiagram() {
                   {['Direct', 'Docs', 'Web', 'Research'].map((label) => (
                     <span
                       key={label}
-                      className="rounded-full border border-border bg-surface-container px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
+                      className="rounded-full border border-slate-200 dark:border-border bg-surface-container px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
                     >
                       {label}
                     </span>
                   ))}
                 </div>
               )}
-            </motion.div>
+            </div>
           ))}
         </motion.div>
       </div>

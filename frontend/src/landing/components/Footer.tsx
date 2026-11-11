@@ -1,6 +1,7 @@
 import { Github, ArrowRight, Twitter } from 'lucide-react'
 import { navigate } from '../../lib/navigation'
 import PixelLogo from './PixelLogo'
+import { ShinyButton } from '../../components/ui/shiny-button'
 
 export default function Footer() {
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
@@ -34,14 +35,15 @@ export default function Footer() {
               Upload a document, ask a question. Agentic tool-routing decides the rest with grounded citations.
             </p>
             <div className="mt-2">
-              <button
-                type="button"
+              <ShinyButton
                 onClick={() => { navigate('/chat/new') }}
-                className="group flex items-center gap-2 rounded-full bg-primary hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50 px-5 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition-colors duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary motion-safe:hover:scale-[1.02] motion-reduce:transform-none"
+                size="default"
+                variant="brand"
+                animated={true}
               >
                 <span>Launch workspace</span>
-                <ArrowRight className="h-3.5 w-3.5 transition-transform duration-150 motion-reduce:transform-none group-hover:translate-x-0.5" aria-hidden="true" />
-              </button>
+                <ArrowRight className="h-4 w-4 transition-transform duration-150 group-hover:translate-x-0.5" aria-hidden="true" />
+              </ShinyButton>
             </div>
           </div>
 

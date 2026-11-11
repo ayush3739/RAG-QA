@@ -146,7 +146,7 @@ const DbVectorSvg = () => (
 export default function ProductShowcase() {
   return (
     <section id="system-features" className="border-t border-border bg-background py-28">
-      <div className="mx-auto max-w-6xl px-6">
+      <div className="mx-auto max-w-7xl px-6">
         {/* Header */}
         <div className="mb-16">
           <h2
@@ -163,7 +163,7 @@ export default function ProductShowcase() {
         {/* Bento Grid Showcase */}
         <BentoGridShowcase
           integration={
-            <Card className="flex h-full flex-col justify-between p-2 bg-surface border-border">
+            <Card className="flex h-full flex-col justify-between p-2 bg-surface border border-slate-200 dark:border-border shadow-[0_1px_3px_rgba(0,0,0,0.03),0_4px_12px_rgba(0,0,0,0.02)] dark:shadow-none">
               <CardHeader>
                 <div className="mb-2 flex items-center justify-between">
                   <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">FIG 0.1</span>
@@ -182,7 +182,7 @@ export default function ProductShowcase() {
           }
 
           trackers={
-            <Card className="h-full bg-surface border-border">
+            <Card className="h-full bg-surface border border-slate-200 dark:border-border shadow-[0_1px_3px_rgba(0,0,0,0.03),0_4px_12px_rgba(0,0,0,0.02)] dark:shadow-none">
               <CardContent className="flex h-full flex-col justify-between p-6">
                 <div>
                   <div className="mb-3 flex items-center justify-between">
@@ -198,7 +198,7 @@ export default function ProductShowcase() {
           }
 
           statistic={
-            <Card className="relative h-full w-full overflow-hidden bg-surface border-border">
+            <Card className="relative h-full w-full overflow-hidden bg-surface border border-slate-200 dark:border-border shadow-[0_1px_3px_rgba(0,0,0,0.03),0_4px_12px_rgba(0,0,0,0.02)] dark:shadow-none">
               <CardContent className="relative z-10 flex h-full flex-col justify-between p-6">
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">FIG 0.3</span>
@@ -223,7 +223,7 @@ export default function ProductShowcase() {
           }
 
           focus={
-            <Card className="h-full group cursor-default bg-surface border-border">
+            <Card className="h-full group cursor-default bg-surface border border-slate-200 dark:border-border shadow-[0_1px_3px_rgba(0,0,0,0.03),0_4px_12px_rgba(0,0,0,0.02)] dark:shadow-none">
               <CardContent className="flex h-full flex-col justify-between p-6">
                 <div className="flex items-start justify-between">
                   <div>
@@ -251,7 +251,7 @@ export default function ProductShowcase() {
           }
 
           productivity={
-            <Card className="h-full bg-surface border-border">
+            <Card className="h-full bg-surface border border-slate-200 dark:border-border shadow-[0_1px_3px_rgba(0,0,0,0.03),0_4px_12px_rgba(0,0,0,0.02)] dark:shadow-none">
               <CardContent className="flex h-full flex-col justify-between p-6">
                 <div>
                   <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">FIG 0.5</span>

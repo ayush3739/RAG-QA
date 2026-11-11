@@ -3,34 +3,46 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Terminal, Database, Cpu, Search, CheckCircle } from 'lucide-react';
 
 const steps = [
-  { id: 1, text: 'Parsing query...', delay: 800, icon: Terminal, color: 'text-muted-foreground' },
-  { id: 2, text: 'Routing to Parent-Child Vector Store', delay: 1500, icon: Cpu, color: 'text-primary' },
-  { id: 3, text: 'Executing Reciprocal Rank Fusion (BM25 + Vector)', delay: 2200, icon: Search, color: 'text-primary' },
-  { id: 4, text: 'Querying pgvector via single-pass function call', delay: 3000, icon: Database, color: 'text-success' },
-  { id: 5, text: 'Aggregating context (Latency: 124ms)', delay: 3500, icon: CheckCircle, color: 'text-success' },
+  { id: 1, text: 'Parsing query...', delay: 800, icon: Terminal, color: 'text-zinc-400' },
+  { id: 2, text: 'Routing to Parent-Child Vector Store', delay: 1500, icon: Cpu, color: 'text-indigo-400' },
+  { id: 3, text: 'Executing Reciprocal Rank Fusion (BM25 + Vector)', delay: 2200, icon: Search, color: 'text-indigo-400' },
+  { id: 4, text: 'Querying pgvector via single-pass function call', delay: 3000, icon: Database, color: 'text-emerald-400' },
+  { id: 5, text: 'Aggregating context (Latency: 124ms)', delay: 3500, icon: CheckCircle, color: 'text-emerald-400' },
 ];
 
 export default function TerminalDemo() {
   const [currentStep, setCurrentStep] = useState(0);
 
   useEffect(() => {
-    // Sequence the steps based on their delays
-    const timeouts = steps.map((step, index) => {
-      return setTimeout(() => {
-        setCurrentStep(index + 1);
-      }, step.delay);
-    });
+    let timeouts: ReturnType<typeof setTimeout>[] = [];
+    let isMounted = true;
 
-    // Reset loop
-    const resetTimeout = setTimeout(() => {
+    const startCycle = () => {
+      if (!isMounted) return;
       setCurrentStep(0);
-    }, 6000);
+      timeouts = steps.map((step, index) =>
+        setTimeout(() => {
+          if (isMounted) {
+            setCurrentStep(index + 1);
+          }
+        }, step.delay)
+      );
+
+      const loopTimeout = setTimeout(() => {
+        if (isMounted) {
+          startCycle();
+        }
+      }, 6500);
+      timeouts.push(loopTimeout);
+    };
+
+    startCycle();
 
     return () => {
+      isMounted = false;
       timeouts.forEach(clearTimeout);
-      clearTimeout(resetTimeout);
     };
-  }, [currentStep === 0]); // Re-run when it resets to 0
+  }, []);
 
   return (
     <section className="py-24 bg-background relative overflow-hidden">
@@ -44,27 +56,27 @@ export default function TerminalDemo() {
           </p>
         </div>
 
-        {/* Terminal Window */}
-        <div className="rounded-xl border border-border bg-surface overflow-hidden">
+        {/* Terminal Window - Dark in all modes for devtool contrast */}
+        <div className="rounded-xl border border-zinc-800 bg-[#09090b] shadow-[0_20px_50px_rgba(0,0,0,0.35)] overflow-hidden">
           {/* Mac Header */}
-          <div className="flex items-center px-4 py-3 border-b border-border bg-surface-container-low">
+          <div className="flex items-center px-4 py-3 border-b border-zinc-800/80 bg-[#121216]">
             <div className="flex space-x-2">
-              <div className="w-3 h-3 rounded-full bg-danger" />
-              <div className="w-3 h-3 rounded-full bg-warning" />
-              <div className="w-3 h-3 rounded-full bg-success" />
+              <div className="w-3 h-3 rounded-full bg-rose-500/80" />
+              <div className="w-3 h-3 rounded-full bg-amber-500/80" />
+              <div className="w-3 h-3 rounded-full bg-emerald-500/80" />
             </div>
-            <div className="mx-auto flex items-center text-xs text-muted-foreground">
-              <Terminal className="w-3.5 h-3.5 mr-2" aria-hidden="true" />
+            <div className="mx-auto flex items-center text-xs text-zinc-400 font-mono">
+              <Terminal className="w-3.5 h-3.5 mr-2 text-zinc-400" aria-hidden="true" />
               KnowVex-agent terminal
             </div>
           </div>
 
           {/* Terminal Body */}
-          <div className="p-6 text-sm min-h-[320px] flex flex-col">
-            <div className="flex items-center text-foreground mb-6">
-              <span className="text-success mr-2 font-mono text-xs">➜</span>
-              <span className="text-primary mr-2 font-mono text-xs">~</span>
-              <code className="typing-animation overflow-hidden whitespace-nowrap border-r-2 border-primary pr-1 inline-block font-mono text-xs">
+          <div className="p-6 text-sm min-h-[320px] flex flex-col bg-[#09090b]">
+            <div className="flex items-center text-zinc-100 mb-6">
+              <span className="text-emerald-400 mr-2 font-mono text-xs font-semibold">➜</span>
+              <span className="text-cyan-400 mr-2 font-mono text-xs font-semibold">~</span>
+              <code className="typing-animation overflow-hidden whitespace-nowrap border-r-2 border-indigo-400 pr-1 inline-block font-mono text-xs text-zinc-200">
                 KnowVex query --topic system-architecture
               </code>
             </div>
@@ -80,8 +92,8 @@ export default function TerminalDemo() {
                       animate={{ opacity: 1, x: 0 }}
                       className="flex items-center space-x-3"
                     >
-                      <Icon className={`w-4 h-4 ${step.color}`} aria-hidden="true" />
-                      <span className="text-muted-foreground text-xs">{step.text}</span>
+                      <Icon className={`w-4 h-4 shrink-0 ${step.color}`} aria-hidden="true" />
+                      <span className="text-zinc-300 text-xs font-mono">{step.text}</span>
                     </motion.div>
                   );
                 })}
@@ -91,9 +103,9 @@ export default function TerminalDemo() {
                 <motion.div 
                   initial={{ opacity: 0 }} 
                   animate={{ opacity: 1 }} 
-                  className="flex items-center space-x-3 text-muted-foreground mt-4"
+                  className="flex items-center space-x-3 text-zinc-500 mt-4"
                 >
-                  <span className="motion-safe:animate-pulse motion-reduce:animate-none font-mono">_</span>
+                  <span className="motion-safe:animate-pulse motion-reduce:animate-none font-mono text-zinc-400">_</span>
                 </motion.div>
               )}
             </div>
@@ -103,10 +115,10 @@ export default function TerminalDemo() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="mt-8 p-4 rounded bg-surface-container border border-border text-foreground"
+                className="mt-8 p-4 rounded-lg bg-[#141419] border border-zinc-800 text-zinc-200 font-mono"
               >
-                <div className="text-xs font-semibold text-primary mb-2">Final Output (JSON)</div>
-                <pre className="text-xs font-mono overflow-x-auto text-muted-foreground">
+                <div className="text-xs font-semibold text-indigo-400 mb-2 font-mono">Final Output (JSON)</div>
+                <pre className="text-xs font-mono overflow-x-auto text-zinc-300 leading-relaxed">
 {`{
   "answer": "KnowVex uses a hybrid retrieval architecture...",
   "sources": [
@@ -132,7 +144,7 @@ export default function TerminalDemo() {
         }
         @keyframes blink-caret {
           from, to { border-color: transparent }
-          50% { border-color: var(--primary); }
+          50% { border-color: #818cf8; }
         }
       `}</style>
     </section>

@@ -33,7 +33,6 @@ export default function AuthView() {
   const [unverifiedNotice, setUnverifiedNotice] = useState<string | null>(null);
   const [successInfo, setSuccessInfo] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isFormFocused, setIsFormFocused] = useState(false);
   const [oauthLoadingProvider, setOauthLoadingProvider] = useState<'github' | 'google' | null>(null);
 
   const handleSocialLogin = (provider: 'github' | 'google') => {
@@ -122,12 +121,12 @@ export default function AuthView() {
       </motion.a>
 
       {/* Full Page ASCII Halftone Background (Atmosphere) */}
-      <div className={`absolute inset-0 z-0 pointer-events-none transition-all duration-1000 ${isFormFocused ? 'opacity-10 blur-sm' : 'opacity-30'}`}>
+      <div className="absolute inset-0 z-0 pointer-events-none opacity-25">
         <AsciiHalftoneBackground />
       </div>
 
       {/* Full Page Faded Background Ribbons (Hero Lines) */}
-      <div className={`absolute inset-0 z-0 pointer-events-none transition-all duration-1000 ${isFormFocused ? 'opacity-20 blur-2xl' : 'opacity-60 blur-md'}`}>
+      <div className="absolute inset-0 z-0 pointer-events-none opacity-40 blur-sm">
         <FadedBackgroundRibbons />
       </div>
 
@@ -148,8 +147,8 @@ export default function AuthView() {
           <motion.div 
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
-            className="relative z-10 w-full max-w-[440px] bg-[#050a19]/40 p-8 rounded-2xl border border-white/5 backdrop-blur-2xl shadow-[0_0_40px_rgba(0,0,0,0.5)]"
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="relative z-10 w-full max-w-[440px] bg-[#050a19]/50 p-8 rounded-2xl border border-white/10 backdrop-blur-xl shadow-[0_0_40px_rgba(0,0,0,0.5)] transform-gpu"
           >
             {/* Top Company Logo (Mobile Only) */}
             <div className="flex lg:hidden justify-center items-center gap-2 mb-12 text-white">
@@ -172,9 +171,11 @@ export default function AuthView() {
                   </div>
                   <button
                     onClick={() => resetFormState("login")}
-                    className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-sm py-2.5 rounded-lg transition-all duration-300 mt-4 shadow-md shadow-primary/25 hover:-translate-y-0.5"
+                    className="relative w-full overflow-hidden flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-white font-semibold text-sm bg-gradient-to-r from-[#1e40af] to-[#1d4ed8] hover:from-[#1d4ed8] hover:to-[#2563eb] active:from-[#1e3a8a] active:to-[#1e40af] border border-blue-400/40 hover:border-blue-300/60 shadow-[inset_0_1px_1.5px_0_rgba(255,255,255,0.5),_inset_0_-1px_2px_0_rgba(0,0,0,0.3),_0_8px_25px_-2px_rgba(30,64,175,0.6)] hover:shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.7),_inset_0_-1px_2px_0_rgba(0,0,0,0.25),_0_12px_32px_-2px_rgba(29,78,216,0.75)] transition-[transform,box-shadow,background-color] duration-150 mt-4 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer transform-gpu"
                   >
-                    Proceed to Sign In
+                    <span className="absolute inset-x-0 top-0 h-[45%] bg-gradient-to-b from-white/25 via-white/10 to-transparent pointer-events-none rounded-t-xl" />
+                    <span className="absolute inset-x-2 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/80 to-transparent pointer-events-none" />
+                    <span className="relative z-10 drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]">Proceed to Sign In</span>
                   </button>
                 </div>
               )}
@@ -193,9 +194,11 @@ export default function AuthView() {
                   </div>
                   <button
                     onClick={() => resetFormState("login")}
-                    className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-sm py-2.5 rounded-lg transition-all duration-300 mt-4 shadow-md shadow-primary/25 hover:-translate-y-0.5"
+                    className="relative w-full overflow-hidden flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-white font-semibold text-sm bg-gradient-to-r from-[#1e40af] to-[#1d4ed8] hover:from-[#1d4ed8] hover:to-[#2563eb] active:from-[#1e3a8a] active:to-[#1e40af] border border-blue-400/40 hover:border-blue-300/60 shadow-[inset_0_1px_1.5px_0_rgba(255,255,255,0.5),_inset_0_-1px_2px_0_rgba(0,0,0,0.3),_0_8px_25px_-2px_rgba(30,64,175,0.6)] hover:shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.7),_inset_0_-1px_2px_0_rgba(0,0,0,0.25),_0_12px_32px_-2px_rgba(29,78,216,0.75)] transition-[transform,box-shadow,background-color] duration-150 mt-4 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer transform-gpu"
                   >
-                    Back to Sign In
+                    <span className="absolute inset-x-0 top-0 h-[45%] bg-gradient-to-b from-white/25 via-white/10 to-transparent pointer-events-none rounded-t-xl" />
+                    <span className="absolute inset-x-2 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/80 to-transparent pointer-events-none" />
+                    <span className="relative z-10 drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]">Back to Sign In</span>
                   </button>
                 </div>
               )}
@@ -227,7 +230,7 @@ export default function AuthView() {
                         type="button"
                         disabled={!!oauthLoadingProvider}
                         onClick={() => handleSocialLogin("github")}
-                        className="w-full flex items-center justify-center gap-3 py-2.5 rounded-lg bg-[#24292e] border border-[#3b4148] hover:bg-[#2f363d] hover:shadow-[0_0_20px_rgba(255,255,255,0.05)] disabled:opacity-50 transition-all duration-300 text-sm font-medium text-white shadow-sm"
+                        className="w-full flex items-center justify-center gap-3 py-2.5 rounded-lg bg-[#24292e] border border-[#3b4148] hover:bg-[#2f363d] hover:border-[#4b525a] hover:shadow-[0_0_20px_rgba(255,255,255,0.05)] disabled:opacity-50 transition-[transform,background-color,border-color,box-shadow] duration-150 text-sm font-medium text-white shadow-sm cursor-pointer active:scale-[0.99] transform-gpu"
                       >
                         {oauthLoadingProvider === "github" ? (
                           <Loader2 className="w-4 h-4 animate-spin text-white" />
@@ -242,7 +245,7 @@ export default function AuthView() {
                         type="button"
                         disabled={!!oauthLoadingProvider}
                         onClick={() => handleSocialLogin("google")}
-                        className="w-full flex items-center justify-center gap-3 py-2.5 rounded-lg bg-[#24292e] border border-[#3b4148] hover:bg-[#2f363d] hover:shadow-[0_0_20px_rgba(255,255,255,0.05)] disabled:opacity-50 transition-all duration-300 text-sm font-medium text-white shadow-sm"
+                        className="w-full flex items-center justify-center gap-3 py-2.5 rounded-lg bg-[#24292e] border border-[#3b4148] hover:bg-[#2f363d] hover:border-[#4b525a] hover:shadow-[0_0_20px_rgba(255,255,255,0.05)] disabled:opacity-50 transition-[transform,background-color,border-color,box-shadow] duration-150 text-sm font-medium text-white shadow-sm cursor-pointer active:scale-[0.99] transform-gpu"
                       >
                         {oauthLoadingProvider === "google" ? (
                           <Loader2 className="w-4 h-4 animate-spin text-white" />
@@ -295,10 +298,8 @@ export default function AuthView() {
                           type="text"
                           value={name}
                           onChange={(e) => setName(e.target.value)}
-                          onFocus={() => setIsFormFocused(true)}
-                          onBlur={() => setIsFormFocused(false)}
                           placeholder="John Doe"
-                          className="w-full h-10 px-3 rounded-lg bg-[#24292e] border border-[#3b4148] text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:bg-[#2c3137] transition-all duration-300"
+                          className="w-full h-10 px-3 rounded-lg bg-[#24292e] border border-[#3b4148] text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:bg-[#2c3137] transition-colors duration-150"
                           required
                         />
                       </div>
@@ -312,10 +313,8 @@ export default function AuthView() {
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        onFocus={() => setIsFormFocused(true)}
-                        onBlur={() => setIsFormFocused(false)}
                         placeholder="m@example.com"
-                        className="w-full h-10 px-3 rounded-lg bg-[#24292e] border border-[#3b4148] text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:bg-[#2c3137] transition-all duration-300"
+                        className="w-full h-10 px-3 rounded-lg bg-[#24292e] border border-[#3b4148] text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:bg-[#2c3137] transition-colors duration-150"
                         required
                       />
                     </div>
@@ -330,7 +329,7 @@ export default function AuthView() {
                             <button
                               type="button"
                               onClick={() => resetFormState("forgot-password")}
-                              className="text-xs font-medium text-zinc-400 hover:text-zinc-200 transition-colors"
+                              className="text-xs font-medium text-zinc-400 hover:text-zinc-200 transition-colors duration-150"
                             >
                               Forgot your password?
                             </button>
@@ -341,11 +340,9 @@ export default function AuthView() {
                             type={showPassword ? "text" : "password"}
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            onFocus={() => setIsFormFocused(true)}
-                            onBlur={() => setIsFormFocused(false)}
                             placeholder="••••••••"
                             autoComplete={authMode === "register" ? "new-password" : "current-password"}
-                            className={`w-full h-10 px-3 pr-10 rounded-lg bg-[#24292e] border text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-4 transition-all duration-300 ${
+                            className={`w-full h-10 px-3 pr-10 rounded-lg bg-[#24292e] border text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-4 transition-colors duration-150 ${
                               isPasswordInvalid
                                 ? "border-red-500/60 focus:border-red-500 focus:ring-red-500/10 focus:bg-[#2c3137]"
                                 : "border-[#3b4148] focus:border-blue-500 focus:ring-blue-500/10 focus:bg-[#2c3137]"
@@ -355,7 +352,7 @@ export default function AuthView() {
                           <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors duration-150"
                           >
                             {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                           </button>
@@ -394,18 +391,29 @@ export default function AuthView() {
                     <button
                       type="submit"
                       disabled={isLoading || isPasswordInvalid}
-                      className="relative w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-sm py-2.5 rounded-lg transition-all duration-300 mt-6 shadow-md shadow-primary/25 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-60 disabled:hover:translate-y-0 disabled:cursor-not-allowed overflow-hidden"
+                      className={`relative w-full overflow-hidden flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-white font-semibold text-sm bg-gradient-to-r from-[#1e40af] to-[#1d4ed8] hover:from-[#1d4ed8] hover:to-[#2563eb] active:from-[#1e3a8a] active:to-[#1e40af] border border-blue-400/40 hover:border-blue-300/60 shadow-[inset_0_1px_1.5px_0_rgba(255,255,255,0.5),_inset_0_-1px_2px_0_rgba(0,0,0,0.3),_0_8px_25px_-2px_rgba(30,64,175,0.6)] hover:shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.7),_inset_0_-1px_2px_0_rgba(0,0,0,0.25),_0_12px_32px_-2px_rgba(29,78,216,0.75)] transition-[transform,box-shadow,background-color] duration-150 mt-6 transform-gpu ${
+                        (isLoading || isPasswordInvalid)
+                          ? "opacity-50 cursor-not-allowed pointer-events-none"
+                          : "opacity-100 cursor-pointer hover:-translate-y-0.5 active:translate-y-0"
+                      }`}
                     >
+                      {/* Metallic Glass Sheen Highlight */}
+                      <span className="absolute inset-x-0 top-0 h-[45%] bg-gradient-to-b from-white/25 via-white/10 to-transparent pointer-events-none rounded-t-xl" />
+                      {/* Metallic edge line across top */}
+                      <span className="absolute inset-x-2 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/80 to-transparent pointer-events-none" />
+
                       {isLoading && (
-                        <div className="absolute inset-0 bg-primary/70 flex items-center justify-center z-10 backdrop-blur-sm">
-                          <Loader2 className="w-5 h-5 animate-spin text-primary-foreground" />
+                        <div className="absolute inset-0 bg-[#1e40af] flex items-center justify-center z-20">
+                          <Loader2 className="w-5 h-5 animate-spin text-white" />
                         </div>
                       )}
-                      {authMode === "login"
-                        ? "Login"
-                        : authMode === "register"
-                        ? "Sign Up"
-                        : "Send Password Reset Link"}
+                      <span className="relative z-10 flex items-center gap-2 drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]">
+                        {authMode === "login"
+                          ? "Login"
+                          : authMode === "register"
+                          ? "Sign Up"
+                          : "Send Password Reset Link"}
+                      </span>
                     </button>
                   </form>
 
@@ -413,16 +421,18 @@ export default function AuthView() {
                   <div className="mt-8 text-center space-y-3">
                     {authMode === "forgot-password" ? (
                       <button
+                        type="button"
                         onClick={() => resetFormState("login")}
-                        className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-300 hover:text-white transition-colors"
+                        className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-300 hover:text-white transition-colors duration-150 cursor-pointer"
                       >
                         <ArrowLeft size={14} />
                         Back to Sign In
                       </button>
                     ) : (
                       <button
+                        type="button"
                         onClick={() => resetFormState(authMode === "login" ? "register" : "login")}
-                        className="text-xs font-medium text-zinc-300 hover:text-white transition-colors"
+                        className="text-xs font-medium text-zinc-300 hover:text-white transition-colors duration-150 cursor-pointer"
                       >
                         {authMode === "login"
                           ? "Don't have an account? Sign up"

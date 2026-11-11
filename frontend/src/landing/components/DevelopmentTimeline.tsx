@@ -22,7 +22,7 @@ export default function DevelopmentTimeline() {
     visible: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.5, ease: [0.23, 1, 0.32, 1] },
+      transition: { duration: 0.5, ease: [0.23, 1, 0.32, 1] as const },
     },
   }
 

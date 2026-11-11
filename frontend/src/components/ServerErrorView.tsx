@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { ServerCrash, RefreshCw, Home } from "lucide-react";
 import { api } from "../lib/api";
 import { useStore } from "../store/useStore";
+import { cn } from "../lib/utils";
 
 export default function ServerErrorView() {
   const [isRetrying, setIsRetrying] = useState(false);

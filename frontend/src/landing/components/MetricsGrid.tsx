@@ -21,22 +21,18 @@ const metrics = [
 export default function MetricsGrid() {
   return (
     <section id="metrics" className="border-y border-border bg-background py-20">
-      <div className="mx-auto max-w-6xl px-6">
+      <div className="mx-auto max-w-7xl px-6 w-full">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-50px' }}
-          transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
-          className="grid grid-cols-1 gap-0 divide-y divide-border md:grid-cols-3 md:divide-x md:divide-y-0"
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] as const }}
+          className="grid w-full grid-cols-1 gap-0 divide-y divide-border md:grid-cols-3 md:divide-x md:divide-y-0"
         >
-          {metrics.map((m, i) => (
-            <motion.div
+          {metrics.map((m) => (
+            <div
               key={m.value}
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: i * 0.12 }}
-              className="group px-0 py-10 transition-colors duration-150 md:px-12 md:py-4 first:pl-0 last:pr-0"
+              className="group px-0 py-8 transition-colors duration-150 md:px-8 lg:px-12 md:py-4 w-full flex flex-col justify-center md:first:pl-0 md:last:pr-0"
             >
               <p
                 className="mb-2 text-5xl font-medium tracking-[-0.04em] text-foreground transition-transform duration-150 motion-reduce:transform-none group-hover:translate-x-1 md:text-6xl"
@@ -50,7 +46,7 @@ export default function MetricsGrid() {
               <p className="text-[13px] text-muted-foreground">
                 {m.sub}
               </p>
-            </motion.div>
+            </div>
           ))}
         </motion.div>
       </div>

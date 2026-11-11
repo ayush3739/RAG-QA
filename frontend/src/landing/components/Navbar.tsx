@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Github, ArrowRight, Sun, Moon } from 'lucide-react'
 import { navigate } from '../../lib/navigation'
 import { useStore } from '../../store/useStore'
+import { ShinyButton } from '../../components/ui/shiny-button'
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
@@ -135,13 +136,14 @@ export default function Navbar() {
             )}
           </button>
 
-          <button
+          <ShinyButton
+            size="sm"
+            animated={false}
             onClick={() => { navigate('/chat/new') }}
-            className="group flex items-center gap-1.5 rounded-full bg-primary hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50 text-primary-foreground px-4 py-1.5 text-xs font-semibold shadow-sm transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary motion-safe:hover:scale-[1.02] motion-reduce:transform-none"
           >
             <span>Launch app</span>
-            <ArrowRight className="h-3 w-3 transition-transform duration-150 motion-reduce:transform-none group-hover:translate-x-0.5" aria-hidden="true" />
-          </button>
+            <ArrowRight className="h-3 w-3 transition-transform duration-150 group-hover:translate-x-0.5" aria-hidden="true" />
+          </ShinyButton>
         </div>
 
         {/* Mobile Actions: Theme Toggle & Launch */}
@@ -159,12 +161,14 @@ export default function Navbar() {
             )}
           </button>
 
-          <button
+          <ShinyButton
+            size="sm"
+            animated={false}
             onClick={() => { navigate('/chat/new') }}
-            className="flex items-center gap-1 rounded-full bg-primary hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50 text-primary-foreground px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="!px-3 !py-1"
           >
             <span>Launch</span>
-          </button>
+          </ShinyButton>
         </div>
       </div>
     </nav>

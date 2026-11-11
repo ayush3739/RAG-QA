@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface ApiTab {
@@ -7,7 +7,7 @@ interface ApiTab {
   endpoint: string
   method: string
   request: string
-  response: JSX.Element
+  response: React.ReactNode
 }
 
 const tabs: ApiTab[] = [
