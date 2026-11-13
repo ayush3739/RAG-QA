@@ -8,7 +8,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 app.use(express.json({ limit: "25mb" }));
 
@@ -784,7 +784,11 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     console.log("Starting server in PRODUCTION mode...");
-    const distPath = path.join(process.cwd(), "dist");
+    const distPath = fs.existsSync(path.join(__dirname, "index.html"))
+      ? __dirname
+      : fs.existsSync(path.join(process.cwd(), "frontend", "dist"))
+      ? path.join(process.cwd(), "frontend", "dist")
+      : path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { 
   Database, Plus, FolderOpen, MessageSquare, 
-  LayoutDashboard, Settings, LogOut, Sun, Moon, PanelLeftClose, PanelLeftOpen, Sparkles, Crown, Clock, CreditCard, ShieldCheck
+  LayoutDashboard, Settings, LogOut, Sun, Moon, PanelLeftClose, PanelLeftOpen, Sparkles, Crown, Clock, CreditCard, ShieldCheck, Zap
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "../lib/utils";
@@ -54,6 +54,7 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
   }, []);
 
   const isAdmin = user?.role?.toLowerCase() === "admin";
+  const isPro = user?.role?.toLowerCase() === "pro";
 
   const tabs = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, shortcut: "D" },
@@ -231,32 +232,55 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
                 setCurrentTab("settings");
                 setShowUserMenu(false);
               }}
-              className="px-3.5 py-2.5 bg-surface-container/50 border-b border-border/60 flex items-center justify-between cursor-pointer hover:bg-surface-container transition-colors group"
+              className={cn(
+                "px-3.5 py-2.5 border-b flex items-center justify-between cursor-pointer transition-all group relative overflow-hidden",
+                isPro
+                  ? "bg-gradient-to-r from-amber-500/15 via-yellow-500/10 to-amber-500/5 border-amber-500/30 shadow-[inset_0_0_15px_rgba(245,158,11,0.08)] hover:from-amber-500/20 hover:border-amber-500/40"
+                  : "bg-surface-container/50 border-border/60 hover:bg-surface-container"
+              )}
             >
-              <div>
-                <p className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors">Current plan</p>
-                <p className="text-[11px] text-muted-foreground">
-                  {user?.role?.toLowerCase() === "admin" ? "System Administrator" : user?.role?.toLowerCase() === "pro" ? "Pro tier (full access)" : "Community Free"}
+              {isPro && (
+                <div className="absolute -top-6 -right-6 w-16 h-16 bg-amber-400/15 rounded-full blur-xl pointer-events-none" />
+              )}
+              <div className="relative z-10">
+                <p className={cn(
+                  "text-xs font-bold transition-colors flex items-center gap-1.5",
+                  isPro ? "text-amber-700 dark:text-amber-300" : "text-foreground group-hover:text-primary"
+                )}>
+                  {isPro && <Crown className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 fill-amber-500 dark:fill-amber-400" />}
+                  {isPro ? "KnowVex Pro — Active" : "Current plan"}
+                </p>
+                <p className={cn("text-[11px]", isPro ? "text-amber-800/90 dark:text-amber-200/80 font-medium" : "text-muted-foreground")}>
+                  {isAdmin ? "System Administrator" : isPro ? "Priority agents & research tier" : "Community Free"}
                 </p>
               </div>
-              <span className={cn(
-                "text-[10px] font-semibold px-2 py-0.5 rounded border inline-flex items-center gap-1",
-                user?.role?.toLowerCase() === "pro"
-                  ? "bg-primary/10 text-primary border-primary/20"
-                  : user?.role?.toLowerCase() === "admin"
-                  ? "bg-primary/10 text-primary border-primary/20"
-                  : "bg-surface-container text-muted-foreground border-border"
-              )}>
-                {user?.role?.toLowerCase() === "pro" && <Crown className="w-2.5 h-2.5 text-primary" />}
-                {user?.role?.toLowerCase() === "admin" ? "Admin" : user?.role?.toLowerCase() === "pro" ? "Pro" : "Free"}
-              </span>
+              <div className="relative z-10">
+                {isPro ? (
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 text-neutral-950 inline-flex items-center gap-1 shadow-[0_0_12px_rgba(245,158,11,0.35)] tracking-wide">
+                    <Crown className="w-2.5 h-2.5 fill-neutral-950 text-neutral-950" />
+                    PRO
+                  </span>
+                ) : (
+                  <span className={cn(
+                    "text-[10px] font-semibold px-2 py-0.5 rounded border inline-flex items-center gap-1",
+                    isAdmin ? "bg-primary/10 text-primary border-primary/20" : "bg-surface-container text-muted-foreground border-border"
+                  )}>
+                    {isAdmin ? "Admin" : "Free"}
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Daily Quota Progress */}
             <div className="px-3.5 py-2.5 bg-surface/50 border-b border-border/60">
               <div className="flex items-center justify-between text-xs mb-1.5">
                 <span className="text-muted-foreground flex items-center gap-1.5 font-medium">
-                  <Sparkles className="w-3 h-3 text-primary" /> Daily queries
+                  {isPro ? (
+                    <Zap className="w-3 h-3 text-amber-500 dark:text-amber-400" />
+                  ) : (
+                    <Sparkles className="w-3 h-3 text-primary" />
+                  )}
+                  Daily queries
                 </span>
                 <span className="tabular-nums font-medium text-foreground text-xs">
                   {quota ? (quota.query_limit === null ? "Unlimited" : `${quota.queries_used} / ${quota.query_limit}`) : "..."}
@@ -271,13 +295,15 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
                         ? "bg-danger"
                         : quota.queries_used / quota.query_limit > 0.8
                         ? "bg-warning"
+                        : isPro
+                        ? "bg-gradient-to-r from-amber-400 to-yellow-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]"
                         : "bg-primary"
                     )}
                     style={{ transform: `scaleX(${Math.min(1, quota.queries_used / quota.query_limit)})`, width: "100%" }}
                   />
                 </div>
               ) : (
-                <div className="text-xs text-primary/80">
+                <div className={cn("text-xs font-semibold", isPro ? "text-amber-600 dark:text-amber-400" : "text-primary/80")}>
                   Full unmetered access
                 </div>
               )}
@@ -286,7 +312,10 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
             {/* Deep Research Quota Progress */}
             <div className="px-3.5 py-2.5 bg-surface/30 border-b border-border/60">
               <div className="flex items-center justify-between text-xs mb-1.5">
-                <span className="text-muted-foreground font-medium">
+                <span className="text-muted-foreground font-medium flex items-center gap-1.5">
+                  {isPro ? (
+                    <Sparkles className="w-3 h-3 text-amber-500 dark:text-amber-400" />
+                  ) : null}
                   Deep research
                 </span>
                 <span className="tabular-nums font-medium text-foreground text-xs">
@@ -302,6 +331,8 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
                         ? "bg-danger"
                         : (quota.research_used ?? 0) / quota.research_limit >= 0.8
                         ? "bg-warning"
+                        : isPro
+                        ? "bg-gradient-to-r from-amber-400 to-yellow-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]"
                         : "bg-success"
                     )}
                     style={{ transform: `scaleX(${Math.min(1, (quota.research_used ?? 0) / quota.research_limit)})`, width: "100%" }}
@@ -373,27 +404,40 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
             )}
           >
             <div className="relative flex-shrink-0">
-              <div className="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs ring-1 ring-border">
+              <div className={cn(
+                "w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs ring-1 transition-all",
+                isPro
+                  ? "bg-gradient-to-tr from-amber-500/20 via-yellow-500/25 to-amber-400/20 text-amber-700 dark:text-amber-300 ring-amber-500/40 shadow-[0_0_10px_rgba(245,158,11,0.25)]"
+                  : "bg-primary/20 text-primary ring-border"
+              )}>
                 {user?.name?.charAt(0)?.toUpperCase() || 'U'}
               </div>
-              {isCollapsed && (user?.role?.toLowerCase() === "pro" || user?.role?.toLowerCase() === "admin") && (
-                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-warning ring-2 ring-background" />
+              {isCollapsed && (isPro || isAdmin) && (
+                <span className={cn(
+                  "absolute -top-0.5 -right-0.5 rounded-full ring-2 ring-background",
+                  isPro ? "w-2.5 h-2.5 bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.85)]" : "w-2 h-2 bg-warning"
+                )} />
               )}
             </div>
             {!isCollapsed && (
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
                 <p className="text-sm font-semibold text-on-surface truncate leading-tight tracking-tight">{user?.name || "User"}</p>
-                <span className={cn(
-                  "text-[10px] font-semibold px-1.5 py-0.5 rounded border inline-flex items-center gap-0.5 shrink-0",
-                  user?.role?.toLowerCase() === "pro"
-                    ? "bg-primary/10 text-primary border-primary/20"
-                    : user?.role?.toLowerCase() === "admin"
-                    ? "bg-primary/10 text-primary border-primary/20"
-                    : "bg-surface-container-high text-muted-foreground border-border/60"
-                )}>
-                  {user?.role?.toLowerCase() === "admin" ? "Admin" : user?.role?.toLowerCase() === "pro" ? "Pro" : "Free"}
-                </span>
+                {isPro ? (
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 text-neutral-950 inline-flex items-center gap-1 shadow-[0_0_12px_rgba(245,158,11,0.35)] tracking-wide shrink-0">
+                    <Crown className="w-2.5 h-2.5 fill-neutral-950 text-neutral-950" />
+                    PRO
+                  </span>
+                ) : (
+                  <span className={cn(
+                    "text-[10px] font-semibold px-1.5 py-0.5 rounded border inline-flex items-center gap-0.5 shrink-0",
+                    isAdmin
+                      ? "bg-primary/10 text-primary border-primary/20"
+                      : "bg-surface-container-high text-muted-foreground border-border/60"
+                  )}>
+                    {isAdmin ? "Admin" : "Free"}
+                  </span>
+                )}
               </div>
               <span className="text-[10px] text-muted-foreground truncate block">{user?.email || "No email"}</span>
             </div>

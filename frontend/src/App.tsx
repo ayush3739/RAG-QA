@@ -6,6 +6,7 @@ import ResetPasswordView from "./components/ResetPasswordView";
 import NotFoundView from "./components/NotFoundView";
 import RateLimitView from "./components/RateLimitView";
 import ServerErrorView from "./components/ServerErrorView";
+import ProWelcomeModal, { isProWelcomed, markProWelcomed } from "./components/ProWelcomeModal";
 import { AppShell } from "./components/layout/AppShell";
 import { AppWorkspace } from "./components/layout/AppWorkspace";
 import { useDocumentUpload } from "./hooks/useDocumentUpload";
@@ -125,7 +126,19 @@ export default function App() {
   const setParams = useStore((s) => s.setParams);
 
   const isProcessing = useStore((s) => s.isProcessing);
+  const user = useStore((s) => s.user);
   const setUser = useStore((s) => s.setUser);
+  const setIsProWelcomeOpen = useStore((s) => s.setIsProWelcomeOpen);
+
+  // First-time Pro celebratory modal trigger
+  useEffect(() => {
+    if (isAuthenticated && user?.role?.toLowerCase() === "pro") {
+      if (!isProWelcomed(user) && !showOnboarding) {
+        setIsProWelcomeOpen(true);
+        markProWelcomed(user);
+      }
+    }
+  }, [isAuthenticated, user?.role, user?.id, user?.email, showOnboarding, setIsProWelcomeOpen]);
 
   const updateProfileMutation = useMutation({
     mutationFn: async (body: { name?: string; email?: string }) => {
@@ -544,6 +557,9 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* Celebratory Pro Welcome Modal */}
+      <ProWelcomeModal />
     </AppShell>
   );
 }

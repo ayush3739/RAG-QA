@@ -173,10 +173,11 @@ export function useChatStream({
           const isResearchQuota = errorData?.detail?.error === "RESEARCH_QUOTA_EXCEEDED" || errorData?.detail?.code === "RESEARCH_QUOTA_EXCEEDED" || errorData?.error === "RESEARCH_QUOTA_EXCEEDED";
           const isDailyQuota = errorData?.detail?.error === "QUOTA_EXCEEDED" || errorData?.error === "QUOTA_EXCEEDED";
           const resetInfo = formatResetTime();
+          const isProUser = useStore.getState().user?.role?.toLowerCase() === "pro";
           const rateLimitMsg = isResearchQuota
-            ? `**Deep Research Quota Exceeded** — ${errorData?.detail?.message || "You have reached your daily research allowance."} ${resetInfo.summary}. Please upgrade to Pro for higher limits.`
+            ? `**Deep Research Quota Exceeded** — ${errorData?.detail?.message || "You have reached your daily research allowance."} ${resetInfo.summary}.${isProUser ? "" : " Please upgrade to Pro for higher limits."}`
             : isDailyQuota
-            ? `**Daily Query Quota Exceeded** — ${errorData?.detail?.message || "You have reached your daily query allowance."} ${resetInfo.summary}. Please upgrade to Pro for 500 queries/day.`
+            ? `**Daily Query Quota Exceeded** — ${errorData?.detail?.message || "You have reached your daily query allowance."} ${resetInfo.summary}.${isProUser ? "" : " Please upgrade to Pro for 500 queries/day."}`
             : "**Rate Limited** — The AI provider is busy. Please wait a moment and try again.";
           currentText = rateLimitMsg;
           setActiveMessages((prev) => prev.map((m) => (m.id === botMsgId ? { ...m, text: rateLimitMsg } : m)));

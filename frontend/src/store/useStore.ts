@@ -46,6 +46,8 @@ interface AppState {
   setUser: (user: UserData | null) => void;
   quota: UserQuota | null;
   setQuota: (quota: UserQuota | null) => void;
+  isProWelcomeOpen: boolean;
+  setIsProWelcomeOpen: (open: boolean) => void;
   logout: () => void;
 }
 
@@ -71,12 +73,15 @@ export const useStore = create<AppState>()(
       setUser: (user) => set({ user }),
       quota: null,
       setQuota: (quota) => set({ quota }),
+      isProWelcomeOpen: false,
+      setIsProWelcomeOpen: (open) => set({ isProWelcomeOpen: open }),
       logout: () => set({
         accessToken: null,
         refreshToken: null,
         isAuthenticated: false,
         user: null,
         quota: null,
+        isProWelcomeOpen: false,
         authMode: 'login',
         activeConvId: null,
         activeDocumentId: null,

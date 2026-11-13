@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { 
   Cpu, Sliders, User, Shield, RefreshCw, Moon, Sun, LogOut, Trash2, Save, Check,
   Server, Palette, AlertTriangle, Lock, Eye, EyeOff, Clock,
-  CreditCard, ArrowUpRight, ChevronRight, Crown
+  CreditCard, ArrowUpRight, ChevronRight, Crown, Zap, Sparkles, FolderOpen, Files
 } from "lucide-react";
 import { toast } from "sonner";
 import { ModelParams } from "../types";
@@ -63,7 +63,7 @@ function SettingsRow({ label, desc, children, last = false }: { label: string; d
 }
 
 // Quota meter — reusable across subscription tab
-function QuotaMeter({ label, used, limit, detail }: { label: string; used: number; limit: number | null; detail: string }) {
+function QuotaMeter({ label, used, limit, detail, isPro }: { label: string; used: number; limit: number | null; detail: string; isPro?: boolean }) {
   const pct = limit ? Math.min(100, (used / limit) * 100) : 100;
   const remaining = limit !== null ? Math.max(0, limit - used) : null;
   const isExhausted = limit !== null && used >= limit;
@@ -73,14 +73,24 @@ function QuotaMeter({ label, used, limit, detail }: { label: string; used: numbe
       <div className="flex items-center justify-between text-xs">
         <span className="font-medium text-foreground">{label}</span>
         <span className="tabular-nums font-medium text-foreground">
-          {limit === null ? "Unlimited" : `${used} / ${limit}`}
+          {limit === null ? (
+            <span className={cn("font-semibold", isPro ? "text-amber-600 dark:text-amber-400" : "text-primary")}>Unlimited</span>
+          ) : (
+            `${used} / ${limit}`
+          )}
         </span>
       </div>
       <div className="w-full h-1.5 bg-surface-container rounded-full overflow-hidden">
         <div 
           className={cn(
             "h-full rounded-full origin-left transition-transform duration-300 motion-reduce:transition-none",
-            isExhausted ? "bg-danger" : isWarning ? "bg-warning" : "bg-primary"
+            isExhausted
+              ? "bg-danger"
+              : isWarning
+              ? "bg-warning"
+              : isPro
+              ? "bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]"
+              : "bg-primary"
           )}
           style={{ transform: `scaleX(${pct / 100})`, width: "100%" }}
         />
@@ -249,7 +259,7 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
     isAdmin
       ? "bg-primary/8 text-primary border-primary/15"
       : isPro
-      ? "bg-primary/8 text-primary border-primary/15"
+      ? "bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 text-neutral-950 font-extrabold border-transparent shadow-[0_0_12px_rgba(245,158,11,0.35)] tracking-wide"
       : "bg-surface-container text-muted-foreground border-border/60"
   );
 
@@ -267,6 +277,8 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
         <div className="flex items-center gap-1 mt-6 border-b border-border overflow-x-auto">
           {SECTIONS.map((s) => {
             const isActive = activeSection === s.id;
+            const isSubTab = s.id === "subscription";
+            const TabIcon = isSubTab && isPro ? Crown : s.icon;
             return (
               <button
                 key={s.id}
@@ -274,15 +286,31 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
                 onClick={() => handleTabChange(s.id)}
                 className={cn(
                   "relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors cursor-pointer rounded-t-lg shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
-                  isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                  isActive
+                    ? isSubTab && isPro
+                      ? "text-amber-700 dark:text-amber-300 font-bold"
+                      : "text-foreground"
+                    : isSubTab && isPro
+                    ? "text-amber-800/80 dark:text-amber-400/80 hover:text-amber-700 dark:hover:text-amber-300"
+                    : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <s.icon className={cn("w-3.5 h-3.5 shrink-0", isActive ? "text-primary" : "text-muted-foreground")} />
+                <TabIcon className={cn(
+                  "w-3.5 h-3.5 shrink-0",
+                  isSubTab && isPro
+                    ? "text-amber-500 dark:text-amber-400 fill-amber-500/20"
+                    : isActive
+                    ? "text-primary"
+                    : "text-muted-foreground"
+                )} />
                 <span>{s.label}</span>
                 {isActive && (
                   <motion.div
                     layoutId="settings-tab-indicator"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full"
+                    className={cn(
+                      "absolute bottom-0 left-0 right-0 h-0.5 rounded-full",
+                      isSubTab && isPro ? "bg-gradient-to-r from-amber-400 to-yellow-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" : "bg-primary"
+                    )}
                     transition={{ type: "spring", stiffness: 500, damping: 35 }}
                   />
                 )}
@@ -419,13 +447,21 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
               <div className="space-y-6">
                 {/* Avatar + Info strip */}
                 <div className="flex items-center gap-4 p-5 premium-card">
-                  <div className="w-14 h-14 rounded-2xl bg-primary/15 text-primary flex items-center justify-center font-bold text-xl shrink-0 ring-1 ring-primary/15">
+                  <div className={cn(
+                    "w-14 h-14 rounded-2xl flex items-center justify-center font-bold text-xl shrink-0 ring-1 transition-all",
+                    isPro
+                      ? "bg-gradient-to-tr from-amber-500/20 via-yellow-500/25 to-amber-400/20 text-amber-700 dark:text-amber-300 ring-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.25)]"
+                      : "bg-primary/15 text-primary ring-primary/15"
+                  )}>
                     {user?.name?.charAt(0)?.toUpperCase() || "U"}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <p className="text-base font-bold text-foreground truncate">{user?.name || "User"}</p>
-                      <span className={planBadge}>{planLabel}</span>
+                      <span className={planBadge}>
+                        {isPro && <Crown className="w-3 h-3 fill-neutral-950 text-neutral-950" />}
+                        {planLabel}
+                      </span>
                     </div>
                     <p className="text-sm text-muted-foreground truncate mt-0.5">{user?.email || "No email"}</p>
                   </div>
@@ -469,7 +505,8 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
                     <div className="pt-2 border-t border-border/50 flex items-center justify-between text-xs">
                       <span className="text-muted-foreground">Assigned plan</span>
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-foreground">
+                        <span className={cn("font-medium", isPro ? "text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1.5" : "text-foreground")}>
+                          {isPro && <Crown className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 fill-amber-500 dark:fill-amber-400" />}
                           {isAdmin ? "Enterprise Admin" : isPro ? "KnowVex Pro" : "Community Free"}
                         </span>
                         <button
@@ -598,75 +635,214 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
             {activeSection === "subscription" && (
               <div className="space-y-6">
                 {/* Active Plan Overview */}
-                <div className="premium-card p-6 space-y-5">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-2.5">
-                        <h3 className="text-base font-bold text-foreground tracking-tight">
-                          {isAdmin ? "Enterprise Administrator" : isPro ? "KnowVex Pro" : "Community Free"}
-                        </h3>
-                        <span className={planBadge}>
-                          {isAdmin ? "Admin" : "Active"}
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground leading-relaxed max-w-lg">
-                        {isAdmin
-                          ? "Unmetered infrastructure access with uncapped agent routing, deep research, and storage."
-                          : isPro
-                          ? "500 daily agent queries, 25 deep research runs, 50 document slots."
-                          : "10 daily agent queries, 1 deep research run, 3 document slots."}
-                      </p>
-                    </div>
+                {isPro ? (
+                  <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#121319] via-[#181924] to-[#0d0e14] border border-amber-500/30 p-6 md:p-7 shadow-[0_0_35px_rgba(245,158,11,0.08)] hover:shadow-[0_0_50px_rgba(245,158,11,0.16)] hover:border-amber-500/40 transition-all duration-300 space-y-6">
+                    {/* Golden Ambient Glows */}
+                    <div className="absolute -top-24 -right-24 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+                    <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-yellow-500/5 rounded-full blur-3xl pointer-events-none" />
 
-                    {isFree && (
+                    {/* Top Header Row */}
+                    <div className="relative z-10 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                      <div className="space-y-1.5">
+                        <div className="flex flex-wrap items-center gap-2.5">
+                          <h3 className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
+                            KnowVex Pro
+                          </h3>
+                          <span className="text-[11px] font-extrabold px-3 py-1 rounded-full bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 text-neutral-950 inline-flex items-center gap-1.5 shadow-[0_0_15px_rgba(245,158,11,0.35)] tracking-wide">
+                            <Crown className="w-3.5 h-3.5 fill-neutral-950 text-neutral-950" />
+                            ACTIVE PRO TIER
+                          </span>
+                        </div>
+                        <p className="text-xs text-neutral-300/90 leading-relaxed max-w-xl">
+                          Your account has full premier access: 500 daily agent queries, 25 deep multi-angle syntheses, priority compute queues, and 50 document vector indexing slots.
+                        </p>
+                      </div>
+
                       <div className="shrink-0 flex items-center gap-2">
-                        {upgradeRequestData?.has_pending ? (
-                          <div className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-                            <Clock className="w-3.5 h-3.5 animate-pulse" />
-                            <span>Request Pending Approval</span>
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            disabled={isRequestingUpgrade}
-                            onClick={handleRequestUpgrade}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/15 border border-primary/20 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
-                          >
-                            <Crown className="w-3.5 h-3.5" />
-                            <span>{isRequestingUpgrade ? "Submitting\u2026" : "Request Pro Access"}</span>
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          aria-label="View Pro tier benefits and upgraded capabilities"
+                          onClick={() => useStore.getState().setIsProWelcomeOpen(true)}
+                          className="flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 hover:border-amber-500/50 rounded-xl transition-all shadow-[0_0_15px_rgba(245,158,11,0.12)] cursor-pointer active:scale-95"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                          <span>View Pro Benefits</span>
+                        </button>
                       </div>
-                    )}
-                  </div>
+                    </div>
 
-                  {/* Cycle metadata — three stats, no cards-in-cards */}
-                  <div className="pt-4 border-t border-border flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8 text-xs">
-                    <div>
-                      <div className="text-muted-foreground mb-0.5">Allocation cycle</div>
-                      <div className="font-medium text-foreground">Daily at midnight UTC</div>
+                    {/* 4 Benefit Cards Grid */}
+                    <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                      {/* 1. 500 Daily Agent Queries */}
+                      <div className="rounded-xl border border-amber-500/20 bg-neutral-950/60 p-3.5 backdrop-blur-sm hover:border-amber-500/35 transition-colors">
+                        <div className="flex items-start gap-3">
+                          <div className="h-9 w-9 shrink-0 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                            <Zap className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                              <span>500 Daily Agent Queries</span>
+                              <span className="text-[10px] font-extrabold text-amber-400 bg-amber-400/10 px-1.5 py-0.2 rounded border border-amber-400/20">50x BOOST</span>
+                            </div>
+                            <p className="text-[11px] text-neutral-400 mt-0.5 leading-snug">
+                              Instant zero-queue answering with deep contextual retrieval.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 2. 25 Deep Research Syntheses */}
+                      <div className="rounded-xl border border-amber-500/20 bg-neutral-950/60 p-3.5 backdrop-blur-sm hover:border-amber-500/35 transition-colors">
+                        <div className="flex items-start gap-3">
+                          <div className="h-9 w-9 shrink-0 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                            <Sparkles className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                              <span>25 Deep Research Syntheses</span>
+                              <span className="text-[10px] font-extrabold text-amber-400 bg-amber-400/10 px-1.5 py-0.2 rounded border border-amber-400/20">AGENTIC</span>
+                            </div>
+                            <p className="text-[11px] text-neutral-400 mt-0.5 leading-snug">
+                              Multi-angle agentic research across documents and web.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 3. 50 Knowledge Base Documents */}
+                      <div className="rounded-xl border border-amber-500/20 bg-neutral-950/60 p-3.5 backdrop-blur-sm hover:border-amber-500/35 transition-colors">
+                        <div className="flex items-start gap-3">
+                          <div className="h-9 w-9 shrink-0 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                            <FolderOpen className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                              <span>50 Knowledge Documents</span>
+                              <span className="text-[10px] font-extrabold text-amber-400 bg-amber-400/10 px-1.5 py-0.2 rounded border border-amber-400/20">300 PAGES/DOC</span>
+                            </div>
+                            <p className="text-[11px] text-neutral-400 mt-0.5 leading-snug">
+                              High-capacity vector indexing with cross-encoder reranking.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 4. Priority Compute Pipeline */}
+                      <div className="rounded-xl border border-amber-500/20 bg-neutral-950/60 p-3.5 backdrop-blur-sm hover:border-amber-500/35 transition-colors">
+                        <div className="flex items-start gap-3">
+                          <div className="h-9 w-9 shrink-0 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                            <Cpu className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                              <span>Priority Compute Pipeline</span>
+                              <span className="text-[10px] font-extrabold text-amber-400 bg-amber-400/10 px-1.5 py-0.2 rounded border border-amber-400/20">FAST LANE</span>
+                            </div>
+                            <p className="text-[11px] text-neutral-400 mt-0.5 leading-snug">
+                              Dedicated GPU queue & instant real-time SSE stream routing.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="hidden sm:block w-px h-6 bg-border" />
-                    <div>
-                      <div className="text-muted-foreground mb-0.5">Local reset</div>
-                      <div className="font-medium text-foreground">{resetInfo.localTime}</div>
-                    </div>
-                    <div className="hidden sm:block w-px h-6 bg-border" />
-                    <div>
-                      <div className="text-muted-foreground mb-0.5">Time remaining</div>
-                      <div className="font-medium text-foreground tabular-nums">{resetInfo.timeRemaining}</div>
+
+                    {/* Cycle metadata */}
+                    <div className="relative z-10 pt-4 border-t border-amber-500/20 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8 text-xs">
+                      <div>
+                        <div className="text-amber-200/60 mb-0.5">Allocation cycle</div>
+                        <div className="font-semibold text-neutral-200">Daily at midnight UTC</div>
+                      </div>
+                      <div className="hidden sm:block w-px h-6 bg-amber-500/20" />
+                      <div>
+                        <div className="text-amber-200/60 mb-0.5">Local reset</div>
+                        <div className="font-semibold text-neutral-200">{resetInfo.localTime}</div>
+                      </div>
+                      <div className="hidden sm:block w-px h-6 bg-amber-500/20" />
+                      <div>
+                        <div className="text-amber-200/60 mb-0.5">Time remaining</div>
+                        <div className="font-semibold text-amber-300 tabular-nums">{resetInfo.timeRemaining}</div>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="premium-card p-6 space-y-5">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-2.5">
+                          <h3 className="text-base font-bold text-foreground tracking-tight">
+                            {isAdmin ? "Enterprise Administrator" : "Community Free"}
+                          </h3>
+                          <span className={planBadge}>
+                            {isAdmin ? "Admin" : "Active"}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground leading-relaxed max-w-lg">
+                          {isAdmin
+                            ? "Unmetered infrastructure access with uncapped agent routing, deep research, and storage."
+                            : "10 daily agent queries, 1 deep research run, 3 document slots."}
+                        </p>
+                      </div>
+
+                      {isFree && (
+                        <div className="shrink-0 flex items-center gap-2">
+                          {upgradeRequestData?.has_pending ? (
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/25 rounded-lg">
+                              <Clock className="w-3.5 h-3.5 animate-pulse" />
+                              <span>Request Pending Approval</span>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              disabled={isRequestingUpgrade}
+                              onClick={handleRequestUpgrade}
+                              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-amber-700 dark:text-amber-300 bg-gradient-to-r from-amber-500/15 to-yellow-500/15 hover:from-amber-500/25 hover:to-yellow-500/25 border border-amber-500/35 hover:border-amber-500/50 rounded-lg transition-all cursor-pointer disabled:opacity-50 shadow-xs"
+                            >
+                              <Crown className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 fill-amber-500/20" />
+                              <span>{isRequestingUpgrade ? "Submitting\u2026" : "Request Pro Access"}</span>
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Cycle metadata — three stats, no cards-in-cards */}
+                    <div className="pt-4 border-t border-border flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8 text-xs">
+                      <div>
+                        <div className="text-muted-foreground mb-0.5">Allocation cycle</div>
+                        <div className="font-medium text-foreground">Daily at midnight UTC</div>
+                      </div>
+                      <div className="hidden sm:block w-px h-6 bg-border" />
+                      <div>
+                        <div className="text-muted-foreground mb-0.5">Local reset</div>
+                        <div className="font-medium text-foreground">{resetInfo.localTime}</div>
+                      </div>
+                      <div className="hidden sm:block w-px h-6 bg-border" />
+                      <div>
+                        <div className="text-muted-foreground mb-0.5">Time remaining</div>
+                        <div className="font-medium text-foreground tabular-nums">{resetInfo.timeRemaining}</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Metered Resource Usage */}
-                <div className="premium-card p-6 space-y-5">
+                <div className={cn(
+                  "premium-card p-6 space-y-5 transition-all",
+                  isPro && "border-amber-500/30 dark:border-amber-500/20 bg-amber-500/[0.02] dark:bg-amber-500/[0.04]"
+                )}>
                   <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-semibold text-muted-foreground">
-                      Resource usage
-                    </h4>
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-xs font-semibold text-muted-foreground">
+                        Resource usage
+                      </h4>
+                      {isPro && (
+                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
+                          PRO ALLOCATION
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <Clock className="w-3.5 h-3.5 text-primary" />
+                      <Clock className={cn("w-3.5 h-3.5", isPro ? "text-amber-500 dark:text-amber-400" : "text-primary")} />
                       <span>{resetInfo.summary}</span>
                     </div>
                   </div>
@@ -677,6 +853,7 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
                       used={quota?.queries_used ?? 0}
                       limit={quota?.query_limit ?? null}
                       detail="Resets daily at 00:00 UTC"
+                      isPro={isPro}
                     />
 
                     <div className="border-t border-border/50 pt-4">
@@ -685,6 +862,7 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
                         used={quota?.research_used ?? 0}
                         limit={quota?.research_limit ?? null}
                         detail="Multi-agent research executions"
+                        isPro={isPro}
                       />
                     </div>
 
@@ -694,12 +872,13 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
                         used={documents.length}
                         limit={docLimit}
                         detail={`Max ${pageLimit ?? "unlimited"} pages per document`}
+                        isPro={isPro}
                       />
                     </div>
                   </div>
 
                   <div className="pt-3 border-t border-border/50 text-xs text-muted-foreground flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-primary shrink-0" />
+                    <Clock className={cn("w-3.5 h-3.5 shrink-0", isPro ? "text-amber-500 dark:text-amber-400" : "text-primary")} />
                     <span>Next cycle begins at {resetInfo.localTime} ({resetInfo.timeRemaining} remaining). All daily meters reset.</span>
                   </div>
                 </div>
@@ -722,13 +901,13 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
                       <thead>
                         <tr className="border-b border-border text-xs text-muted-foreground">
                           <th className="py-2.5 px-3 font-medium">Resource</th>
-                          <th className={cn("py-2.5 px-3 font-medium", isFree && "text-primary")}>
+                          <th className={cn("py-2.5 px-3 font-medium", isFree && "text-primary font-semibold")}>
                             Community {isFree && "(current)"}
                           </th>
-                          <th className={cn("py-2.5 px-3 font-medium", isPro && "text-primary")}>
-                            Pro {isPro && "(current)"}
+                          <th className={cn("py-2.5 px-3 font-medium", isPro ? "text-amber-600 dark:text-amber-400 font-bold bg-amber-500/5 dark:bg-amber-500/10 rounded-t-md" : "")}>
+                            Pro {isPro && "👑 (current)"}
                           </th>
-                          <th className={cn("py-2.5 px-3 font-medium", isAdmin && "text-primary")}>
+                          <th className={cn("py-2.5 px-3 font-medium", isAdmin && "text-primary font-semibold")}>
                             Enterprise {isAdmin && "(current)"}
                           </th>
                         </tr>
@@ -744,10 +923,10 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
                           { resource: "Cross-encoder reranking", free: "BGE reranker", pro: "BGE reranker", admin: "BGE reranker" },
                           { resource: "Execution timeout", free: "120 s", pro: "300 s", admin: "Uncapped" },
                         ].map((row) => (
-                          <tr key={row.resource} className="hover:bg-surface-container/20 transition-colors">
+                          <tr key={row.resource} className={cn("transition-colors", isPro ? "hover:bg-amber-500/5 dark:hover:bg-amber-500/10" : "hover:bg-surface-container/20")}>
                             <td className="py-2.5 px-3 font-medium text-foreground">{row.resource}</td>
                             <td className={cn("py-2.5 px-3 tabular-nums", isFree && "font-medium text-foreground")}>{row.free}</td>
-                            <td className={cn("py-2.5 px-3 tabular-nums", isPro && "font-medium text-foreground")}>{row.pro}</td>
+                            <td className={cn("py-2.5 px-3 tabular-nums", isPro ? "font-bold text-amber-700 dark:text-amber-300 bg-amber-500/5 dark:bg-amber-500/10" : "")}>{row.pro}</td>
                             <td className={cn("py-2.5 px-3 tabular-nums", isAdmin && "font-medium text-foreground")}>{row.admin}</td>
                           </tr>
                         ))}

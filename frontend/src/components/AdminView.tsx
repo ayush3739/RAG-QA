@@ -204,9 +204,9 @@ export default function AdminView() {
         <div className="p-4 rounded-xl bg-surface border border-border shadow-sm">
           <div className="flex items-center justify-between text-muted-foreground mb-2">
             <span className="text-xs font-semibold">Pro Tier Users</span>
-            <Crown className="w-4 h-4 text-cyan-400" />
+            <Crown className="w-4 h-4 text-amber-500 dark:text-amber-400 fill-amber-500/20" />
           </div>
-          <div className="text-2xl font-bold text-cyan-400 tabular-nums">{proCount}</div>
+          <div className="text-2xl font-bold text-amber-600 dark:text-amber-400 tabular-nums">{proCount}</div>
           <div className="text-[11px] text-muted-foreground mt-1">500 queries/day & 50 slots</div>
         </div>
 
@@ -369,7 +369,7 @@ export default function AdminView() {
                                     </span>
                                   )}
                                   {u.has_pending_upgrade && (
-                                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-medium">
+                                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 font-medium">
                                       Requested Pro
                                     </span>
                                   )}
@@ -400,12 +400,12 @@ export default function AdminView() {
                                 roleLower === "admin"
                                   ? "bg-purple-500/10 text-purple-400 border-purple-500/20"
                                   : roleLower === "pro"
-                                  ? "bg-cyan-500/10 text-cyan-400 border-cyan-500/20"
+                                  ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30 font-bold shadow-[0_0_8px_rgba(245,158,11,0.2)]"
                                   : "bg-surface-container text-muted-foreground border-border"
                               )}
                             >
                               {roleLower === "admin" && <Shield className="w-3 h-3 text-purple-400" />}
-                              {roleLower === "pro" && <Crown className="w-3 h-3 text-cyan-400" />}
+                              {roleLower === "pro" && <Crown className="w-3 h-3 text-amber-400 fill-amber-400" />}
                               <span className="capitalize">{u.role}</span>
                             </span>
                           </td>
@@ -444,10 +444,10 @@ export default function AdminView() {
                                       type="button"
                                       disabled={updateRoleMutation.isPending}
                                       onClick={() => updateRoleMutation.mutate({ userId: u.id, role: "pro" })}
-                                      className="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 transition-colors cursor-pointer flex items-center gap-1 shadow-xs"
+                                      className="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 transition-colors cursor-pointer flex items-center gap-1 shadow-xs"
                                       title="Upgrade to Pro tier (500 queries, 50 docs)"
                                     >
-                                      <Crown className="w-3 h-3" />
+                                      <Crown className="w-3 h-3 text-amber-500 dark:text-amber-400 fill-amber-500/20" />
                                       Make Pro
                                     </button>
                                   )}
