@@ -84,7 +84,7 @@ def create_refresh_token(user_id: str, expires_delta:timedelta | None = None) ->
     
     return encoded_jwt
 
-def decode_token(token: str,expected_type: str) -> dict | None:
+def decode_token(token: str, expected_type: str = "access"):
     try:
         payload = jwt.decode(
             token,
@@ -100,6 +100,9 @@ def decode_token(token: str,expected_type: str) -> dict | None:
         if payload.get("type") != expected_type:
             return None
 
+        sub = payload.get("sub")
+        if sub is not None and str(sub).isdigit():
+            return int(sub)
         return payload
 
     except JWTError:

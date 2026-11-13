@@ -54,6 +54,8 @@ app.add_middleware(
         "localhost",
         "127.0.0.1",
         "0.0.0.0",
+        "testserver",
+        "test",
         "*.trycloudflare.com",
         "*.run.app",
     ],

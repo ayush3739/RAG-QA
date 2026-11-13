@@ -1,3 +1,4 @@
+import json
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
@@ -31,18 +32,35 @@ async def chat(
    
 
     async def event_generator():
-
-        async for event_type, data in chat_service.stream_chat(
-            session_id=session_id,
-            question=request.question,
-            user_id=current_user.id,
-            db=db,
-            mode = request.mode or "auto",
-        ):
-
+        try:
+            async for event_type, data in chat_service.stream_chat(
+                session_id=session_id,
+                question=request.question,
+                user_id=current_user.id,
+                db=db,
+                mode = request.mode or "auto",
+            ):
+                yield {
+                    "event": event_type,
+                    "data": data,
+                }
+        except Exception as stream_exc:
             yield {
-                "event": event_type,
-                "data": data,
+                "event": "graph_status",
+                "data": json.dumps({
+                    "node": "error",
+                    "label": "Stream Error",
+                    "status": "failed",
+                    "message": str(stream_exc),
+                }),
+            }
+            yield {
+                "event": "error",
+                "data": f"Stream interrupted: {stream_exc}",
+            }
+            yield {
+                "event": "done",
+                "data": "[DONE]",
             }
 
     return EventSourceResponse(

@@ -178,7 +178,9 @@ export function useChatStream({
             : isDailyQuota
             ? `**Daily Query Quota Exceeded** — ${errorData?.detail?.message || "You have reached your daily query allowance."} ${resetInfo.summary}. Please upgrade to Pro for 500 queries/day.`
             : "**Rate Limited** — The AI provider is busy. Please wait a moment and try again.";
+          currentText = rateLimitMsg;
           setActiveMessages((prev) => prev.map((m) => (m.id === botMsgId ? { ...m, text: rateLimitMsg } : m)));
+          setGraphStatuses((prev) => prev.map((s) => s.status === "running" ? { ...s, status: "failed", message: "Quota exceeded" } : s));
           toast.warning(errorData?.detail?.message || "Quota limit reached.", { duration: 7000 });
           api.getQuota().then((q) => useStore.getState().setQuota(q)).catch(() => {});
           return;
@@ -194,13 +196,17 @@ export function useChatStream({
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let currentEvent = "message";
+      let buffer = "";
 
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split("\n");
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        let shouldTerminate = false;
 
         for (let line of lines) {
           if (line.endsWith("\r")) {
@@ -208,10 +214,14 @@ export function useChatStream({
           }
 
           if (line.startsWith("event: ")) {
-            currentEvent = line.slice(7);
+            currentEvent = line.slice(7).trim();
           } else if (line.startsWith("data: ") || line === "data:") {
             const dataStr = line.startsWith("data: ") ? line.slice(6) : "";
-            if (dataStr === "[DONE]") continue;
+            
+            if (dataStr === "[DONE]" || currentEvent === "done") {
+              shouldTerminate = true;
+              break;
+            }
 
             if (currentEvent === "token") {
               const tokenText = dataStr === "" ? "\n" : dataStr;
@@ -254,28 +264,37 @@ export function useChatStream({
                 );
               } catch (e) {}
             } else if (currentEvent === "rate_limit") {
-              const rateLimitMsg = "⏳ **Rate Limited** — The AI provider is busy. Please wait a moment and try again.";
+              const rateLimitMsg = dataStr || "⏳ **Rate Limited** — The AI provider is busy. Please wait a moment and try again.";
               currentText = rateLimitMsg;
               setActiveMessages((prev) => prev.map((m) => (m.id === botMsgId ? { ...m, text: rateLimitMsg } : m)));
               toast.warning("Rate limited by AI provider. Try again in a few seconds.", { duration: 6000 });
+              setGraphStatuses((prev) => prev.map((s) => s.status === "running" ? { ...s, status: "failed", message: "Rate limited" } : s));
+              shouldTerminate = true;
+              break;
             } else if (currentEvent === "error") {
               const errMsg = dataStr ? `⚠️ **Error** — ${dataStr}` : "⚠️ **Error** — Something went wrong. Please try again.";
               currentText = errMsg;
               setActiveMessages((prev) => prev.map((m) => (m.id === botMsgId ? { ...m, text: errMsg } : m)));
+              toast.error(dataStr || "An error occurred during response streaming.", { duration: 6000 });
+              setGraphStatuses((prev) => prev.map((s) => s.status === "running" ? { ...s, status: "failed", message: dataStr || "Error" } : s));
+              shouldTerminate = true;
+              break;
             }
           }
         }
+
+        if (shouldTerminate) {
+          await reader.cancel().catch(() => {});
+          break;
+        }
       }
-    } catch (error) {
-      const errorMsgText = `⚠️ **Workspace Query Refusal**: Connection to backend failed.`;
+    } catch (error: any) {
+      const errorMsgText = error?.message?.includes("status")
+        ? `⚠️ **Server Error** — ${error.message}. Please try again.`
+        : `⚠️ **Workspace Query Refusal**: Connection to backend failed.`;
       currentText = errorMsgText;
-      const errorMsg: Message = {
-        id: `msg-error-${Date.now()}`,
-        sender: "assistant",
-        text: errorMsgText,
-        timestamp: new Date().toISOString(),
-      };
-      setActiveMessages((prev) => [...prev, errorMsg]);
+      setActiveMessages((prev) => prev.map((m) => (m.id === botMsgId ? { ...m, text: errorMsgText } : m)));
+      setGraphStatuses((prev) => prev.map((s) => s.status === "running" ? { ...s, status: "failed", message: "Connection failed" } : s));
     } finally {
       setIsProcessing(false);
 

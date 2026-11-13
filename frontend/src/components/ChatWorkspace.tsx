@@ -698,25 +698,28 @@ export default function ChatWorkspace({
                     {visibleGraphStatuses.map((step: any, idx) => {
                       const isPast = step.status === "completed";
                       const isActive = step.status === "running";
+                      const isFailed = step.status === "failed" || step.status === "error";
                       const label = step.label || step.message || step.node || String(step);
                        
                       return (
                         <div key={`${label}-${idx}`} className={cn(
                           "flex items-center gap-2.5 transition-opacity duration-200", 
-                          isPast ? "opacity-100" : isActive ? "opacity-100" : "opacity-40"
+                          isFailed ? "opacity-100" : isPast ? "opacity-100" : isActive ? "opacity-100" : "opacity-40"
                         )}>
-                          {isPast ? (
-                            <CheckCircle2 className="w-4 h-4 text-success" />
+                          {isFailed ? (
+                            <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
+                          ) : isPast ? (
+                            <CheckCircle2 className="w-4 h-4 text-success shrink-0" />
                           ) : isActive ? (
-                            <div className="w-4 h-4 flex items-center justify-center">
+                            <div className="w-4 h-4 flex items-center justify-center shrink-0">
                               <span className="w-2 h-2 bg-primary rounded-full animate-ping motion-reduce:animate-none" />
                             </div>
                           ) : (
-                            <div className="w-4 h-4 rounded-full border border-border" />
+                            <div className="w-4 h-4 rounded-full border border-border shrink-0" />
                           )}
                           <span className={cn(
                             "text-xs font-medium",
-                            isPast ? "text-muted-foreground" : isActive ? "text-primary font-semibold" : "text-muted-foreground"
+                            isFailed ? "text-destructive font-semibold" : isPast ? "text-muted-foreground" : isActive ? "text-primary font-semibold" : "text-muted-foreground"
                           )}>
                             {label}
                           </span>

@@ -55,6 +55,10 @@ def node_completed(node: str, **extra: Any) -> tuple[str, str]:
     return graph_status(node, "completed", **extra)
 
 
+def node_failed(node: str, message: str | None = None, **extra: Any) -> tuple[str, str]:
+    return graph_status(node, "failed", message=message, **extra)
+
+
 def route_selected(route: str, reason: str = "") -> tuple[str, str]:
     label = ROUTE_LABELS.get(route, route.replace("_", " ").title())
     return graph_status(

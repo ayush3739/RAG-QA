@@ -28,56 +28,84 @@ class ChatService:
         mode :str = "auto",
     ) -> AsyncGenerator[tuple[str, object], None]:
 
-        # 1. Validate session
-
-        session = await self.session_service.get_session(
-            session_id=session_id,
-            db=db,
-        )
-
-        if not session:
-            yield ("error", "Session not found")
-            return
-
-        if session.user_id != user_id:
-            yield ("error", "Unauthorized")
-            return
-
-        # 2. Save user message
-
-        await self.session_service.add_message(
-            session_id=session_id,
-            role="user",
-            content=question,
-            db=db,
-        )
-
-        # 2b. Track query usage
-        # it gets as a deps at the chat api level 
-
-        # 3. Load history
-        # Already includes the user message saved above — no need to append it again.
-
-        history = await self.session_service.get_recent_history(
-            session_id=session_id,
-            db=db,
-        )
-
-        # 4. Load attached documents
-
-        document_ids = await self.session_service.get_session_documents(
-            session_id=session_id,
-            db=db,
-        )
-
-        # 4b. Get document names for context injection
-        document_names: list[str] = []
-        if document_ids:
-            doc_list = await self.session_service.get_session_documents_full(
+        # 1. Validate session and initialize chat
+        try:
+            session = await self.session_service.get_session(
                 session_id=session_id,
                 db=db,
             )
-            document_names = [doc.name for doc in doc_list.documents]
+
+            if not session:
+                yield ("graph_status", json.dumps({
+                    "node": "session_validation",
+                    "label": "Session Not Found",
+                    "status": "failed",
+                    "message": "Session not found",
+                }))
+                yield ("error", "Session not found")
+                yield ("done", "[DONE]")
+                return
+
+            if session.user_id != user_id:
+                yield ("graph_status", json.dumps({
+                    "node": "session_validation",
+                    "label": "Unauthorized Access",
+                    "status": "failed",
+                    "message": "Unauthorized",
+                }))
+                yield ("error", "Unauthorized")
+                yield ("done", "[DONE]")
+                return
+
+            # 2. Save user message
+            await self.session_service.add_message(
+                session_id=session_id,
+                role="user",
+                content=question,
+                db=db,
+            )
+
+            # 2b. Track query usage
+            # it gets as a deps at the chat api level 
+
+            # 3. Load history
+            # Already includes the user message saved above — no need to append it again.
+            history = await self.session_service.get_recent_history(
+                session_id=session_id,
+                db=db,
+            )
+
+            # 4. Load attached documents
+            document_ids = await self.session_service.get_session_documents(
+                session_id=session_id,
+                db=db,
+            )
+
+            # 4b. Get document names for context injection
+            document_names: list[str] = []
+            if document_ids:
+                doc_list = await self.session_service.get_session_documents_full(
+                    session_id=session_id,
+                    db=db,
+                )
+                document_names = [doc.name for doc in doc_list.documents]
+
+        except Exception as prep_exc:
+            logger.exception(
+                "[chat:prep_error] session_id=%s user_id=%s",
+                session_id,
+                user_id,
+            )
+            prep_error = f"Failed to initialize chat: {prep_exc}"
+            yield ("graph_status", json.dumps({
+                "node": "initialization",
+                "label": "Initialization Error",
+                "status": "failed",
+                "message": prep_error,
+            }))
+            yield ("error", prep_error)
+            yield ("done", "[DONE]")
+            return
 
         # 5. Route through the agent layer
 
@@ -130,22 +158,42 @@ class ChatService:
                     "Please wait a moment and try again."
                 )
                 event_type_to_yield = "rate_limit"
+                node_label = "Provider Rate Limited"
             else:
                 error_message = (
                     "Sorry, I couldn't complete this response because the agent "
                     f"encountered an error: {exc}"
                 )
                 event_type_to_yield = "error"
+                node_label = "Agent Execution Error"
 
-            await self.session_service.add_message(
-                session_id=session_id,
-                role="assistant",
-                content=error_message,
-                db=db,
-                confidence=0.0,
-                sources=[],
-                tool_used="error",
-            )
+            # 1. Immediately yield graph status update marking the failure so UI stops spinning
+            yield ("graph_status", json.dumps({
+                "node": "error",
+                "label": node_label,
+                "status": "failed",
+                "message": error_message,
+            }))
+
+            # 2. Persist error message safely without letting DB transaction failures block SSE
+            try:
+                await self.session_service.add_message(
+                    session_id=session_id,
+                    role="assistant",
+                    content=error_message,
+                    db=db,
+                    confidence=0.0,
+                    sources=[],
+                    tool_used="error",
+                )
+            except Exception as db_exc:
+                logger.error("[chat:error_db_save_failed] %s", db_exc)
+                try:
+                    await db.rollback()
+                except Exception:
+                    pass
+
+            # 3. Always yield error event and done marker to guarantee stream contract
             yield (event_type_to_yield, error_message)
             yield ("done", "[DONE]")
             return
