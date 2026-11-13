@@ -328,5 +328,41 @@ export const api = {
   getActivity: async (days: number = 7) => {
     return apiFetch(`/analytics/activity?days=${days}`);
   },
+
+  // User Upgrade Requests
+  requestProUpgrade: (reason?: string) => apiFetch('/user/upgrade-request', {
+    method: 'POST',
+    body: JSON.stringify({ reason: reason || 'Requested from settings' }),
+  }),
+
+  getMyUpgradeRequest: () => apiFetch('/user/upgrade-request'),
+
+  // Admin Portal
+  getAdminStats: () => apiFetch('/admin/stats'),
+
+  getAdminUsers: (params?: { search?: string; role?: string; limit?: number; skip?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.search) query.append('search', params.search);
+    if (params?.role) query.append('role', params.role);
+    if (params?.limit) query.append('limit', String(params.limit));
+    if (params?.skip) query.append('skip', String(params.skip));
+    return apiFetch(`/admin/users?${query.toString()}`);
+  },
+
+  updateUserRole: (userId: number, role: 'user' | 'pro' | 'admin') => apiFetch(`/admin/users/${userId}/role`, {
+    method: 'PATCH',
+    body: JSON.stringify({ role }),
+  }),
+
+  getAdminUpgradeRequests: (statusFilter: string = 'pending') =>
+    apiFetch(`/admin/upgrade-requests?status_filter=${statusFilter}`),
+
+  approveUpgradeRequest: (requestId: number) => apiFetch(`/admin/upgrade-requests/${requestId}/approve`, {
+    method: 'POST',
+  }),
+
+  rejectUpgradeRequest: (requestId: number) => apiFetch(`/admin/upgrade-requests/${requestId}/reject`, {
+    method: 'POST',
+  }),
 };
 

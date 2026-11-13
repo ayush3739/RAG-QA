@@ -129,7 +129,7 @@ export default function DashboardView({
             </span>
           </div>
           <p className="text-xs text-muted-foreground mt-1 font-medium">
-            Active neural RAG retrieval engine on <strong className="text-foreground font-semibold">monolith-v4.2.0</strong> ({totalQueriesPast7Days} queries past 7 days)
+            Active neural RAG retrieval engine on <strong className="text-foreground font-semibold">knowvex-core-v2.0</strong> ({totalQueriesPast7Days} queries past 7 days)
           </p>
         </div>
 
@@ -424,7 +424,7 @@ export default function DashboardView({
         >
           <div className="flex items-center gap-2">
             <Activity className="w-3.5 h-3.5" />
-            <span>Telemetry channel: <strong className="font-medium text-foreground">monolith-v4.2.0</strong></span>
+            <span>Telemetry channel: <strong className="font-medium text-foreground">knowvex-core-v2.0</strong></span>
           </div>
           <div className="flex items-center gap-2">
             <span className={cn("w-1.5 h-1.5 rounded-full", healthStatus === "online" ? "bg-success" : "bg-danger")} />

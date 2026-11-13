@@ -6,6 +6,7 @@ import { DocumentsView } from "../DocumentsView";
 import DocumentDetailsView from "../DocumentDetailsView";
 import SessionsView from "../SessionsView";
 import SettingsView from "../SettingsView";
+import AdminView from "../AdminView";
 import { useStore } from "../../store/useStore";
 import { SourceDocument, Conversation, Message, ModelParams } from "../../types";
 
@@ -129,6 +130,7 @@ export function AppWorkspace({
           />
         )}
         {currentTab === "settings" && <SettingsView params={params} onParamChange={setParams} />}
+        {currentTab === "admin" && <AdminView />}
       </motion.div>
     </AnimatePresence>
   );

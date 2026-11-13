@@ -10,11 +10,13 @@ from backend.services.security import (
 
 
 def test_created_access_token_can_be_decoded():
-    assert decode_token(create_access_token(subject=42)) == 42
+    payload = decode_token(create_access_token(user_id=42, role="user"))
+    assert payload is not None
+    assert int(payload["sub"]) == 42
 
 
 def test_expired_access_token_is_rejected():
-    expired_token = create_access_token(subject=42, expires_delta=timedelta(seconds=-1))
+    expired_token = create_access_token(user_id=42, role="user", expires_delta=timedelta(seconds=-1))
     assert decode_token(expired_token) is None
 
 

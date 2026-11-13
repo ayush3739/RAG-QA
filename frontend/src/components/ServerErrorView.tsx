@@ -83,7 +83,7 @@ export default function ServerErrorView() {
         <div className="mt-10 text-xs text-muted-foreground flex items-center gap-2">
           <span>KnowVex Telemetry Channel</span>
           <span className="w-1 h-1 rounded-full bg-border" />
-          <span>Node monolith-v4.2.0</span>
+          <span>Node knowvex-core-v2.0</span>
         </div>
       </motion.div>
     </div>

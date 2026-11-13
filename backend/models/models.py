@@ -1,6 +1,5 @@
-from datetime import datetime,UTC
+from datetime import datetime, UTC
 from typing import Any, Dict, Optional
-from langchain_classic.indexes import index
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, Boolean, Float, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import JSONB,UUID
@@ -38,6 +37,7 @@ class User(Base):
     data_usages: Mapped[list["DataUsage"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     refresh_tokens: Mapped[list["RefreshToken"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     oauth_accounts: Mapped[list["OAuthAccount"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    upgrade_requests: Mapped[list["UpgradeRequest"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
 class OAuthAccount(Base):
     __tablename__ = "oauth_accounts"
@@ -193,3 +193,16 @@ class Feedback(Base):
     rating: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     comment: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+
+class UpgradeRequest(Base):
+    __tablename__ = "upgrade_requests"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    requested_role: Mapped[str] = mapped_column(String(20), default="Pro", nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="pending", nullable=False, index=True)
+    reason: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    user: Mapped["User"] = relationship(back_populates="upgrade_requests")

@@ -276,6 +276,13 @@ export default function App() {
         setCurrentTab("chats");
       } else if (route === "settings") {
         setCurrentTab("settings");
+      } else if (route === "admin") {
+        const currentUser = useStore.getState().user;
+        if (currentUser?.role?.toLowerCase() === "admin") {
+          setCurrentTab("admin");
+        } else {
+          setCurrentTab("dashboard");
+        }
       } else if (route === "chat") {
         setCurrentTab("conversations");
         if (param === "new") {
@@ -316,6 +323,8 @@ export default function App() {
       targetPath = "/chats";
     } else if (currentTab === "settings") {
       targetPath = "/settings";
+    } else if (currentTab === "admin") {
+      targetPath = "/admin";
     } else if (currentTab === "conversations") {
       if (activeConvId === "") {
         targetPath = "/chat/new";

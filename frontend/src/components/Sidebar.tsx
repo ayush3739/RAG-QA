@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { 
   Database, Plus, FolderOpen, MessageSquare, 
-  LayoutDashboard, Settings, LogOut, Sun, Moon, PanelLeftClose, PanelLeftOpen, Sparkles, Crown, Clock, CreditCard
+  LayoutDashboard, Settings, LogOut, Sun, Moon, PanelLeftClose, PanelLeftOpen, Sparkles, Crown, Clock, CreditCard, ShieldCheck
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "../lib/utils";
@@ -53,11 +53,14 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewResearch, conv
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const isAdmin = user?.role?.toLowerCase() === "admin";
+
   const tabs = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, shortcut: "D" },
     { id: "chats", label: "Chats", icon: MessageSquare, count: conversationsCount, shortcut: "T" },
     { id: "documents", label: "Documents", icon: FolderOpen, shortcut: "U" },
     { id: "settings", label: "Settings", icon: Settings, shortcut: "S" },
+    ...(isAdmin ? [{ id: "admin", label: "Admin", icon: ShieldCheck, shortcut: "A" }] : []),
   ];
 
   return (

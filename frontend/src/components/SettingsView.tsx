@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { 
   Cpu, Sliders, User, Shield, RefreshCw, Moon, Sun, LogOut, Trash2, Save, Check,
   Server, Palette, AlertTriangle, Lock, Eye, EyeOff, Clock,
-  CreditCard, ArrowUpRight, ChevronRight
+  CreditCard, ArrowUpRight, ChevronRight, Crown
 } from "lucide-react";
 import { toast } from "sonner";
 import { ModelParams } from "../types";
@@ -139,6 +139,32 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Upgrade request state for free users
+  const { data: upgradeRequestData, refetch: refetchUpgradeRequest } = useQuery({
+    queryKey: ["myUpgradeRequest"],
+    queryFn: async () => {
+      const res = await api.getMyUpgradeRequest();
+      return res as { has_pending: boolean; status?: string; created_at?: string; message?: string };
+    },
+    enabled: isFree,
+    refetchOnWindowFocus: false,
+  });
+
+  const [isRequestingUpgrade, setIsRequestingUpgrade] = useState(false);
+
+  const handleRequestUpgrade = async () => {
+    setIsRequestingUpgrade(true);
+    try {
+      const res = await api.requestProUpgrade("Requested from settings subscription page");
+      toast.success(res.message || "Pro upgrade request submitted to administrators!");
+      refetchUpgradeRequest();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to submit upgrade request");
+    } finally {
+      setIsRequestingUpgrade(false);
+    }
+  };
 
   // Sync activeSection with external changes
   useEffect(() => {
@@ -593,18 +619,24 @@ export default function SettingsView({ params, onParamChange }: SettingsViewProp
                     </div>
 
                     {isFree && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          toast.info("Pro plan includes 500 queries/day, 25 deep research runs, and 50 document slots.", {
-                            description: "To upgrade, reach out to your team admin or email admin@knowvex.ai"
-                          });
-                        }}
-                        className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/15 border border-primary/15 rounded-lg transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-                      >
-                        <span>Upgrade to Pro</span>
-                        <ArrowUpRight className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="shrink-0 flex items-center gap-2">
+                        {upgradeRequestData?.has_pending ? (
+                          <div className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                            <Clock className="w-3.5 h-3.5 animate-pulse" />
+                            <span>Request Pending Approval</span>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={isRequestingUpgrade}
+                            onClick={handleRequestUpgrade}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/15 border border-primary/20 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                          >
+                            <Crown className="w-3.5 h-3.5" />
+                            <span>{isRequestingUpgrade ? "Submitting\u2026" : "Request Pro Access"}</span>
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
 

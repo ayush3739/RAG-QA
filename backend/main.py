@@ -1,6 +1,7 @@
 from typing import Annotated
 from contextlib import asynccontextmanager
 import logging
+import sys
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, status
@@ -15,7 +16,7 @@ from backend.core.config import settings
 from backend.db.base import engine, get_db
 
 # Import routers
-from backend.api.routes import chat, documents, research, feedback, auth, user, sessions, analytics
+from backend.api.routes import chat, documents, research, feedback, auth, user, sessions, analytics, admin
 
 logging.basicConfig(
     level=logging.INFO,
@@ -29,6 +30,7 @@ FRONTEND_DIR = ROOT_DIR / "frontend"
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    
     logger.info("🚀 Starting KnowVex API...")
     try:
         async with engine.begin() as conn:
@@ -108,6 +110,7 @@ app.include_router(research.router, prefix="/api/v1", tags=["Research"])
 app.include_router(feedback.router, prefix="/api/v1", tags=["Feedback"])
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"])
 app.include_router(user.router, prefix="/api/v1/user", tags=["User"])
+app.include_router(admin.router, prefix="/api/v1/admin", tags=["Admin"])
 app.include_router(sessions.router, prefix="/api/v1/sessions", tags=["Sessions"])
 app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["Analytics"])
 

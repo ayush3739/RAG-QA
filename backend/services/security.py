@@ -38,11 +38,19 @@ def verify_password(plain: str, hashed: str) -> bool:
     return _pwd_context.verify(plain, hashed)
 
 
+def validate_password(password: str, min_length: int = 10) -> str:
+    """Validate password length and bcrypt limits."""
+    if not password or len(password) < min_length:
+        raise ValueError(f"Password must be at least {min_length} characters long")
+    if len(password.encode("utf-8")) > 72:
+        raise ValueError("Password cannot exceed 72 bytes due to bcrypt limitations")
+    return password
+
+
 #JWT token utilities
 
 def create_access_token(user_id: str, role: str, expires_delta:timedelta | None = None) -> str:
 
-    
     now = datetime.now(timezone.utc)
     
     if expires_delta:
@@ -100,9 +108,7 @@ def decode_token(token: str, expected_type: str = "access"):
         if payload.get("type") != expected_type:
             return None
 
-        sub = payload.get("sub")
-        if sub is not None and str(sub).isdigit():
-            return int(sub)
+        
         return payload
 
     except JWTError:
