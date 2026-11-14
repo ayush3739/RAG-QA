@@ -96,7 +96,8 @@ async def research_planner(state: ResearchState) -> dict:
         [
             {"role": "system", "content": prompts["PLANNER_SYSTEM"]},
             {"role": "user", "content": planner_input},
-        ]
+        ],
+        task="router",
     )
     plan = _parse_json_object(response)
     return {
@@ -169,7 +170,8 @@ async def evidence_fusion(state: ResearchState) -> dict:
         [
             {"role": "system", "content": prompts["FUSION_SYSTEM"]},
             {"role": "user", "content": payload},
-        ]
+        ],
+        task="research",
     )
     fused = _parse_json_array(response)
     if not fused:
@@ -211,7 +213,8 @@ async def generator(state: ResearchState) -> dict:
             {"role": "system", "content": prompts["GENERATOR_SYSTEM"]},
             *history_messages,
             {"role": "user", "content": payload},
-        ]
+        ],
+        task="research",
     )
     return {"draft": response}
 
@@ -233,7 +236,8 @@ async def critic(state: ResearchState) -> dict:
         [
             {"role": "system", "content": prompts["CRITIC_SYSTEM"]},
             {"role": "user", "content": payload},
-        ]
+        ],
+        task="router",
     )
     result = _parse_json_object(response)
     return {"issues_found": bool(result.get("issues_found", False))}
@@ -263,7 +267,8 @@ async def query_refiner(state: ResearchState) -> dict:
                     f"Draft so far:\n{state.get('draft', '')}"
                 ),
             },
-        ]
+        ],
+        task="router",
     )
     return {
         "refined_query": response.strip(),

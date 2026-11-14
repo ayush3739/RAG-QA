@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.services.session_service import SessionService
 from backend.services.analytics_service import AnalyticsService
+from backend.services.llm_provider import LLMProvider
 from backend.agent.graph_agent import stream_answer_query_with_graph
 
 
@@ -244,6 +245,7 @@ class ChatService:
                 "chunks": retrieved_chunks,
                 "tool_trace": tool_trace,
                 "routing_reason": routing_reason,
+                "llm_telemetry": LLMProvider.get_last_telemetry(),
             }),
         )
 

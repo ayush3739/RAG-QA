@@ -323,7 +323,8 @@ async def direct_answer_impl(query: str, history: list[dict] | None = None, docu
             },
             *_history_messages(history),
             {"role": "user", "content": query},
-        ]
+        ],
+        task="general",
     )
 
     return {
@@ -369,7 +370,8 @@ async def summarize_document_impl(
                 ),
             },
             {"role": "user", "content": f"REQUEST:\n{query}\n\nDOCUMENT CONTEXT:\n{context}"},
-        ]
+        ],
+        task="rag",
     )
 
     return {
@@ -417,7 +419,8 @@ async def generate_quiz_impl(
                     f"DOCUMENT CONTEXT:\n{context}"
                 ),
             },
-        ]
+        ],
+        task="rag",
     )
 
     return {

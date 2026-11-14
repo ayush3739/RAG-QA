@@ -90,7 +90,7 @@ Conversation History:
 {history_text or "No previous conversation."}
 
 User Query: {original_query}"""
-    response = await llm.invoke([{"role": "user", "content": prompt}])
+    response = await llm.invoke([{"role": "user", "content": prompt}], task="router")
     result = _parse_json_object(response)
     
     raw_queries = result.get("queries", [])

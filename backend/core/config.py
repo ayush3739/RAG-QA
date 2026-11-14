@@ -20,10 +20,14 @@ class Settings(BaseSettings):
     gemini_api_key: Optional[str] = None
     open_router_key: Optional[str] = None
     nvidia_nim: Optional[str] = None
-    aws_access_key_id: Optional[str] = None
-    aws_secret_access_key: Optional[str] = None
-    aws_session_token: Optional[str] = None
-    aws_region_name: Optional[str] = "us-east-1"
+    nvidia_nim_api_key: Optional[str] = None
+    cohere_api_key: Optional[str] = None
+    cloudflare_api_token: Optional[str] = None
+    cloudflare_ai_api: Optional[str] = None
+    cloudflare_account_id: Optional[str] = None
+    gonka_api_key: Optional[str] = None
+    kilo_api_key: Optional[str] = None
+    cerebras_api_key: Optional[str] = None
 
     # Active provider/model (overridden at the bottom of this file)
     llm_provider: str = "groq"

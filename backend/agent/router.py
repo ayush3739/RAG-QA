@@ -173,7 +173,7 @@ Q: what is this document about and what is Newton's third law?
     ]
 
     try:
-        response = await llm.invoke(messages)
+        response = await llm.invoke(messages, task="router")
     except Exception:
         logger.exception("[router:json_error]")
         tools = _fallback_select_tools(query, has_documents, include_web)
@@ -385,7 +385,7 @@ async def _synthesize(
         {"role": "user", "content": query},
     ]
 
-    return await llm.invoke(messages)
+    return await llm.invoke(messages, task="rag")
 
 
 async def answer_query(

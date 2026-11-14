@@ -1,0 +1,111 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "default_cooldown_seconds": 60.0,
+    "max_retries": 1,
+    "default_timeout_seconds": 15.0,
+    "enable_telemetry": true
+  },
+  "chains": {
+    "router": [
+      { "id": "groq_20b", "label": "Groq GPT-OSS 20B", "enabled": true },
+      { "id": "cloudflare_3b", "label": "Cloudflare 3B", "enabled": true },
+      { "id": "gemini_flash", "label": "Gemini Flash", "enabled": true },
+      { "id": "kilo_free", "label": "Kilo Free", "enabled": true },
+      { "id": "ollama", "label": "Ollama", "enabled": true }
+    ],
+    "rag_and_research": [
+      { "id": "gemini_flash", "label": "Gemini Flash", "enabled": true },
+      { "id": "cohere_r", "label": "Cohere R+", "enabled": true },
+      { "id": "gonka_deepseek", "label": "Gonka DeepSeek", "enabled": true },
+      { "id": "gonka_minimax", "label": "Gonka MiniMax", "enabled": true },
+      { "id": "gonka_glm", "label": "Gonka GLM", "enabled": true },
+      { "id": "groq_120b", "label": "Groq GPT-OSS 120B", "enabled": true },
+      { "id": "groq_qwen27b", "label": "Groq Qwen 27B", "enabled": true },
+      { "id": "kilo_free", "label": "Kilo Free", "enabled": true },
+      { "id": "nvidia_nim", "label": "Nvidia NIM", "enabled": true },
+      { "id": "ollama", "label": "Ollama", "enabled": true }
+    ],
+    "general_chat": [
+      { "id": "groq_120b", "label": "Groq GPT-OSS 120B", "enabled": true },
+      { "id": "gemini_flash", "label": "Gemini Flash", "enabled": true },
+      { "id": "gonka_deepseek", "label": "Gonka DeepSeek", "enabled": true },
+      { "id": "gonka_minimax", "label": "Gonka MiniMax", "enabled": true },
+      { "id": "gonka_glm", "label": "Gonka GLM", "enabled": true },
+      { "id": "cohere_r", "label": "Cohere R+", "enabled": true },
+      { "id": "groq_20b", "label": "Groq GPT-OSS 20B", "enabled": true },
+      { "id": "groq_qwen27b", "label": "Groq Qwen 27B", "enabled": true },
+      { "id": "cloudflare_3b", "label": "Cloudflare 3B", "enabled": true },
+      { "id": "kilo_free", "label": "Kilo Free", "enabled": true },
+      { "id": "groq_secondary", "label": "Groq Secondary (120B)", "enabled": true },
+      { "id": "nvidia_nim", "label": "Nvidia NIM", "enabled": true },
+      { "id": "openrouter", "label": "OpenRouter", "enabled": true },
+      { "id": "groq_third", "label": "Groq Third (120B)", "enabled": true },
+      { "id": "ollama", "label": "Ollama", "enabled": true }
+    ]
+  },
+  "models": {
+    "groq_20b": {
+      "model": "openai/gpt-oss-20b",
+      "description": "Ultra-fast JSON routing (1,000 t/s, 250K TPM, 1K RPM, 131k context)"
+    },
+    "groq_120b": {
+      "model": "openai/gpt-oss-120b",
+      "description": "High-fidelity conversational responses (500 t/s, 250K TPM, 1K RPM, 131k context)"
+    },
+    "groq_qwen27b": {
+      "model": "qwen/qwen3.8-27b",
+      "description": "High-speed reasoning model (450 t/s, 250K TPM, 1K RPM, 131k context)"
+    },
+    "gemini_flash": {
+      "model": "gemini-flash-lite-latest",
+      "description": "1M token context window, fast REST endpoint"
+    },
+    "cohere_r": {
+      "model": "command-r-08-2024",
+      "description": "Purpose-built for RAG citation grounding"
+    },
+    "cloudflare_3b": {
+      "model": "@cf/meta/llama-3.2-3b-instruct",
+      "description": "Cloudflare Workers AI edge inference"
+    },
+    "gonka_deepseek": {
+      "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+      "description": "400K context window FP8 reasoning"
+    },
+    "gonka_minimax": {
+      "model": "MiniMaxAI/MiniMax-M2.7",
+      "description": "200K context window for heavy documents"
+    },
+    "gonka_glm": {
+      "model": "zai-org/GLM-5.3-Flash",
+      "description": "400K context window rapid token throughput"
+    },
+    "kilo_free": {
+      "model": "kilo-auto/free",
+      "description": "Kilo Code AI Gateway autonomous free model router"
+    },
+    "nvidia_nim": {
+      "model": "mistralai/mistral-7b-instruct-v0.3",
+      "description": "NVIDIA NIM enterprise inference"
+    },
+    "openrouter": {
+      "model": "liquid/lfm-3-1.7b:free",
+      "description": "OpenRouter free-tier aggregator"
+    },
+    "ollama": {
+      "model": "qwen2.5:7b",
+      "description": "Local offline fallback"
+    }
+  },
+  "embeddings": {
+    "primary": {
+      "provider": "jina",
+      "model": "jina-embeddings-v3"
+    },
+    "fallback": {
+      "provider": "gonka",
+      "model": "BAAI/bge-m3"
+    }
+  }
+}

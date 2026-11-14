@@ -259,7 +259,8 @@ async def main_router(state: MainState) -> dict:
                     f"query={state['user_query']}"
                 ),
             },
-        ]
+        ],
+        task="router",
     )
     result = _parse_json_object(response)
     route = result.get("route", "general")
